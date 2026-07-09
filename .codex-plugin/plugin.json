@@ -1,0 +1,38 @@
+{
+  "name": "qa-suite",
+  "version": "1.0.0",
+  "description": "Multi-agent QA framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
+  "author": {
+    "name": "slinky07",
+    "url": "https://github.com/slinky07"
+  },
+  "homepage": "https://github.com/slinky07/qa-suite",
+  "repository": "https://github.com/slinky07/qa-suite",
+  "license": "MIT",
+  "keywords": [
+    "qa",
+    "testing",
+    "quality-assurance",
+    "release-readiness",
+    "agent-skill"
+  ],
+  "skills": "./qa-suite/",
+  "interface": {
+    "displayName": "qa-suite",
+    "shortDescription": "Disciplined multi-agent QA for real software projects.",
+    "longDescription": "Run scoped QA agents for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing with evidence-anchored reports and platform checklists.",
+    "developerName": "slinky07",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/slinky07/qa-suite",
+    "defaultPrompt": [
+      "Use qa-suite to set up QA for this project.",
+      "Use qa-suite to run smoke QA.",
+      "Use qa-suite for a full release audit."
+    ],
+    "brandColor": "#10A37F"
+  }
+}

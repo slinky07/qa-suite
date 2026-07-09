@@ -1,0 +1,20 @@
+{
+  "name": "qa-suite",
+  "interface": {
+    "displayName": "qa-suite"
+  },
+  "plugins": [
+    {
+      "name": "qa-suite",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

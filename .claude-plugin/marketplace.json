@@ -1,0 +1,31 @@
+{
+  "name": "qa-suite",
+  "description": "Multi-agent QA framework plugins for Claude Code.",
+  "owner": {
+    "name": "slinky07"
+  },
+  "plugins": [
+    {
+      "name": "qa-suite",
+      "source": "./",
+      "displayName": "qa-suite",
+      "description": "Multi-agent QA framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
+      "version": "1.0.0",
+      "author": {
+        "name": "slinky07",
+        "url": "https://github.com/slinky07"
+      },
+      "homepage": "https://github.com/slinky07/qa-suite",
+      "repository": "https://github.com/slinky07/qa-suite",
+      "license": "MIT",
+      "keywords": [
+        "qa",
+        "testing",
+        "quality-assurance",
+        "release-readiness",
+        "agent-skill"
+      ],
+      "category": "Productivity"
+    }
+  ]
+}

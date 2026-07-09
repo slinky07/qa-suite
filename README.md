@@ -8,11 +8,11 @@ Install qa-suite into the agent platform. Do not copy it into every project repo
 
 | Platform | Install |
 |---|---|
-| Claude Code | Copy `qa-suite/` into `~/.claude/skills/`, or into `.claude/skills/` for one Claude Code project. |
+| Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then run `/plugin install qa-suite@qa-suite`. For simple local use, copying `qa-suite/` into `~/.claude/skills/` still works. |
 | Claude.ai | Download `qa-suite.skill` from this repo's Releases page and upload it as a skill. |
-| Codex | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` for global use, or into `.agents/skills/qa-suite` for a repo-scoped team skill. Optionally mention `$qa-suite` in `AGENTS.md` when that repo should route QA requests to it. |
+| Codex | Add this repo as a plugin marketplace with `codex plugin marketplace add slinky07/qa-suite`, then run `codex plugin add qa-suite --marketplace qa-suite`. For simple local use, copying `qa-suite/` into `$HOME/.agents/skills/qa-suite` still works. |
 
-Claude Code users can also copy `.claude/commands/` for thin slash commands that invoke smoke, regression, and release QA paths.
+The Claude Code plugin also includes thin slash commands for smoke, regression, and release QA paths.
 
 ## Configure Once Per Project
 
