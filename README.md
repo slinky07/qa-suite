@@ -10,7 +10,7 @@ Install qa-suite into the agent platform. Do not copy it into every project repo
 |---|---|
 | Claude Code | Copy `qa-suite/` into `~/.claude/skills/`, or into `.claude/skills/` for one Claude Code project. |
 | Claude.ai | Download `qa-suite.skill` from this repo's Releases page and upload it as a skill. |
-| Codex | Reference `qa-suite/SKILL.md` from `AGENTS.md`, using the path where you keep this repo. |
+| Codex | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` for global use, or into `.agents/skills/qa-suite` for a repo-scoped team skill. Optionally mention `$qa-suite` in `AGENTS.md` when that repo should route QA requests to it. |
 
 Claude Code users can also copy `.claude/commands/` for thin slash commands that invoke smoke, regression, and release QA paths.
 
