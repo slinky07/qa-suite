@@ -10,7 +10,9 @@ Install qa-suite into the agent platform. Do not copy it into every project repo
 |---|---|
 | Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then run `/plugin install qa-suite@qa-suite`. For simple local use, copying `qa-suite/` into `~/.claude/skills/` still works. |
 | Claude.ai | Download `qa-suite.skill` from this repo's Releases page and upload it as a skill. |
-| Codex | Add this repo as a plugin marketplace with `codex plugin marketplace add slinky07/qa-suite`, then run `codex plugin add qa-suite --marketplace qa-suite`. For simple local use, copying `qa-suite/` into `$HOME/.agents/skills/qa-suite` still works. |
+| Codex CLI | Add this repo as a plugin marketplace with `codex plugin marketplace add slinky07/qa-suite`, then run `codex plugin add qa-suite --marketplace qa-suite`. |
+| Codex Desktop | Open the Plugins directory, add `slinky07/qa-suite` as a marketplace, then install the `qa-suite` plugin from the `qa-suite` marketplace. |
+| Codex local skill fallback | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` if you want the skill without plugin marketplace install. |
 
 The Claude Code plugin also includes thin slash commands for smoke, regression, and release QA paths.
 
