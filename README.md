@@ -89,6 +89,10 @@ Compatibility claims are only made for combinations actually run. Emulated or si
 - Never claim untested coverage. Every report names what was not tested.
 - Most conservative verdict wins. A Go only means nothing failed in that agent's lane.
 
+## Release Notes
+
+`v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
+
 ## License
 
 MIT
