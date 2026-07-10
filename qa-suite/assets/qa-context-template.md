@@ -11,6 +11,11 @@ guessing.
 - **Repository docs to read first:** <!-- e.g. AGENTS.md, README.md -->
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
 
+## Testing posture
+
+- **Posture:** aggressive <!-- default; use "standard" only with a stated reason -->
+- **Reason for standard posture:** N/A <!-- required when Posture is "standard" -->
+
 ## Runtime
 
 - **Default run policy:** <!-- which path agents use when both exist, e.g. "prefer make run (dev path) for routine QA; use Docker Compose only when the task is explicitly deployment/container QA or a release audit" -->

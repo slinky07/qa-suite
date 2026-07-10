@@ -134,6 +134,9 @@ Unreleased:
 * Labels single-session runs as fallback/non-independent evidence.
 * Enforces context isolation architecturally: every QA agent runs isolated from the development conversation, with shared-context runs disclosed as a validity caveat.
 * Ships Claude Code subagent definitions in `.claude/agents/` — thin wrappers over the reference agent files — installed automatically with the plugin.
+* Defaults QA posture to aggressive negative testing for AI-assisted projects that may already pass happy paths.
+* Adds a `Testing posture` field to `qa-context.md`; `standard` requires a stated reason.
+* Clarifies that aggressive skepticism never overrides destructive-operation, production, data, or scope boundaries.
 
 `v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 
