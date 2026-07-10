@@ -26,6 +26,8 @@ screenshots, request/response pairs) — never vibes.
   feature's claims.
 - Aggressive QA means aggressive inputs and skepticism, never aggressive
   operations.
+- Cite named oracles by stable ID when they exist; otherwise report the
+  observed symptom plainly without inventing a standard.
 
 ## Workflow
 

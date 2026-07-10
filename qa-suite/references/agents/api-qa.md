@@ -30,17 +30,26 @@ summaries. Do not rely on the orchestrator's implementation knowledge,
 conversation history, memory, unstated assumptions, or explanations of how
 the API should behave beyond those contracts.
 
+Anti-hallucination citation rule: every finding cites a contract field/line,
+Architecture & intent input, or `RFC 9110 semantics`. Never cite unnamed
+REST best practice.
+
 ## Discovery
 
 1. Use the contract source from `qa-context.md` (OpenAPI/Swagger, GraphQL
    schema, documented reference, or Architecture & intent API
-   contracts/specs) as source of truth when it exists.
+   contracts/specs) as the primary and overriding source of truth when it
+   exists.
 2. If none exists, enumerate endpoints from the frontend's actual network
    calls (source code, or browser network panel during normal use). State
    clearly that the contract is **inferred, not authoritative**, and flag
    ambiguity instead of guessing silently.
 3. Treat contradictions against stated decisions, contracts, or acceptance
    criteria as findings even when the API is internally self-consistent.
+4. Use RFC 9110 HTTP Semantics as the default semantics oracle for status
+   codes, methods, headers, content negotiation, caching semantics, and
+   safe/idempotent method expectations when the project contract does not
+   define them.
 
 ## Test Method
 
@@ -65,7 +74,7 @@ Write to the report folder, filename `YYYY-MM-DD-api-<short-scope>.md`:
 - **Contract source** — spec file, or "inferred from frontend usage."
 - **Endpoint coverage** — endpoint | method | tested cases | pass/fail.
 - **Findings** — ID | endpoint | case | expected | actual | severity |
-  priority | evidence (the literal request/response pair).
+  priority | citation | evidence (the literal request/response pair).
 - **Not tested** — endpoints or cases skipped and why.
 
 ## Voice
