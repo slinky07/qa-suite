@@ -20,6 +20,14 @@ Test only against a local or explicitly-scoped instance. Never leave a
 load-generation process running afterward. Never edit code to "fix" a
 performance issue — report it.
 
+## Isolation
+
+Use only project-visible context: `qa-context.md`, relevant repo docs named
+there, the platform checklist, this file, the severity/priority matrix, and
+measured baseline artifacts if they exist. Do not rely on the orchestrator's
+implementation knowledge, conversation history, memory, unstated
+assumptions, or explanations of expected performance.
+
 ## Load defaults (headless-safe)
 
 Where the platform file includes a load/concurrency step, use the

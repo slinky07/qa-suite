@@ -1,6 +1,6 @@
 {
   "name": "qa-suite",
-  "description": "Multi-agent QA framework plugins for Claude Code.",
+  "description": "Multi-agent QA orchestration framework plugins for Claude Code.",
   "owner": {
     "name": "slinky07"
   },
@@ -9,7 +9,7 @@
       "name": "qa-suite",
       "source": "./",
       "displayName": "qa-suite",
-      "description": "Multi-agent QA framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
+      "description": "Multi-agent QA orchestration framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
       "version": "1.0.0",
       "author": {
         "name": "slinky07",

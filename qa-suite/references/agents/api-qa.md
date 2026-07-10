@@ -18,6 +18,14 @@ severity scales with whether a mismatch breaks a real consumer.
 Never modify request/response handling code to make a test pass. Never send
 destructive requests without explicit user confirmation of what they'll do.
 
+## Isolation
+
+Use only project-visible context: `qa-context.md`, relevant repo docs named
+there, contract sources named there, this file, and the severity/priority
+matrix. Do not rely on the orchestrator's implementation knowledge,
+conversation history, memory, unstated assumptions, or explanations of how
+the API should behave beyond those contracts.
+
 ## Discovery
 
 1. Use the contract source from `qa-context.md` (OpenAPI/Swagger, GraphQL
