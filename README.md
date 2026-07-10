@@ -27,7 +27,14 @@ Install qa-suite once in your agent platform. Do **not** copy it into every proj
 | Codex | Add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and verify the installation with `codex plugin list | rg qa-suite`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If command codex is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli  |
 | Codex local skill fallback | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` if you want the skill without using the plugin marketplace. |
 
-The Claude Code plugin also includes thin slash commands for smoke, regression, and release QA paths.
+The Claude Code plugin also includes thin slash commands: `/qa-smoke` (smoke pass), `/qa-regression` (smoke then regression), and `/qa-release` (full release audit).
+
+### Updating an Installed Plugin
+
+| Platform | Update |
+|---|---|
+| Claude Code | Refresh the marketplace with `/plugin marketplace update qa-suite`, then update the plugin with `/plugin update qa-suite@qa-suite` (restart required to apply). |
+| Codex | Run `codex plugin marketplace upgrade` to refresh marketplaces and upgrade installed plugins. |
 
 ## Configure Once Per Project
 
@@ -40,7 +47,7 @@ On first run it:
 1. Auto-discovers what it can from README files, build files, package manifests, Makefiles, compose files, Gradle config, and similar repository sources.
 2. Asks for the missing pieces: default run policy, core user flows, deployment model, threat model, expected concurrency, out-of-scope infrastructure, and destructive endpoints.
 3. Writes `qa-context.md` to the project root for confirmation.
-4. Optionally generates dedicated, repo-local smoke QA agents for the host(s) you confirm — `.claude/agents/<project>-smoke-qa.md` for Claude Code and/or `.codex/agents/<project>-smoke-qa.toml` for Codex. These are project files meant to be committed alongside `qa-context.md`. Skipping this step is fine; qa-suite orchestration works without them.
+4. Generates dedicated, repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` for Claude Code and `.codex/agents/<project>-smoke-qa.toml` for Codex — skipping a format only when the host/project clearly does not support it or you decline. These are project files meant to be committed alongside `qa-context.md`; qa-suite orchestration still works without them.
 
 Users can also copy `qa-suite/assets/qa-context-template.md` manually.
 
