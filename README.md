@@ -40,6 +40,7 @@ On first run it:
 1. Auto-discovers what it can from README files, build files, package manifests, Makefiles, compose files, Gradle config, and similar repository sources.
 2. Asks for the missing pieces: default run policy, core user flows, deployment model, threat model, expected concurrency, out-of-scope infrastructure, and destructive endpoints.
 3. Writes `qa-context.md` to the project root for confirmation.
+4. Optionally generates dedicated, repo-local smoke QA agents for the host(s) you confirm — `.claude/agents/<project>-smoke-qa.md` for Claude Code and/or `.codex/agents/<project>-smoke-qa.toml` for Codex. These are project files meant to be committed alongside `qa-context.md`. Skipping this step is fine; qa-suite orchestration works without them.
 
 Users can also copy `qa-suite/assets/qa-context-template.md` manually.
 
@@ -94,6 +95,24 @@ Codex skill instructions can request delegation, so qa-suite does not need separ
 
 Codex subagents inherit the parent task's sandbox and permission mode. Choose the parent permission mode before dispatch and keep QA subagents read-only except for their own report and evidence files under the configured QA folder.
 
+## Plugin-Shipped Agents vs Repo-Local Project Agents
+
+qa-suite involves two different agent mechanisms per host. Don't confuse them.
+
+| | Plugin-shipped (installed with qa-suite) | Repo-local (generated at project init) |
+|---|---|---|
+| Claude Code | Generic lane subagents from the plugin's `agents/` directory (`smoke-qa`, `regression-qa`, ...). Lowest lookup priority; project-agnostic; get their project binding from the orchestrator's dispatch prompt. | `.claude/agents/<project>-smoke-qa.md` — a project subagent (Markdown + YAML frontmatter, higher priority than plugin agents), pre-bound to this repo's `qa-context.md` and committed with the repo. |
+| Codex | qa-suite is a plugin **skill** — prompt instructions the main task follows and delegates from. Skills are not agent definitions. | `.codex/agents/<project>-smoke-qa.toml` — a Codex **custom agent** (TOML with `name`, `description`, `developer_instructions`), directly spawnable and committed with the repo. |
+
+Use plugin-shipped agents for orchestrated qa-suite runs — they update with the plugin and cover every lane. Use the generated repo-local agents when you want to invoke the smoke lane directly without orchestration, share the project's QA entry point with the team through git, or work in a session where the plugin isn't installed.
+
+Invoking the generated agents later:
+
+* Claude Code: `Use the <project>-smoke-qa agent to smoke-test this build` (or Claude delegates to it automatically for smoke-test requests in that repo).
+* Codex: ask the task to spawn it, e.g. `Spawn the <project>-smoke-qa agent to check this build comes up`.
+
+Generated agents are deliberately narrow: smoke only, `qa-context.md` first, default run policy respected, reports and evidence written only under the configured QA report folder with timestamped filenames (`YYYY-MM-DD-HHMM-...`, so every rerun is a new file), no source/test/config/git/issue/PR edits, non-destructive shutdown of anything they started, and disposable local test data for any mutating action.
+
 ## Agents
 
 | Agent              | One question it answers                                    |
@@ -128,6 +147,15 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.1.1`:
+
+* Project initialization can now optionally generate dedicated repo-local smoke QA agents alongside `qa-context.md`: `.claude/agents/<project>-smoke-qa.md` (Claude Code project subagent, Markdown + YAML frontmatter) and `.codex/agents/<project>-smoke-qa.toml` (Codex custom agent, TOML). Templates ship in `qa-suite/assets/`.
+* Documents when to use plugin-shipped agents vs generated repo-local agents, and keeps the two mechanisms distinct per host.
+* Report filenames now include the run's start time: `YYYY-MM-DD-HHMM-<agent>-<short-scope>.md`. Every rerun creates a new report file instead of overwriting the day's earlier run.
+* Adds an explicit orchestrator patience rule: a dispatched QA subagent that hasn't returned is not a hang; the orchestrator must never scrap a running lane on elapsed time alone and take it over itself.
+
+`v1.1.1` is the current public package release.
+
 `v1.1.0`:
 
 * Makes subagent/delegation orchestration mandatory whenever the host supports it.
@@ -146,7 +174,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Adds no-baseline performance defaults for web, Android, iOS, and desktop while preserving project baselines as the override.
 * Runs AgentShield before packaging; shipped Claude agent wrappers now declare explicit tool restrictions. Post-fix scan: A, 94/100; remaining high finding is local-only `settings.local.json`, not a tracked release artifact.
 
-`v1.1.0` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
+Each release includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 
 ## License
 

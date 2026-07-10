@@ -61,7 +61,8 @@ platform:
 ## Reports
 
 Write to the report folder, filename
-`YYYY-MM-DD-performance-<short-scope>.md`:
+`YYYY-MM-DD-HHMM-performance-<short-scope>.md` (run's local start date and
+time — reruns always create a new file):
 
 - **Verdict** — one line: within expected range / degraded / needs
   investigation / new baseline established.

@@ -113,6 +113,64 @@ invent one. Offer the user two paths:
      user to commit it (config is shared with the team; the `QA/` reports
      folder stays gitignored).
 
+### Optional: generate repo-local host agents
+
+After `qa-context.md` is confirmed (either path above), offer to generate a
+dedicated, repo-local smoke QA agent for the host(s) the team uses. This is
+optional — the orchestration workflow works without them — so skip it
+silently if the user declines. Generate only for hosts the user confirms.
+
+- **Claude Code** (project subagent, Markdown + YAML frontmatter): copy
+  `assets/project-agent-smoke-qa.claude.md` to
+  `.claude/agents/<project>-smoke-qa.md` in the target repo.
+- **Codex** (custom agent, TOML): copy
+  `assets/project-agent-smoke-qa.codex.toml` to
+  `.codex/agents/<project>-smoke-qa.toml` in the target repo.
+
+In both files replace every placeholder: `{{PROJECT_NAME}}` with the
+kebab-cased project name from qa-context.md, `{{QA_CONTEXT_PATH}}` with the
+repo-relative path to qa-context.md, and `{{REPORT_FOLDER}}` with the
+configured report folder (default `QA/`). Create the `.claude/agents/` or
+`.codex/agents/` directory if needed, tell the user these files are meant to
+be committed alongside qa-context.md, and do not modify anything else in
+those directories.
+
+Generated agents are deliberately narrow: smoke QA only, qa-context.md
+first, default run policy respected, reports/evidence only under the
+configured report folder, no source/test/config/git/issue/PR edits,
+non-destructive shutdown of anything they started, and disposable local
+test data for any mutating action. Do not generate agents for other lanes
+unless the user explicitly asks; deeper lanes should keep flowing through
+the orchestrator.
+
+### Plugin-shipped agents vs generated repo-local agents
+
+Do not confuse the two mechanisms; they are host-specific:
+
+- **Claude Code.** The qa-suite plugin ships one generic subagent per QA
+  lane from the plugin's `agents/` directory (lowest lookup priority).
+  A generated `.claude/agents/<project>-smoke-qa.md` is a **project
+  subagent** (higher priority, committed to the repo) that is pre-bound to
+  this project's qa-context. Names never collide (`smoke-qa` vs
+  `<project>-smoke-qa`), so both can coexist.
+- **Codex.** qa-suite itself is a plugin **skill** (prompt instructions the
+  main task follows); Codex **custom agents** are standalone TOML files
+  under `.codex/agents/` (project) or `~/.codex/agents/` (personal). The
+  skill's subagent orchestration does not require custom-agent files; a
+  generated `.codex/agents/<project>-smoke-qa.toml` simply adds a
+  directly-invokable, project-scoped smoke lane.
+
+Use the **plugin-shipped agents** whenever the orchestrator is driving a
+qa-suite run — they are generic, always up to date with the installed
+plugin, and receive their project binding from the dispatch prompt. Use the
+**generated repo-local agents** when someone wants to invoke the smoke lane
+directly without the orchestrator ("use the <project>-smoke-qa agent"),
+wants the project's QA entry point versioned with the repo for the whole
+team, or works in a host session where the qa-suite plugin may not be
+installed. When both exist and the orchestrator is running, the repo-local
+smoke agent is an acceptable dispatch target for the smoke lane; all other
+lanes stay on the plugin-shipped agents.
+
 Setup happens once per project. Every later run finds the file and skips
 straight to the workflow.
 
@@ -161,8 +219,13 @@ One Markdown report per agent run, in the report folder from qa-context.md
 artifacts):
 
 ```text
-QA/YYYY-MM-DD-<agent-name>-<short-scope>.md
+QA/YYYY-MM-DD-HHMM-<agent-name>-<short-scope>.md
 ```
+
+`YYYY-MM-DD-HHMM` is the run's local start date and time. Including the
+time means every rerun — even the same lane, same scope, same day —
+creates a new report file. Never overwrite, append to, or delete a
+previous run's report.
 
 Non-negotiable report rules, all agents:
 
@@ -211,9 +274,23 @@ The orchestrator may:
 - enforce smoke-first ordering and stop deeper agents on smoke No-Go;
 - collect reports and synthesize the final result.
 
+**Patience is a virtue.** A dispatched QA subagent that has not returned
+yet is not evidence of a bug or a hang. Smoke alone is allowed up to 5
+minutes of active checks, and app startup often looks like silence; deeper
+lanes legitimately run much longer. The orchestrator must never scrap a
+running subagent and perform its lane itself because it "seems slow" —
+90 seconds without output is normal, not failure. Treat a lane as failed
+only when the host reports the subagent errored or timed out, or it exceeds
+a generous cap of at least 3x the lane's stated time box. Even then, the
+remedy is to re-dispatch the lane once or report it as not run — taking the
+lane over personally converts independent evidence into contaminated
+self-certification and is always the wrong move.
+
 The orchestrator must not:
 
 - personally perform a selected QA lane while subagents are available;
+- abandon or cancel a dispatched subagent on elapsed time alone, or redo
+  its work itself while it is still running;
 - combine multiple QA lane questions into one subagent;
 - tell a subagent what should pass beyond repo-visible contracts and
   user-scoped instructions;

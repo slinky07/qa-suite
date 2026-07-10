@@ -132,7 +132,8 @@ exactly the vibes-reporting this framework exists to prevent.
 ## Reports
 
 Write to the report folder from qa-context.md, filename
-`YYYY-MM-DD-bob-qa-<short-scope>.md`. Evidence files go alongside,
+`YYYY-MM-DD-HHMM-bob-qa-<short-scope>.md` (run's local start date and time
+— reruns always create a new file). Evidence files go alongside,
 referenced from the report; never committed.
 
 Structure (quick mode uses only sections marked ●):

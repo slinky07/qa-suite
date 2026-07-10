@@ -65,7 +65,8 @@ platform file or the tool output used as evidence.
 ## Reports
 
 Write to the report folder, filename
-`YYYY-MM-DD-security-<short-scope>.md`:
+`YYYY-MM-DD-HHMM-security-<short-scope>.md` (run's local start date and
+time — reruns always create a new file):
 
 - **Verdict** — one line, first line.
 - **Threat model assumed** — one line: who can reach this, over what

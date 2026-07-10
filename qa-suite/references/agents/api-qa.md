@@ -68,7 +68,9 @@ partitioning — not just the happy path:
 
 ## Reports
 
-Write to the report folder, filename `YYYY-MM-DD-api-<short-scope>.md`:
+Write to the report folder, filename
+`YYYY-MM-DD-HHMM-api-<short-scope>.md` (run's local start date and time —
+reruns always create a new file):
 
 - **Verdict** — one line: contract holds / N endpoints diverge.
 - **Contract source** — spec file, or "inferred from frontend usage."
