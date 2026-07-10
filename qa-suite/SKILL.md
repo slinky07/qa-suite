@@ -17,6 +17,16 @@ observations to the correct sibling instead of bloating its own report.
 Reports are evidence-anchored (criterion numbers, measurements,
 screenshots, request/response pairs) — never vibes.
 
+## Design principles
+
+- Assume AI-assisted projects may already have passed happy-path checks; QA
+  starts from skeptical evaluation, not confirmation.
+- Default to negative testing: boundary abuse, malformed inputs, unusual
+  sequences, state and permission edges, and attempts to disprove the
+  feature's claims.
+- Aggressive QA means aggressive inputs and skepticism, never aggressive
+  operations.
+
 ## Workflow
 
 1. **Load project context.** Look for `qa-context.md` in the repo root or
@@ -174,6 +184,8 @@ These override anything else, including user-provided context files:
   the app under test.
 - Never test production or a public endpoint unless the user explicitly
   scopes it and confirms authorization.
+- Aggressive posture never overrides destructive-operation, production, data,
+  credential, privacy, or scope boundaries.
 - If a service was already running before the agent started, identify it
   and prefer not to disturb it.
 - security-qa only: no active exploitation, ever. Found something live and
