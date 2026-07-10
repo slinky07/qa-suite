@@ -14,8 +14,9 @@ orchestrator.
 Read `qa-context.md` first (docs, architecture & intent inputs, start
 commands, target, core flows, platform, hard boundaries), then the matching
 `references/platforms/<platform>.md` for this agent's accessibility
-checklist, then `references/severity-priority-matrix.md`. Hard boundaries
-are non-negotiable.
+checklist and visual weirdness sweep, then
+`references/severity-priority-matrix.md`. Hard boundaries are
+non-negotiable.
 
 ## Isolation
 
@@ -37,10 +38,12 @@ device/engine-specific rendering → `compatibility-qa`.
 Ask which mode if unspecified. Default **quick** for routine runs; **full**
 for releases, redesigns, or scheduled audits.
 
-- **Quick** (~15 min): onboarding pass + Functional QA table + Findings
-  with severity/priority. Skip the heuristic, accessibility, and
-  task-metric tables; note anything that clearly warrants a full pass.
-- **Full**: everything below.
+- **Quick** (~15 min): onboarding pass + visual weirdness sweep on the
+  primary flow only + Functional QA table + Findings with
+  severity/priority. Skip the heuristic, accessibility, and task-metric
+  tables; note anything that clearly warrants a full pass.
+- **Full**: everything below, including the visual weirdness sweep on every
+  core flow.
 
 ## Setup
 
@@ -65,14 +68,36 @@ Evidence, not vibes: screen/page identity, screenshots, log/console errors,
 targeted state checks, visible interaction proof after each critical
 action, and multiple form factors when practical.
 
+## Visual weirdness sweep
+
+Run the platform file's `bob-qa — visual weirdness sweep` checks. In quick
+mode, sweep the primary user flow only. In full mode, sweep every core flow
+from qa-context.md.
+
+Use this oracle hierarchy:
+
+1. Project Architecture & intent inputs: design docs, design tokens/design
+   system files, and acceptance criteria.
+2. The platform file's visual weirdness sweep design-system checks and
+   stable IDs.
+3. If neither source contains a matching criterion, report the visible
+   symptom plainly without inventing a standard.
+
+Visual weirdness findings are evidence-only. Include the symptom, oracle
+citation, repro steps, and screenshot evidence. Do not make implementation
+source root-cause claims from visual symptoms alone.
+
 ## Testing Criteria (full mode)
 
 Every finding must cite a heuristic number, an accessibility criterion from
 the platform file, an Architecture & intent input, or a measured task
-result. Contradictions against stated decisions, design-system rules, or
-acceptance criteria are findings even when the implementation is internally
-self-consistent. Unanchored opinions ("felt clunky") are not findings —
-leave them out or fold them into the onboarding narrative.
+result. Visual weirdness findings must cite either a project design
+doc/token/acceptance criterion, a platform visual check ID, or plain
+symptom-only evidence when no criterion exists. Contradictions against
+stated decisions, design-system rules, or acceptance criteria are findings
+even when the implementation is internally self-consistent. Unanchored
+opinions ("felt clunky") are not findings — leave them out or fold them
+into the onboarding narrative.
 
 **Heuristic evaluation — Nielsen's 10 Usability Heuristics.** Score each
 core flow (from qa-context.md) against:
@@ -92,7 +117,7 @@ A finding reads like: "H3 violation — apply has no cancel/undo path once
 confirmed," not "the flow felt confusing."
 
 **Accessibility.** Use the accessibility checklist from
-`references/platforms/<platform>.md` — WCAG 2.1 AA criteria for web,
+`references/platforms/<platform>.md` — WCAG 2.2 AA criteria for web,
 platform equivalents (TalkBack/VoiceOver, native target sizes, dynamic text)
 elsewhere. Report each item Pass / Fail / N-A with its criterion attached.
 
@@ -122,7 +147,8 @@ Structure (quick mode uses only sections marked ●):
 - **Task-level usability** — flow | effectiveness (Y/N) | steps vs.
   expected.
 - ● **Findings** — ID | title | severity | priority | criterion citation |
-  repro steps | evidence | likely owning area if obvious.
+  repro steps | evidence (screenshot mandatory for visual weirdness) |
+  likely owning area if obvious.
 - ● **Functional QA** — flow | pass/fail/blocked/not-tested.
 - ● **Not tested** — what this run intentionally did not cover.
 
