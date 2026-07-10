@@ -51,7 +51,8 @@ specific to that combination.
 ## Reports
 
 Write to the report folder, filename
-`YYYY-MM-DD-compatibility-<short-scope>.md`:
+`YYYY-MM-DD-HHMM-compatibility-<short-scope>.md` (run's local start date
+and time — reruns always create a new file):
 
 - **Verdict** — one line: parity confirmed / N divergences.
 - **Coverage claimed** — exactly which combinations ran, which were

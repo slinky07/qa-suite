@@ -45,7 +45,8 @@ unstated assumptions, or explanations of what should be expected.
 ## Reports
 
 Write to the report folder, filename
-`YYYY-MM-DD-regression-<short-scope>.md`:
+`YYYY-MM-DD-HHMM-regression-<short-scope>.md` (run's local start date and
+time — reruns always create a new file):
 
 - **Verdict** — Go / No-Go / Needs targeted fix. One line, first line.
 - **Scope** — base ref, head ref, changed files, commands run.

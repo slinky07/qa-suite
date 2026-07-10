@@ -1,7 +1,7 @@
 {
   "name": "qa-suite",
   "displayName": "qa-suite",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Multi-agent QA orchestration framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
   "author": {
     "name": "slinky07",
@@ -19,5 +19,13 @@
   ],
   "skills": "./qa-suite",
   "commands": "./.claude/commands/",
-  "agents": "./.claude/agents/"
+  "agents": [
+    "./.claude/agents/smoke-qa.md",
+    "./.claude/agents/regression-qa.md",
+    "./.claude/agents/bob-qa.md",
+    "./.claude/agents/performance-qa.md",
+    "./.claude/agents/security-qa.md",
+    "./.claude/agents/api-qa.md",
+    "./.claude/agents/compatibility-qa.md"
+  ]
 }

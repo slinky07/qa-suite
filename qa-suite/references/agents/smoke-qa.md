@@ -37,7 +37,8 @@ unstated assumptions, or self-certification.
 ## Reports
 
 Short by design — no severity/priority matrix, no frameworks. Write to the
-report folder, filename `YYYY-MM-DD-smoke-<short-scope>.md`:
+report folder, filename `YYYY-MM-DD-HHMM-smoke-<short-scope>.md` (run's
+local start date and time — reruns always create a new file):
 
 - **Verdict** — Go / No-Go, first line, one sentence.
 - **Checklist results** — pass/fail per step, stop point noted if you
