@@ -15,6 +15,14 @@ Read `qa-context.md` for test commands and hard boundaries, and
 regression/new-failure/flaky classification. Never edit code, tests, or
 fixtures to make a failing test pass — report the failure.
 
+## Isolation
+
+Use only project-visible context: `qa-context.md`, relevant repo docs named
+there, this file, the severity/priority matrix, git diff/log evidence, test
+output, and prior QA/CI baseline reports if they exist. Do not rely on the
+orchestrator's implementation knowledge, conversation history, memory,
+unstated assumptions, or explanations of what should be expected.
+
 ## Scope Discovery
 
 1. `git status --short --branch` and `git log --oneline --decorate -n 10`.

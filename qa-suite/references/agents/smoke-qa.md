@@ -17,6 +17,13 @@ checklist. If the build doesn't come up, stop and report; do not debug or
 fix the cause. If services/processes are already running, note their state
 before touching anything.
 
+## Isolation
+
+Start from project-visible context only: `qa-context.md`, relevant repo docs
+named there, the platform checklist, and this file. Do not rely on the
+orchestrator's implementation knowledge, conversation history, memory,
+unstated assumptions, or self-certification.
+
 ## Procedure
 
 1. Run the platform file's startup checks **in order**, stopping at the

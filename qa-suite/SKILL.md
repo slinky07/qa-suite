@@ -5,10 +5,17 @@ description: Professional multi-agent QA testing framework covering smoke, regre
 
 # QA Suite
 
-A set of scoped QA agents, one per testing type. Each agent answers exactly
-one question and routes out-of-scope observations to the correct sibling
-instead of bloating its own report. Reports are evidence-anchored (criterion
-numbers, measurements, screenshots, request/response pairs) — never vibes.
+QA Suite is a multi-agent orchestration skill. When the host provides any
+subagent or delegation facility, the active assistant is the orchestrator:
+it prepares neutral setup context, dispatches independent QA agents, and
+synthesizes their reports. The orchestrator does not personally perform
+smoke, regression, Bob UX/accessibility, performance, security, API
+contract, or compatibility QA work when delegation is available.
+
+Each scoped QA agent answers exactly one question and routes out-of-scope
+observations to the correct sibling instead of bloating its own report.
+Reports are evidence-anchored (criterion numbers, measurements,
+screenshots, request/response pairs) — never vibes.
 
 ## Workflow
 
@@ -28,13 +35,35 @@ numbers, measurements, screenshots, request/response pairs) — never vibes.
 4. **Read `references/severity-priority-matrix.md`** before writing any
    finding. Every finding gets both a Severity and a Priority. Never
    redefine these scales.
-5. **Run agents in order** (smoke always first), write one report per agent
-   to the report folder defined in qa-context.md, verdict on line one.
-6. **Start the app via qa-context.md's default run policy.** When both a
-   dev path and a deployment path exist, use the policy's preferred path
-   for routine QA; only take the deployment path (e.g. Docker) when the
-   task is explicitly deployment/container QA or a release audit. State
-   which path was used in the report's Environment section.
+5. **Choose execution mode.**
+   - If the host has subagents, task agents, background agents, workers, or
+     any equivalent delegation tool, you MUST use them.
+   - Spawn a separate QA subagent for each selected QA lane. One subagent
+     answers exactly one lane question: smoke, regression, Bob
+     UX/accessibility, performance, security, API contract, or
+     compatibility.
+   - Run `smoke-qa` first as its own independent subagent. If smoke reports
+     No-Go, stop and do not dispatch deeper agents.
+   - After smoke is Go, dispatch remaining selected lanes independently;
+     parallel dispatch is allowed when the host supports it.
+   - Only when no subagent/delegation facility exists may you run the lanes
+     sequentially in the same session. That is fallback mode, not
+     independent evidence.
+6. **Dispatch with neutral context only.** Give each QA subagent only:
+   repo path, `qa-context.md` path, relevant repo docs named in
+   `qa-context.md`, the matching platform checklist, its own agent
+   instruction file, the severity/priority matrix when applicable, report
+   folder, and the user's scoped QA request. Do not give expected outcomes,
+   implementation explanations, conversation history, prior memory, or the
+   orchestrator's beliefs about how the feature should work.
+7. **Enforce qa-context.md's default run policy.** When both a dev path and
+   a deployment path exist, use the policy's preferred path for routine QA;
+   only take the deployment path (e.g. Docker) when the task is explicitly
+   deployment/container QA or a release audit. State which path was used in
+   the report's Environment section.
+8. **Synthesize, don't retest.** The orchestrator reads the completed
+   reports, applies the most conservative verdict, names skipped lanes, and
+   summarizes evidence. It does not fill gaps by performing lane QA itself.
 
 ## First-run setup (no qa-context.md found)
 
@@ -119,6 +148,9 @@ Non-negotiable report rules, all agents:
 
 - **Verdict on line one.** Go / No-Go / a one-line state, before anything
   else.
+- **Execution mode is visible.** If a run used single-session fallback,
+  every report and the final summary must state:
+  `Execution mode: single-session fallback; non-independent evidence`.
 - **Every finding carries Severity AND Priority** from the shared matrix.
 - **Every report has a "Not tested" section.** A report that doesn't state
   its limits overclaims by default.
@@ -147,9 +179,38 @@ These override anything else, including user-provided context files:
 - security-qa only: no active exploitation, ever. Found something live and
   serious → stop and tell the user immediately, don't bury it in a report.
 
+## Orchestrator boundaries
+
+The orchestrator may:
+
+- prepare or confirm `qa-context.md`;
+- identify the target repo, platform, report folder, and selected QA lanes;
+- read the selected agent instructions to construct neutral dispatches;
+- enforce smoke-first ordering and stop deeper agents on smoke No-Go;
+- collect reports and synthesize the final result.
+
+The orchestrator must not:
+
+- personally perform a selected QA lane while subagents are available;
+- combine multiple QA lane questions into one subagent;
+- tell a subagent what should pass beyond repo-visible contracts and
+  user-scoped instructions;
+- pass implementation knowledge, prior conversation, memory, or unstated
+  assumptions into a QA subagent;
+- edit source, tests, config, or git history as part of QA.
+
+QA subagents are read-only except for writing their own report and evidence
+files to the configured QA report folder.
+
 ## Adapting to the host platform
 
-This skill is agent-platform-neutral. On Claude Code, the agent files can
-alternatively be installed as subagents (`.claude/agents/`) and dispatched
-in parallel; on a single-session platform, run them sequentially in the
-order above. The agent bodies don't change — only how they're invoked.
+This skill is agent-platform-neutral, but strongest available orchestration
+is mandatory. Use Claude Code subagents/tasks when available, Codex
+multi-agent delegation when available, or the host's equivalent agent
+facility. Claude.ai and local skill installs may use the same agent bodies
+through whatever delegation facility the host exposes.
+
+Single-session sequential execution is allowed only on hosts with no
+subagent or delegation facility. In that fallback, preserve smoke-first
+ordering and one-question-per-lane behavior, and label every report and the
+final summary as fallback/non-independent evidence.

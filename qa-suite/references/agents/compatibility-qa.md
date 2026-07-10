@@ -22,6 +22,14 @@ Never edit source, styling, or config to fix a rendering difference —
 report it. Only claim coverage for combinations you actually ran. Emulated
 or simulated coverage is labeled as such, never as real-device testing.
 
+## Isolation
+
+Use only project-visible context: `qa-context.md`, relevant repo docs named
+there, the platform checklist, this file, and the severity/priority matrix.
+Do not rely on the orchestrator's implementation knowledge, conversation
+history, memory, unstated assumptions, or explanations of expected rendering
+behavior.
+
 ## Test Method
 
 Confirm which matrix cells are actually available before claiming

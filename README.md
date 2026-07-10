@@ -74,6 +74,16 @@ When the request is unclear, qa-suite asks whether this is a routine pass, UI re
 
 Run order matters: smoke first, always. If smoke is No-Go, deeper agents stop because they assume a running app.
 
+## Orchestration Model
+
+QA-Suite is orchestration-first. When Claude Code, Codex, Claude.ai, or another host provides subagents, task agents, background agents, workers, or any equivalent delegation tool, qa-suite dispatches a separate independent QA agent for each selected lane.
+
+The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is No-Go, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
+
+Each QA subagent receives only project-visible context: `qa-context.md`, relevant repo docs named there, the matching platform checklist, its own lane instructions, the severity/priority matrix when applicable, the report folder, and the user's scoped QA request. Subagents do not inherit the implementation agent's prior context, conversation history, memory, unstated assumptions, or explanation of how the feature should work. `bob-qa` is especially isolated so it can keep a fresh-user mindset; `smoke-qa` is independent evidence, not orchestrator self-certification.
+
+Single-session sequential execution is fallback only for hosts with no subagent or delegation facility. Reports and final summaries from fallback runs must explicitly label themselves as `single-session fallback; non-independent evidence`.
+
 ## Agents
 
 | Agent              | One question it answers                                    |
@@ -107,6 +117,11 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Most conservative verdict wins. A Go only means nothing failed in that agent’s lane.
 
 ## Release Notes
+
+Unreleased:
+
+* Makes subagent/delegation orchestration mandatory whenever the host supports it.
+* Labels single-session runs as fallback/non-independent evidence.
 
 `v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 

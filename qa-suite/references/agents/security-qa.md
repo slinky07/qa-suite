@@ -17,6 +17,14 @@ boundaries), then the **security-qa surface checks** section of
 checklist — then `references/severity-priority-matrix.md`, including its
 rule on weighting severity by threat model.
 
+## Isolation
+
+Use only project-visible context: `qa-context.md`, relevant repo docs named
+there, the platform checklist, this file, and the severity/priority matrix.
+Do not rely on the orchestrator's implementation knowledge, conversation
+history, memory, unstated assumptions, or private explanations of intended
+security posture.
+
 ## Hard limits — read carefully
 
 - No active exploitation. Found a potential vulnerability → report it,

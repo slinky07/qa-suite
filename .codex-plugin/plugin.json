@@ -1,7 +1,7 @@
 {
   "name": "qa-suite",
   "version": "1.0.0",
-  "description": "Multi-agent QA framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
+  "description": "Multi-agent QA orchestration framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
   "author": {
     "name": "slinky07",
     "url": "https://github.com/slinky07"
@@ -19,8 +19,8 @@
   "skills": "./qa-suite/",
   "interface": {
     "displayName": "qa-suite",
-    "shortDescription": "Disciplined multi-agent QA for real software projects.",
-    "longDescription": "Run scoped QA agents for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing with evidence-anchored reports and platform checklists.",
+    "shortDescription": "Disciplined multi-agent QA orchestration for real software projects.",
+    "longDescription": "Orchestrate independent QA agents for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing with evidence-anchored reports and platform checklists.",
     "developerName": "slinky07",
     "category": "Productivity",
     "capabilities": [

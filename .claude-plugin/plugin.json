@@ -2,7 +2,7 @@
   "name": "qa-suite",
   "displayName": "qa-suite",
   "version": "1.0.0",
-  "description": "Multi-agent QA framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
+  "description": "Multi-agent QA orchestration framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
   "author": {
     "name": "slinky07",
     "url": "https://github.com/slinky07"
