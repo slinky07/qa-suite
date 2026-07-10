@@ -210,6 +210,31 @@ multi-agent delegation when available, or the host's equivalent agent
 facility. Claude.ai and local skill installs may use the same agent bodies
 through whatever delegation facility the host exposes.
 
+### Codex-specific dispatch
+
+Codex supports subagent workflows from skill instructions as well as direct
+user prompts. In Codex Desktop, CLI, and IDE, treat the main task as the
+root orchestrator and spawn one direct child subagent per selected QA lane.
+Do not ask QA subagents to spawn their own descendants; the default Codex
+nesting model is root-to-child orchestration.
+
+When the Codex delegation tool offers a choice to fork or inherit the
+current conversation context, do not fork/inherit it for QA lanes. Start
+each QA subagent from a fresh, self-contained prompt containing only the
+neutral dispatch context listed above. In current Codex multi-agent tools,
+that means leaving `fork_context` unset/false rather than copying the
+orchestrator thread.
+
+Codex subagents inherit the parent task's sandbox and permission mode. Set
+the parent task permissions before dispatch, and keep each QA subagent
+read-only except for writing its own report and evidence files under the
+configured QA report folder.
+
+Do not require project-specific Codex custom-agent files for qa-suite to
+work. If a user has custom Codex agents, they may be used only when they
+preserve this skill's one-lane scope, isolation, report format, and safety
+boundaries.
+
 Single-session sequential execution is allowed only on hosts with no
 subagent or delegation facility. In that fallback, preserve smoke-first
 ordering and one-question-per-lane behavior, and label every report and the

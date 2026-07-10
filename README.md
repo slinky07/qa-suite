@@ -84,6 +84,14 @@ Each QA subagent receives only project-visible context: `qa-context.md`, relevan
 
 Single-session sequential execution is fallback only for hosts with no subagent or delegation facility. Reports and final summaries from fallback runs must explicitly label themselves as `single-session fallback; non-independent evidence`.
 
+### Codex Notes
+
+In Codex Desktop, Codex CLI, and the Codex IDE extension, qa-suite should run as a root-orchestrated subagent workflow: the main task reads the skill, selects lanes, runs `smoke-qa` first as one child subagent, and then dispatches one direct child subagent for each remaining selected lane after smoke is Go.
+
+Codex skill instructions can request delegation, so qa-suite does not need separate Codex custom-agent files to enforce this rule. If the active Codex tool offers a way to fork or inherit the current conversation context, leave it off for QA lanes. Each QA subagent should start from a fresh, self-contained prompt containing only project-visible context and its own lane instructions. This keeps Bob fresh, keeps smoke independent, and avoids turning the implementation agent's prior reasoning into QA evidence.
+
+Codex subagents inherit the parent task's sandbox and permission mode. Choose the parent permission mode before dispatch and keep QA subagents read-only except for their own report and evidence files under the configured QA folder.
+
 ## Agents
 
 | Agent              | One question it answers                                    |
