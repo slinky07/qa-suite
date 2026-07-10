@@ -128,7 +128,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
-Unreleased:
+`v1.1.0`:
 
 * Makes subagent/delegation orchestration mandatory whenever the host supports it.
 * Labels single-session runs as fallback/non-independent evidence.
@@ -145,7 +145,7 @@ Unreleased:
 * Re-keys security checks with stable IDs mapped to ASVS 5.0.0 topic areas or MASVS v2.1.0 control groups, without claiming compliance.
 * Adds no-baseline performance defaults for web, Android, iOS, and desktop while preserving project baselines as the override.
 
-`v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
+`v1.1.0` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 
 ## License
 
