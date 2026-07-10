@@ -1,3 +1,5 @@
+In real QA, testers are not always developers, and that is intentional. A good tester looks at what the software actually does, not what the person who built it expects it to do. qa-suite follows the same principle for agent-based testing: each QA run is isolated from the development conversation - independence of testing, as formal QA calls it (ISTQB).
+
 # qa-suite
 
 A structured multi-agent QA framework for AI coding assistants.
