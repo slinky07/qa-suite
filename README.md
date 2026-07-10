@@ -2,7 +2,7 @@
 
 A structured multi-agent QA framework for AI coding assistants.
 
-QA-Suite is a reusable AI QA framework that orchestrates specialized QA agents to perform structured software quality validation, producing consistent, evidence-based reports for every change and release.
+QA-Suite is a reusable, AI-powered, multi-agent QA framework built on established software quality assurance principles and modern AI workflows. It orchestrates specialized QA agents to deliver structured, evidence-based software validation, adapting from focused change verification to comprehensive release readiness assessments.
 
 It gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
 
