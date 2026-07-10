@@ -154,13 +154,19 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.1.3`:
+
+* Project initialization now generates the repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` and `.codex/agents/<project>-smoke-qa.toml` — instead of offering them as an optional post-confirmation step. A format is skipped only when the host/project clearly does not support it or the user declines.
+* README now names the Claude Code slash commands (`/qa-smoke`, `/qa-regression`, `/qa-release`) and documents plugin update commands for Claude Code and Codex.
+* `qa-suite.skill` and `qa-suite-source.zip` are regenerated from the current `qa-suite/` tree and verified byte-identical to the checkout, fixing the stale-artifact QA findings (BOB-001, COMPAT-001/002, security finding 1).
+
+`v1.1.3` is the current public package release.
+
 `v1.1.2`:
 
 * The visual weirdness sweep checklists now carry the full VW-* check set (VW-WEB-01…11, VW-AND-01…12, VW-IOS-01…12, VW-DSK-01…10), and each sweep section opens with its named platform design oracle (Material Design 3, Apple HIG, WCAG 2.2 AA + Nielsen H4/H8, or the OS convention) and a screenshot-evidence rule.
 * Restores the concrete WCAG 2.2 2.5.8 target-size numbers in the web accessibility checklist.
 * Restores Bob's strict implementation-source reading ban for visual findings and the enumerated named-standards list in the skill's design principles.
-
-`v1.1.2` is the current public package release.
 
 `v1.1.1`:
 
