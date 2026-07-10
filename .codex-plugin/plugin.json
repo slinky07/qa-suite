@@ -1,6 +1,6 @@
 {
   "name": "qa-suite",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Multi-agent QA orchestration framework for smoke, regression, UI/UX, performance, security hygiene, API contract, and compatibility testing.",
   "author": {
     "name": "slinky07",

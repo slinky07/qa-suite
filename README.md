@@ -147,15 +147,20 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.1.2`:
+
+* The visual weirdness sweep checklists now carry the full VW-* check set (VW-WEB-01…11, VW-AND-01…12, VW-IOS-01…12, VW-DSK-01…10), and each sweep section opens with its named platform design oracle (Material Design 3, Apple HIG, WCAG 2.2 AA + Nielsen H4/H8, or the OS convention) and a screenshot-evidence rule.
+* Restores the concrete WCAG 2.2 2.5.8 target-size numbers in the web accessibility checklist.
+* Restores Bob's strict implementation-source reading ban for visual findings and the enumerated named-standards list in the skill's design principles.
+
+`v1.1.2` is the current public package release.
+
 `v1.1.1`:
 
 * Project initialization can now optionally generate dedicated repo-local smoke QA agents alongside `qa-context.md`: `.claude/agents/<project>-smoke-qa.md` (Claude Code project subagent, Markdown + YAML frontmatter) and `.codex/agents/<project>-smoke-qa.toml` (Codex custom agent, TOML). Templates ship in `qa-suite/assets/`.
 * Documents when to use plugin-shipped agents vs generated repo-local agents, and keeps the two mechanisms distinct per host.
 * Report filenames now include the run's start time: `YYYY-MM-DD-HHMM-<agent>-<short-scope>.md`. Every rerun creates a new report file instead of overwriting the day's earlier run.
 * Adds an explicit orchestrator patience rule: a dispatched QA subagent that hasn't returned is not a hang; the orchestrator must never scrap a running lane on elapsed time alone and take it over itself.
-* The visual weirdness sweep checklists now carry the full VW-* check set (VW-WEB-01…11, VW-AND-01…12, VW-IOS-01…12, VW-DSK-01…10) with named platform design oracles per section.
-
-`v1.1.1` is the current public package release.
 
 `v1.1.0`:
 
