@@ -48,30 +48,35 @@ the visible symptom plainly without inventing a standard.
 
 ## performance-qa — metrics
 
-- **Cold start:** time from app start to first successful HTTP response.
-- **Warm latency:** 20–50 sequential requests to the main page and key
+- **PERF-WEB-01 Cold start:** time from app start to first successful HTTP
+  response.
+- **PERF-WEB-02 Warm latency:** 20–50 sequential requests to the main page and key
   endpoints; report p50/p95.
-- **Concurrency:** light HTTP load test (autocannon, k6) at the level from
+- **PERF-WEB-03 Concurrency:** light HTTP load test (autocannon, k6) at the level from
   qa-context.md; report req/sec, error rate, latency distribution.
-- **Frontend:** Lighthouse performance score plus the flagged metrics (LCP,
-  TBT, CLS) — report the metrics, not just the score.
-- **Resources under load:** container/process CPU% and memory, noting
+- **PERF-WEB-04 Frontend:** Lighthouse/Web Vitals metrics — report LCP,
+  INP, CLS, and the tool context, not just an aggregate score.
+- **PERF-WEB-05 Resources under load:** container/process CPU% and memory, noting
   upward trends (leak) vs. plateau.
+
+No-baseline defaults: Core Web Vitals pass only when LCP ≤2.5s, INP
+<200ms, and CLS <0.1 at p75. INP replaced FID in March 2024; ignore
+unofficial "Core Web Vitals 2.0" blog metrics. Project baselines override
+these defaults once present.
 
 ## security-qa — surface checks
 
-1. Dependency audit (`npm audit` or ecosystem equivalent from
-   qa-context.md).
-2. Exposed routes: debug endpoints, admin panels, unauthenticated API
-   routes that docs say need auth.
-3. Security headers on the main response: CSP, X-Frame-Options /
-   frame-ancestors, X-Content-Type-Options, HSTS (if HTTPS). Weigh absence
-   against the threat model — a VPN-only tool has a different bar than a
-   public endpoint.
-4. Secrets hygiene in the repo: committed env files, hardcoded keys,
-   credentials in compose/config. Reference file/line, never print values.
-5. CORS wider than the deployment model calls for.
-6. Documented default credentials still active (no brute-forcing).
+These checks are security hygiene, not a pentest. ASVS references are
+OWASP ASVS 5.0.0 topic areas, not compliance claims.
+
+| ID | Check | ASVS 5.0.0 topic area |
+|---|---|---|
+| SEC-WEB-01 | Dependency audit (`npm audit` or ecosystem equivalent from qa-context.md); cite only actual tool output for CVE, severity, affected version, or CWE. | V15 Secure Coding and Architecture |
+| SEC-WEB-02 | Exposed routes: debug endpoints, admin panels, unauthenticated API routes that docs say need auth. | V8 Authorization; V13 Configuration |
+| SEC-WEB-03 | Security headers on the main response: CSP, X-Frame-Options / frame-ancestors, X-Content-Type-Options, HSTS (if HTTPS). Weigh absence against the threat model — a VPN-only tool has a different bar than a public endpoint. | V3 Web Frontend Security; V12 Secure Communication; V13 Configuration |
+| SEC-WEB-04 | Secrets hygiene in the repo: committed env files, hardcoded keys, credentials in compose/config. Reference file/line, never print values. | V11 Cryptography; V14 Data Protection |
+| SEC-WEB-05 | CORS wider than the deployment model calls for. | V12 Secure Communication; V13 Configuration |
+| SEC-WEB-06 | Documented default credentials still active (no brute-forcing). | V6 Authentication; V13 Configuration |
 
 ## compatibility-qa — matrix
 

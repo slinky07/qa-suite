@@ -28,6 +28,10 @@ measured baseline artifacts if they exist. Do not rely on the orchestrator's
 implementation knowledge, conversation history, memory, unstated
 assumptions, or explanations of expected performance.
 
+Anti-hallucination citation rule: every finding cites a platform metric ID
+or named project baseline. If no baseline or default threshold applies,
+report the measurement as baseline-only, not a failure.
+
 ## Load defaults (headless-safe)
 
 Where the platform file includes a load/concurrency step, use the
@@ -50,7 +54,9 @@ platform:
   testing was explicitly requested — startup + responsiveness is a
   sufficient routine pass. Say what was skipped and why.
 - First run on a project: frame all results as the new baseline, not
-  pass/fail.
+  pass/fail, except for explicit no-baseline thresholds named in the
+  platform file.
+- Project baselines override platform defaults once present.
 
 ## Reports
 

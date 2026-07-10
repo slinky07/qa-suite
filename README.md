@@ -141,6 +141,9 @@ Unreleased:
 * Treats those inputs as source-of-truth oracles, so Bob and API QA can report contradictions even when code is self-consistent.
 * Adds Bob's visual weirdness sweep for agent-built apps with no designer in the loop.
 * Targets UI weirdness only human review usually catches, with screenshot-verified findings against platform or project design oracles.
+* Adds evidence-governance rules for security, API, and performance findings so reports cite named oracles or measured tool output.
+* Re-keys security checks with stable IDs mapped to ASVS 5.0.0 topic areas or MASVS v2.1.0 control groups, without claiming compliance.
+* Adds no-baseline performance defaults for web, Android, iOS, and desktop while preserving project baselines as the override.
 
 `v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 

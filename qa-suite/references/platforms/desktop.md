@@ -43,28 +43,31 @@ the visible symptom plainly without inventing a standard.
 
 ## performance-qa — metrics
 
-- Cold start: launch to interactive window, wall-clock measured, averaged
-  over 3+ runs.
-- Memory and CPU at idle and during core flows (OS process monitor or
+- **PERF-DSK-01 Cold start:** launch to interactive window, wall-clock
+  measured, averaged over 3+ runs.
+- **PERF-DSK-02 Memory and CPU** at idle and during core flows (OS process monitor or
   framework tooling); trend vs. plateau.
-- Bundle/installer size vs. prior baseline if releases are in scope.
-- Electron/Tauri: renderer-process metrics via the embedded DevTools where
-  available.
+- **PERF-DSK-03 Bundle/installer size** vs. prior baseline if releases are in scope.
+- **PERF-DSK-04 Electron/Tauri renderer-process metrics** via the embedded
+  DevTools where available.
+
+No-baseline defaults: there is no public named desktop threshold. The first
+run is baseline-only unless the project provides explicit targets. Project
+baselines override this default once present.
 
 ## security-qa — surface checks
 
-1. Dependency audit per ecosystem (npm audit for Electron, cargo audit for
-   Tauri, ecosystem tool otherwise).
-2. Electron-specific: `nodeIntegration` off, `contextIsolation` on, no
-   loading of remote content with node access; Tauri: allowlist/capability
-   scope review.
-3. Secrets hygiene in repo and packaged artifacts; reference file/line,
-   never print values.
-4. Auto-update channel integrity (HTTPS, signature verification) if the
-   app self-updates.
-5. Local data storage location and permissions for sensitive data, per
-   threat model.
-6. Documented default credentials still active.
+These checks are security hygiene, not a pentest. ASVS references are
+OWASP ASVS 5.0.0 topic areas, not compliance claims.
+
+| ID | Check | ASVS 5.0.0 topic area |
+|---|---|---|
+| SEC-DSK-01 | Dependency audit per ecosystem (npm audit for Electron, cargo audit for Tauri, ecosystem tool otherwise); cite only actual tool output for CVE, severity, affected version, or CWE. | V15 Secure Coding and Architecture |
+| SEC-DSK-02 | Electron-specific: `nodeIntegration` off, `contextIsolation` on, no loading of remote content with node access; Tauri: allowlist/capability scope review. | V3 Web Frontend Security; V13 Configuration |
+| SEC-DSK-03 | Secrets hygiene in repo and packaged artifacts; reference file/line, never print values. | V11 Cryptography; V14 Data Protection |
+| SEC-DSK-04 | Auto-update channel integrity (HTTPS, signature verification) if the app self-updates. | V12 Secure Communication; V15 Secure Coding and Architecture |
+| SEC-DSK-05 | Local data storage location and permissions for sensitive data, per threat model. | V14 Data Protection |
+| SEC-DSK-06 | Documented default credentials still active (no brute-forcing). | V6 Authentication; V13 Configuration |
 
 ## compatibility-qa — matrix
 

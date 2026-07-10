@@ -44,21 +44,30 @@ the visible symptom plainly without inventing a standard.
 
 ## performance-qa — metrics
 
-- Launch time via Xcode Organizer / `xctrace` or XCTest launch performance
+- **PERF-IOS-01 Launch time** via Xcode Organizer / `xctrace` or XCTest launch performance
   tests.
-- Hitches/frame drops during core flows (Instruments: Animation Hitches).
-- Memory via Instruments across a flow; trend vs. plateau.
-- App size vs. prior baseline if release builds are in scope.
+- **PERF-IOS-02 Hitches/frame drops** during core flows (Instruments:
+  Animation Hitches).
+- **PERF-IOS-03 Memory** via Instruments across a flow; trend vs. plateau.
+- **PERF-IOS-04 App size** vs. prior baseline if release builds are in scope.
+
+No-baseline defaults: no watchdog terminations during tested flows.
+Hitch-free scrolling is a finding only when reported by Instruments or
+MetricKit; do not invent numeric hitch thresholds. Project baselines
+override these defaults once present.
 
 ## security-qa — surface checks
 
-1. Dependency audit per package manager (SwiftPM/CocoaPods advisories).
-2. Info.plist review: ATS exceptions (`NSAllowsArbitraryLoads`), over-broad
-   usage descriptions, URL schemes that expose actions.
-3. Secrets hygiene: hardcoded keys in source or bundled plists; keys
-   recoverable from the built app. Reference file/line, never print values.
-4. Keychain vs. UserDefaults for sensitive storage, per threat model.
-5. Documented default credentials still active.
+These checks are security hygiene, not a pentest. MASVS references are
+OWASP MASVS v2.1.0 control groups, not compliance claims.
+
+| ID | Check | MASVS v2.1.0 category |
+|---|---|---|
+| SEC-IOS-01 | Dependency audit per package manager (SwiftPM/CocoaPods advisories); cite only actual tool output for CVE, severity, affected version, or CWE. | MASVS-CODE: Code Quality |
+| SEC-IOS-02 | Info.plist review: ATS exceptions (`NSAllowsArbitraryLoads`), over-broad usage descriptions, URL schemes that expose actions. | MASVS-NETWORK: Network Communication; MASVS-PLATFORM: Platform Interaction; MASVS-PRIVACY: Privacy |
+| SEC-IOS-03 | Secrets hygiene: hardcoded keys in source or bundled plists; keys recoverable from the built app. Reference file/line, never print values. | MASVS-STORAGE: Storage; MASVS-CRYPTO: Cryptography; MASVS-AUTH: Authentication and Authorization |
+| SEC-IOS-04 | Keychain vs. UserDefaults for sensitive storage, per threat model. | MASVS-STORAGE: Storage |
+| SEC-IOS-05 | Documented default credentials still active (no brute-forcing). | MASVS-AUTH: Authentication and Authorization |
 
 ## compatibility-qa — matrix
 

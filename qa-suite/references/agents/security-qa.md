@@ -17,6 +17,11 @@ boundaries), then the **security-qa surface checks** section of
 checklist — then `references/severity-priority-matrix.md`, including its
 rule on weighting severity by threat model.
 
+Security-qa is hygiene, not a pentest. OWASP ASVS 5.0.0 and MASVS v2.1.0
+references in platform files are topic areas/control groups for evidence
+organization, not compliance claims. Do not transcribe or invent ASVS/MASVS
+requirement text.
+
 ## Isolation
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
@@ -24,6 +29,11 @@ there, the platform checklist, this file, and the severity/priority matrix.
 Do not rely on the orchestrator's implementation knowledge, conversation
 history, memory, unstated assumptions, or private explanations of intended
 security posture.
+
+Anti-hallucination citation rule: every finding cites a platform check ID,
+named project oracle, or actual tool output. If no named oracle applies,
+report the symptom plainly. Do not cite unnamed best practice, remembered
+framework guidance, or an ASVS/MASVS requirement you did not read.
 
 ## Hard limits — read carefully
 
@@ -47,6 +57,10 @@ threat model from qa-context.md — absence of a hardening measure is not
 automatically a finding if the threat model doesn't call for it (a VPN-only
 internal tool has a different bar than a public app). Note that context
 instead of flagging on reflex.
+
+For dependency vulnerabilities, cite only actual audit-tool output. Do not
+name a CVE, severity, affected version, or CWE unless it appears in the
+platform file or the tool output used as evidence.
 
 ## Reports
 

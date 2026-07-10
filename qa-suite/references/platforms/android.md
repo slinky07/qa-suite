@@ -50,35 +50,36 @@ the visible symptom plainly without inventing a standard.
 
 ## performance-qa — metrics
 
-- **Cold / warm / hot startup:** `adb shell am start -W` reported times, or
-  Macrobenchmark if the project has it.
-- **Jank:** frame metrics during core flows (`adb shell dumpsys gfxinfo
+- **PERF-AND-01 Cold / warm / hot startup:** `adb shell am start -W`
+  reported times, or Macrobenchmark if the project has it.
+- **PERF-AND-02 Jank:** frame metrics during core flows (`adb shell dumpsys gfxinfo
   <package>` or Perfetto) — report janky-frame percentage, not an
   impression of smoothness.
-- **Memory:** `adb shell dumpsys meminfo <package>` sampled across a flow;
+- **PERF-AND-03 Memory:** `adb shell dumpsys meminfo <package>` sampled across a flow;
   note upward trend vs. plateau. LeakCanary findings if the project bundles
   it.
-- **APK/AAB size** vs. prior baseline, if release builds are in scope.
+- **PERF-AND-04 APK/AAB size** vs. prior baseline, if release builds are in scope.
 - Client-side "concurrent load" mostly doesn't apply; if the app has a
   backend, load-test that via api-qa/performance-qa against the backend URL
   instead.
 
+No-baseline defaults: no ANR during tested flows. Android vitals treats
+startup as excessive at cold ≥5s, warm ≥2s, and hot ≥1.5s. Project
+baselines override these defaults once present.
+
 ## security-qa — surface checks
 
-1. Dependency audit: Gradle dependency verification /
-   OWASP dependency-check plugin / `gradle dependencyUpdates` for known
-   CVEs, per what the project has available.
-2. Manifest review: exported activities/services/receivers that shouldn't
-   be; `android:debuggable` in release config; `usesCleartextTraffic`;
-   over-broad permissions vs. what the app actually does.
-3. Secrets hygiene: hardcoded API keys in source, `local.properties` or
-   keystores committed, secrets baked into the APK (strings/resources).
-   Reference file/line, never print values.
-4. Network security config: cleartext allowed where it shouldn't be,
-   missing certificate pinning only if the threat model calls for it.
-5. Backup/export: `allowBackup` implications for sensitive data, given the
-   threat model.
-6. Documented default credentials still active (no brute-forcing).
+These checks are security hygiene, not a pentest. MASVS references are
+OWASP MASVS v2.1.0 control groups, not compliance claims.
+
+| ID | Check | MASVS v2.1.0 category |
+|---|---|---|
+| SEC-AND-01 | Dependency audit: Gradle dependency verification / OWASP dependency-check plugin / `gradle dependencyUpdates`; cite only actual tool output for CVE, severity, affected version, or CWE. | MASVS-CODE: Code Quality |
+| SEC-AND-02 | Manifest review: exported activities/services/receivers that shouldn't be; `android:debuggable` in release config; `usesCleartextTraffic`; over-broad permissions vs. what the app actually does. | MASVS-PLATFORM: Platform Interaction; MASVS-NETWORK: Network Communication; MASVS-PRIVACY: Privacy |
+| SEC-AND-03 | Secrets hygiene: hardcoded API keys in source, `local.properties` or keystores committed, secrets baked into the APK (strings/resources). Reference file/line, never print values. | MASVS-STORAGE: Storage; MASVS-CRYPTO: Cryptography; MASVS-AUTH: Authentication and Authorization |
+| SEC-AND-04 | Network security config: cleartext allowed where it shouldn't be, missing certificate pinning only if the threat model calls for it. | MASVS-NETWORK: Network Communication |
+| SEC-AND-05 | Backup/export: `allowBackup` implications for sensitive data, given the threat model. | MASVS-STORAGE: Storage; MASVS-PRIVACY: Privacy |
+| SEC-AND-06 | Documented default credentials still active (no brute-forcing). | MASVS-AUTH: Authentication and Authorization |
 
 ## compatibility-qa — matrix
 
