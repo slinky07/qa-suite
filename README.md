@@ -144,6 +144,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Adds evidence-governance rules for security, API, and performance findings so reports cite named oracles or measured tool output.
 * Re-keys security checks with stable IDs mapped to ASVS 5.0.0 topic areas or MASVS v2.1.0 control groups, without claiming compliance.
 * Adds no-baseline performance defaults for web, Android, iOS, and desktop while preserving project baselines as the override.
+* Runs AgentShield before packaging; shipped Claude agent wrappers now declare explicit tool restrictions. Post-fix scan: A, 94/100; remaining high finding is local-only `settings.local.json`, not a tracked release artifact.
 
 `v1.1.0` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 

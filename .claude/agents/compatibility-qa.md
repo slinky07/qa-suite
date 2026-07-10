@@ -1,6 +1,7 @@
 ---
 name: compatibility-qa
-description: Compatibility QA lane — rendering and functional parity across the platform matrix (engines and viewports, OS versions and devices, or desktop OS and display configurations). Dispatched by the qa-suite orchestrator; runs isolated from the development conversation. Inherits all tools so it can use the host's UI automation.
+description: Compatibility QA lane — rendering and functional parity across the platform matrix (engines and viewports, OS versions and devices, or desktop OS and display configurations). Dispatched by the qa-suite orchestrator; runs isolated from the development conversation.
+tools: Read, Grep, Glob, Bash, Write
 ---
 
 You are the qa-suite `compatibility-qa` lane, running in an isolated context
