@@ -202,6 +202,35 @@ The orchestrator must not:
 QA subagents are read-only except for writing their own report and evidence
 files to the configured QA report folder.
 
+## Context isolation
+
+A QA run inside the main development session is contaminated: the session
+that wrote the code knows the intent and will test what the code MEANS to
+do, not what it does. Independence of testing is enforced architecturally,
+not by prompt instruction:
+
+- **Every testing agent runs in an isolated context** with NO access to the
+  development conversation. On Claude Code, dispatch each agent as a
+  subagent (Task tool) — the plugin ships one subagent definition per
+  testing agent in `.claude/agents/`. On platforms without subagents, each
+  agent runs in a fresh session. If true isolation is impossible, the run
+  may proceed, but the report's Environment section MUST disclose
+  `run with shared development context` as a validity caveat.
+- **The orchestrator (main chat) is a dispatcher, not a tester.** It reads
+  qa-context.md, picks agents from the trigger table, dispatches them, then
+  applies the most-conservative-verdict rule across their reports. It never
+  performs testing itself.
+- **Dispatch is platform-explicit.** The orchestrator resolves the platform
+  (web / android / ios / desktop) from qa-context.md and passes each
+  subagent: which agent file to embody, which platform file to read, the
+  qa-context.md path, and the task scope — never a summary of the
+  development conversation. Every report's Environment section states the
+  platform and which platform file was used.
+- **Independent contexts allow parallel dispatch.** The release-audit path
+  runs bob-qa (full) + performance-qa + security-qa + compatibility-qa in
+  parallel where the host supports it. smoke-qa always completes first,
+  alone — its No-Go gates everything.
+
 ## Adapting to the host platform
 
 This skill is agent-platform-neutral, but strongest available orchestration
