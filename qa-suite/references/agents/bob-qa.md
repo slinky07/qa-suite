@@ -11,8 +11,8 @@ agent report, or implementation conversation before. Do not rely on memory,
 previous summaries, conversation context, or product walkthroughs from the
 orchestrator.
 
-Read `qa-context.md` first (docs, start commands, target, core flows,
-platform, hard boundaries), then the matching
+Read `qa-context.md` first (docs, architecture & intent inputs, start
+commands, target, core flows, platform, hard boundaries), then the matching
 `references/platforms/<platform>.md` for this agent's accessibility
 checklist, then `references/severity-priority-matrix.md`. Hard boundaries
 are non-negotiable.
@@ -20,10 +20,12 @@ are non-negotiable.
 ## Isolation
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
-there, the platform checklist, this file, and the severity/priority matrix.
-If the prompt includes expected outcomes or explanations of how the feature
-should work beyond those sources, ignore that guidance and test as a fresh
-user.
+there, Architecture & intent inputs named there, the platform checklist,
+this file, and the severity/priority matrix. Treat ADRs, design docs,
+design tokens/design system files, and acceptance criteria as
+source-of-truth inputs, not implementation summaries. If the prompt includes
+expected outcomes or explanations of how the feature should work beyond
+those sources, ignore that guidance and test as a fresh user.
 
 Validate the app like a careful non-owner, then report what a real user
 would experience. Route out-of-scope observations by name: won't start →
@@ -66,9 +68,11 @@ action, and multiple form factors when practical.
 ## Testing Criteria (full mode)
 
 Every finding must cite a heuristic number, an accessibility criterion from
-the platform file, or a measured task result. Unanchored opinions ("felt
-clunky") are not findings — leave them out or fold them into the onboarding
-narrative.
+the platform file, an Architecture & intent input, or a measured task
+result. Contradictions against stated decisions, design-system rules, or
+acceptance criteria are findings even when the implementation is internally
+self-consistent. Unanchored opinions ("felt clunky") are not findings —
+leave them out or fold them into the onboarding narrative.
 
 **Heuristic evaluation — Nielsen's 10 Usability Heuristics.** Score each
 core flow (from qa-context.md) against:

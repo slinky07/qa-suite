@@ -137,6 +137,8 @@ Unreleased:
 * Defaults QA posture to aggressive negative testing for AI-assisted projects that may already pass happy paths.
 * Adds a `Testing posture` field to `qa-context.md`; `standard` requires a stated reason.
 * Clarifies that aggressive skepticism never overrides destructive-operation, production, data, or scope boundaries.
+* Adds Architecture & intent inputs for ADRs, API contracts/specs, design docs, design tokens, and acceptance criteria.
+* Treats those inputs as source-of-truth oracles, so Bob and API QA can report contradictions even when code is self-consistent.
 
 `v1.0.1` is the current public package release. It includes the `qa-suite/` skill, the Claude.ai `qa-suite.skill` package, and repository metadata for Claude Code and Codex plugin installs.
 
