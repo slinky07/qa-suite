@@ -115,12 +115,16 @@ invent one. Offer the user two paths:
      user to commit it (config is shared with the team; the `QA/` reports
      folder stays gitignored).
 
-### Optional: generate repo-local host agents
+### Generate repo-local host agents (default)
 
-After `qa-context.md` is confirmed (either path above), offer to generate a
-dedicated, repo-local smoke QA agent for the host(s) the team uses. This is
-optional — the orchestration workflow works without them — so skip it
-silently if the user declines. Generate only for hosts the user confirms.
+After `qa-context.md` is confirmed (either path above), generate a
+dedicated, repo-local smoke QA agent for each supported host format as part
+of the same first-run setup — by default, not as an optional
+post-confirmation step. Create both files below unless the host or project
+clearly does not support that agent format (skip only the unsupported
+format and say so in the setup summary), or the user explicitly declines.
+The orchestration workflow still works without them, so a declined or
+unsupported format is never a setup failure.
 
 - **Claude Code** (project subagent, Markdown + YAML frontmatter): copy
   `assets/project-agent-smoke-qa.claude.md` to
@@ -138,12 +142,12 @@ be committed alongside qa-context.md, and do not modify anything else in
 those directories.
 
 Generated agents are deliberately narrow: smoke QA only, qa-context.md
-first, default run policy respected, reports/evidence only under the
-configured report folder, no source/test/config/git/issue/PR edits,
-non-destructive shutdown of anything they started, and disposable local
-test data for any mutating action. Do not generate agents for other lanes
-unless the user explicitly asks; deeper lanes should keep flowing through
-the orchestrator.
+first, default run policy respected, timestamped reports/evidence only
+under the configured report folder, no source/test/config/git/issue/PR
+edits, non-destructive shutdown of anything they started, and disposable
+local test data for any mutating action. Do not generate agents for other
+lanes unless the user explicitly asks; deeper lanes should keep flowing
+through the orchestrator.
 
 ### Plugin-shipped agents vs generated repo-local agents
 
