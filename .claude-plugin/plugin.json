@@ -18,5 +18,6 @@
     "agent-skill"
   ],
   "skills": "./qa-suite",
-  "commands": "./.claude/commands/"
+  "commands": "./.claude/commands/",
+  "agents": "./.claude/agents/"
 }
