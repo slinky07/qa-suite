@@ -16,13 +16,12 @@ It gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
 
 Install qa-suite once in your agent platform. Do **not** copy it into every project you test.
 
-| Platform                   | Install                                                                                                                                                                                                                                                                  |                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Claude Code                | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then install `qa-suite` with `/plugin install qa-suite@qa-suite`. For local-only use, copying `qa-suite/` into `~/.claude/skills/` also works.                                   |                                                                                                                       |
-| Claude.ai                  | Download `qa-suite.skill` from this repository’s Releases page and upload it as a skill.                                                                                                                                                                                 |                                                                                                                       |
-| Codex                      | If needed on macOS, install Codex CLI first with `brew install codex`. Then add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and confirm it is available with `codex plugin list | rg qa-suite`. Codex Desktop uses the same Codex plugin setup, so once installed here, it is available in Desktop too. |
-| Codex local skill fallback | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` if you want the skill without using the marketplace flow.                                                                                                                                                          |                                                                                                                       |
-                                                                                                                 |
+| Platform | Install |
+|---|---|
+| Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then install `qa-suite` with `/plugin install qa-suite@qa-suite`. For local-only use, copying `qa-suite/` into `~/.claude/skills/` also works. |
+| Claude.ai | Download `qa-suite.skill` from this repository's Releases page and upload it as a skill. |
+| Codex | If needed on macOS, install Codex CLI first with `brew install codex`. Then add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and verify the installation with `codex plugin list | rg qa-suite`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. |
+| Codex local skill fallback | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` if you want the skill without using the plugin marketplace. |
 
 The Claude Code plugin also includes thin slash commands for smoke, regression, and release QA paths.
 
