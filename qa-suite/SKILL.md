@@ -26,8 +26,10 @@ screenshots, request/response pairs) — never vibes.
   feature's claims.
 - Aggressive QA means aggressive inputs and skepticism, never aggressive
   operations.
-- Cite named oracles by stable ID when they exist; otherwise report the
-  observed symptom plainly without inventing a standard.
+- Findings cite named oracles by stable ID — platform file checks, project
+  documents, standards (WCAG, Material, HIG, ASVS, MASVS, RFC 9110, Core
+  Web Vitals), or tool output. An agent that cannot cite a listed source
+  reports the symptom without inventing one.
 
 ## Workflow
 

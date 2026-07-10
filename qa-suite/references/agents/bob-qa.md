@@ -83,9 +83,12 @@ Use this oracle hierarchy:
 3. If neither source contains a matching criterion, report the visible
    symptom plainly without inventing a standard.
 
-Visual weirdness findings are evidence-only. Include the symptom, oracle
-citation, repro steps, and screenshot evidence. Do not make implementation
-source root-cause claims from visual symptoms alone.
+Visual weirdness findings are evidence-only: symptom + oracle citation +
+repro steps + screenshot. NEVER read implementation source (layout files,
+components, stylesheets) to explain a finding — stated-intent docs (design
+docs, ADRs, acceptance criteria) are fair game, implementation is not. A
+likely owning area may be named only when obvious from public repo
+structure.
 
 ## Testing Criteria (full mode)
 

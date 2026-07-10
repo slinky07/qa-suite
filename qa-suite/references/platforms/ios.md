@@ -28,6 +28,9 @@ VoiceOver passes.
 
 ## bob-qa — visual weirdness sweep
 
+Design oracle: the project's own design tokens/docs when defined, otherwise
+Apple Human Interface Guidelines. Evidence per finding: screenshot.
+
 Use project design docs, design tokens, and acceptance criteria first. Use
 these platform checks only when project-specific visual oracles do not
 answer the question. Cite the stable ID for matched checks; otherwise report
@@ -35,12 +38,18 @@ the visible symptom plainly without inventing a standard.
 
 | ID | Check |
 |---|---|
-| VIS-IOS-01 | Device classes: core screens avoid overlap, clipping, and unreachable controls on supported iPhone and iPad sizes |
-| VIS-IOS-02 | Dynamic Type: largest supported text sizes do not hide primary actions or critical content |
-| VIS-IOS-03 | Safe areas and system UI: notches, home indicator, tab bars, navigation bars, sheets, and keyboard do not cover app controls |
-| VIS-IOS-04 | iOS states: highlighted, focused, disabled, selected, loading, empty, and error states are visually distinct and design-system consistent |
-| VIS-IOS-05 | Lists and scrolling: navigation titles, sticky controls, bottom bars, and virtualized content do not jump, duplicate, or obscure selected items |
-| VIS-IOS-06 | Assets and motion: icons, images, maps, charts, and animations render sharp, at the intended aspect ratio, and without unintended flicker |
+| VW-IOS-01 | Tappable controls ≥44×44pt (HIG) |
+| VW-IOS-02 | Text truncation, overlap, or clipping at default Dynamic Type size |
+| VW-IOS-03 | Layout survives largest accessibility Dynamic Type sizes without clipping, overlap, or lost controls |
+| VW-IOS-04 | Keyboard does not occlude the focused input; content scrolls or resizes |
+| VW-IOS-05 | Content respects safe areas: nothing hidden behind the notch/Dynamic Island, status bar, or home indicator |
+| VW-IOS-06 | Spacing/alignment consistency: same component type rendered with consistent padding, size, and style across screens; standard layout margins respected |
+| VW-IOS-07 | Dark Mode: all text and controls readable and visible; no invisible-on-background elements |
+| VW-IOS-08 | Rotation (if supported): layout reflows without breakage or state loss |
+| VW-IOS-09 | Images/icons: no stretching, squashing, or visible low-resolution scaling |
+| VW-IOS-10 | Empty, loading, and error states render intentionally — not blank or broken screens |
+| VW-IOS-11 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or truncate gracefully |
+| VW-IOS-12 | Text contrast ≥4.5:1 (≥3:1 large text); non-text UI element contrast ≥3:1 |
 
 ## performance-qa — metrics
 

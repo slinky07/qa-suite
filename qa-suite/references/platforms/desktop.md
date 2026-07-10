@@ -27,6 +27,11 @@ rendered content.
 
 ## bob-qa — visual weirdness sweep
 
+Design oracle: the project's own design tokens/docs when defined, otherwise
+the OS convention (Windows Fluent: targets ≥40epx; macOS HIG; GNOME HIG).
+Evidence per finding: screenshot. Web-view shells (Electron/Tauri) also
+apply the web sweep from `web.md` to rendered content.
+
 Use project design docs, design tokens, and acceptance criteria first. Use
 these platform checks only when project-specific visual oracles do not
 answer the question. Cite the stable ID for matched checks; otherwise report
@@ -34,12 +39,16 @@ the visible symptom plainly without inventing a standard.
 
 | ID | Check |
 |---|---|
-| VIS-DSK-01 | Window resizing: core screens remain usable at the smallest supported window and common high-DPI/scaled configurations |
-| VIS-DSK-02 | Native chrome and content: title bars, menus, toolbars, sidebars, and web-view content do not overlap or create double navigation |
-| VIS-DSK-03 | Text and controls: labels, menu items, shortcuts, dialogs, and buttons remain readable without unintended truncation |
-| VIS-DSK-04 | Modal and popover placement: dialogs, context menus, tooltips, and popovers stay anchored and visible within the active display |
-| VIS-DSK-05 | State transitions: launch, loading, empty, error, update, and offline states are visibly distinct and do not look like crashes |
-| VIS-DSK-06 | Platform fit: spacing, density, focus rings, and disabled/selected states match the app's stated desktop design system or host OS conventions |
+| VW-DSK-01 | Click/touch targets meet the OS convention minimum (Fluent ≥40epx; HIG 44pt-equivalent for touch-capable targets) |
+| VW-DSK-02 | Text truncation, overlap, or clipping at default settings |
+| VW-DSK-03 | Layout survives 150–200% OS display scaling and large system font settings without clipping or overlap |
+| VW-DSK-04 | Window resize: usable at smallest supported size; no broken layout, clipped controls, or dead space at large sizes |
+| VW-DSK-05 | Spacing/alignment consistency: same component type rendered with consistent padding, size, and style across views |
+| VW-DSK-06 | Dark mode / OS theme (if supported): all text and controls readable and visible |
+| VW-DSK-07 | Images/icons: no stretching, squashing, or low-resolution scaling, including on high-DPI displays |
+| VW-DSK-08 | Empty, loading, and error states render intentionally — not blank panes or raw error dumps |
+| VW-DSK-09 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or truncate gracefully |
+| VW-DSK-10 | Text contrast ≥4.5:1 (≥3:1 large text); non-text UI element contrast ≥3:1 |
 
 ## performance-qa — metrics
 
