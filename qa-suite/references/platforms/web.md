@@ -23,7 +23,7 @@ criterion number:
 | 1.4.3 Contrast (Minimum) | Text ≥4.5:1, large text ≥3:1 |
 | 2.1.1 Keyboard | Every interactive element reachable and operable without a mouse |
 | 2.4.7 Focus Visible | Visible focus indicator on all focusable elements |
-| 2.5.8 Target Size (Minimum) (WCAG 2.2 AA) | Touch targets meet WCAG 2.2 AA minimum target-size requirements |
+| 2.5.8 Target Size (Minimum) (WCAG 2.2 AA) | Interactive targets ≥24×24 CSS px, or exempt via sufficient spacing/inline placement; ≥44×44px recommended (2.5.5 AAA) |
 | 4.1.2 Name, Role, Value | Controls expose accessible name and role (ARIA or native semantics) |
 
 Automated assist where available: axe-core, Lighthouse accessibility audit,
@@ -32,6 +32,10 @@ keyboard and focus checks.
 
 ## bob-qa — visual weirdness sweep
 
+Design oracle: the project's own design tokens/docs when defined, otherwise
+WCAG 2.2 AA + Nielsen H4/H8 for consistency; no single vendor system is
+assumed. Evidence per finding: screenshot.
+
 Use project design docs, design tokens, and acceptance criteria first. Use
 these platform checks only when project-specific visual oracles do not
 answer the question. Cite the stable ID for matched checks; otherwise report
@@ -39,12 +43,17 @@ the visible symptom plainly without inventing a standard.
 
 | ID | Check |
 |---|---|
-| VIS-WEB-01 | Responsive layout: no overlapping, clipping, unintended horizontal scroll, or orphaned controls at tested viewports |
-| VIS-WEB-02 | Text containment: labels, headings, button text, and validation messages remain readable without unintended truncation |
-| VIS-WEB-03 | Interaction states: hover, focus, active, disabled, selected, and loading states are visually distinct and aligned with the design system |
-| VIS-WEB-04 | Forms and feedback: errors, helper text, and success states appear near the triggering control without hiding the next action |
-| VIS-WEB-05 | Empty, loading, and error states: state-specific UI is visible, stable, and not mistaken for broken layout |
-| VIS-WEB-06 | Media and icons: images, icons, canvas, charts, and video render at intended size, aspect ratio, and resolution |
+| VW-WEB-01 | Interactive targets ≥24×24 CSS px (WCAG 2.2 2.5.8 AA; ≥44px recommended per 2.5.5 AAA), adjacent targets not overlapping |
+| VW-WEB-02 | Text truncation, overlap, or clipping at default zoom |
+| VW-WEB-03 | Page usable at 200% browser zoom and 320px-wide viewport without loss of content or function (WCAG 1.4.10 Reflow); no horizontal scroll for vertical content |
+| VW-WEB-04 | Spacing/alignment consistency: same component type rendered with consistent padding, size, and style across pages (Nielsen H4) |
+| VW-WEB-05 | Dark mode / theme toggle (if present): all text and controls readable and visible |
+| VW-WEB-06 | Window resize across breakpoints: no broken layout, overlapping elements, or dead zones between defined breakpoints |
+| VW-WEB-07 | Images/icons: no stretching, squashing, or visible low-resolution scaling |
+| VW-WEB-08 | Empty, loading, and error states render intentionally — not blank screens or raw exception text |
+| VW-WEB-09 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or truncate gracefully |
+| VW-WEB-10 | Text contrast ≥4.5:1 (≥3:1 large text) (WCAG 1.4.3); non-text UI element contrast ≥3:1 (WCAG 1.4.11) |
+| VW-WEB-11 | Focus/hover/disabled states visually distinct and consistent across the app |
 
 ## performance-qa — metrics
 

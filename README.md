@@ -153,6 +153,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Documents when to use plugin-shipped agents vs generated repo-local agents, and keeps the two mechanisms distinct per host.
 * Report filenames now include the run's start time: `YYYY-MM-DD-HHMM-<agent>-<short-scope>.md`. Every rerun creates a new report file instead of overwriting the day's earlier run.
 * Adds an explicit orchestrator patience rule: a dispatched QA subagent that hasn't returned is not a hang; the orchestrator must never scrap a running lane on elapsed time alone and take it over itself.
+* The visual weirdness sweep checklists now carry the full VW-* check set (VW-WEB-01…11, VW-AND-01…12, VW-IOS-01…12, VW-DSK-01…10) with named platform design oracles per section.
 
 `v1.1.1` is the current public package release.
 

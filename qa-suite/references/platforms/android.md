@@ -34,6 +34,9 @@ passes.
 
 ## bob-qa — visual weirdness sweep
 
+Design oracle: the project's own design tokens/docs when defined, otherwise
+Material Design 3 (m3.material.io). Evidence per finding: screenshot.
+
 Use project design docs, design tokens, and acceptance criteria first. Use
 these platform checks only when project-specific visual oracles do not
 answer the question. Cite the stable ID for matched checks; otherwise report
@@ -41,12 +44,18 @@ the visible symptom plainly without inventing a standard.
 
 | ID | Check |
 |---|---|
-| VIS-AND-01 | Device classes: core screens avoid overlap, clipping, and unreachable controls on supported phone and tablet widths |
-| VIS-AND-02 | System font and display size: maximum supported font/display scaling does not hide primary actions or critical content |
-| VIS-AND-03 | Orientation and insets: rotation, status/navigation bars, cutouts, keyboard, and gesture areas do not cover app controls |
-| VIS-AND-04 | Material states: pressed, focused, disabled, selected, loading, empty, and error states are visually distinct and design-system consistent |
-| VIS-AND-05 | Lists and scrolling: sticky headers, bottom bars, cards, and virtualized content do not jump, duplicate, or obscure selected items |
-| VIS-AND-06 | Assets and icons: density-specific icons, images, maps, charts, and animations render sharp and at the intended aspect ratio |
+| VW-AND-01 | Touch targets ≥48×48dp (M3 accessibility), adjacent targets separated ≥8dp |
+| VW-AND-02 | Text truncation, overlap, or clipping at default font scale |
+| VW-AND-03 | Layout survives maximum system font size and display size without clipping, overlap, or lost controls |
+| VW-AND-04 | Keyboard (IME) does not occlude the focused input; content scrolls or resizes |
+| VW-AND-05 | Content respects insets/cutouts: nothing hidden behind status bar, navigation bar, or camera cutout |
+| VW-AND-06 | Spacing/alignment consistency: same component type rendered with consistent padding, size, and style across screens (M3 spacing uses 4dp increments — flag visibly arbitrary/mixed spacing, not exact-dp pedantry) |
+| VW-AND-07 | Dark theme: all text and controls readable and visible; no invisible-on-background elements |
+| VW-AND-08 | Rotation (if supported): layout reflows without breakage or state loss |
+| VW-AND-09 | Images/icons: no stretching, squashing, or visible low-resolution scaling |
+| VW-AND-10 | Empty, loading, and error states render intentionally — not blank or broken screens |
+| VW-AND-11 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or ellipsize gracefully |
+| VW-AND-12 | Text contrast ≥4.5:1 (≥3:1 large text); non-text UI element contrast ≥3:1 |
 
 ## performance-qa — metrics
 
