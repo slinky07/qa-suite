@@ -32,6 +32,22 @@ Automated assist: Google's Accessibility Scanner, or Espresso's
 `AccessibilityChecks.enable()`. Supplements, not replaces, manual TalkBack
 passes.
 
+## bob-qa — visual weirdness sweep
+
+Use project design docs, design tokens, and acceptance criteria first. Use
+these platform checks only when project-specific visual oracles do not
+answer the question. Cite the stable ID for matched checks; otherwise report
+the visible symptom plainly without inventing a standard.
+
+| ID | Check |
+|---|---|
+| VIS-AND-01 | Device classes: core screens avoid overlap, clipping, and unreachable controls on supported phone and tablet widths |
+| VIS-AND-02 | System font and display size: maximum supported font/display scaling does not hide primary actions or critical content |
+| VIS-AND-03 | Orientation and insets: rotation, status/navigation bars, cutouts, keyboard, and gesture areas do not cover app controls |
+| VIS-AND-04 | Material states: pressed, focused, disabled, selected, loading, empty, and error states are visually distinct and design-system consistent |
+| VIS-AND-05 | Lists and scrolling: sticky headers, bottom bars, cards, and virtualized content do not jump, duplicate, or obscure selected items |
+| VIS-AND-06 | Assets and icons: density-specific icons, images, maps, charts, and animations render sharp and at the intended aspect ratio |
+
 ## performance-qa — metrics
 
 - **Cold / warm / hot startup:** `adb shell am start -W` reported times, or

@@ -25,6 +25,22 @@ checks below.
 For web-view shells, also run the WCAG table from `web.md` against the
 rendered content.
 
+## bob-qa — visual weirdness sweep
+
+Use project design docs, design tokens, and acceptance criteria first. Use
+these platform checks only when project-specific visual oracles do not
+answer the question. Cite the stable ID for matched checks; otherwise report
+the visible symptom plainly without inventing a standard.
+
+| ID | Check |
+|---|---|
+| VIS-DSK-01 | Window resizing: core screens remain usable at the smallest supported window and common high-DPI/scaled configurations |
+| VIS-DSK-02 | Native chrome and content: title bars, menus, toolbars, sidebars, and web-view content do not overlap or create double navigation |
+| VIS-DSK-03 | Text and controls: labels, menu items, shortcuts, dialogs, and buttons remain readable without unintended truncation |
+| VIS-DSK-04 | Modal and popover placement: dialogs, context menus, tooltips, and popovers stay anchored and visible within the active display |
+| VIS-DSK-05 | State transitions: launch, loading, empty, error, update, and offline states are visibly distinct and do not look like crashes |
+| VIS-DSK-06 | Platform fit: spacing, density, focus rings, and disabled/selected states match the app's stated desktop design system or host OS conventions |
+
 ## performance-qa — metrics
 
 - Cold start: launch to interactive window, wall-clock measured, averaged

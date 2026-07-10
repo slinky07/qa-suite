@@ -26,6 +26,22 @@ the Android equivalent to the iOS toolchain and say you did so.
 Automated assist: Accessibility Inspector (Xcode). Supplements manual
 VoiceOver passes.
 
+## bob-qa — visual weirdness sweep
+
+Use project design docs, design tokens, and acceptance criteria first. Use
+these platform checks only when project-specific visual oracles do not
+answer the question. Cite the stable ID for matched checks; otherwise report
+the visible symptom plainly without inventing a standard.
+
+| ID | Check |
+|---|---|
+| VIS-IOS-01 | Device classes: core screens avoid overlap, clipping, and unreachable controls on supported iPhone and iPad sizes |
+| VIS-IOS-02 | Dynamic Type: largest supported text sizes do not hide primary actions or critical content |
+| VIS-IOS-03 | Safe areas and system UI: notches, home indicator, tab bars, navigation bars, sheets, and keyboard do not cover app controls |
+| VIS-IOS-04 | iOS states: highlighted, focused, disabled, selected, loading, empty, and error states are visually distinct and design-system consistent |
+| VIS-IOS-05 | Lists and scrolling: navigation titles, sticky controls, bottom bars, and virtualized content do not jump, duplicate, or obscure selected items |
+| VIS-IOS-06 | Assets and motion: icons, images, maps, charts, and animations render sharp, at the intended aspect ratio, and without unintended flicker |
+
 ## performance-qa — metrics
 
 - Launch time via Xcode Organizer / `xctrace` or XCTest launch performance
