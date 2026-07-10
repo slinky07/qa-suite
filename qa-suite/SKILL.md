@@ -92,6 +92,14 @@ invent one. Offer the user two paths:
      prefill every field they answer: platform, start commands, test
      commands, URL, dependency audit tool. Never ask the user for
      something the repo already answers.
+   - **Discover oracle inputs before asking.** Check conventional
+     architecture and intent paths such as `docs/adr`, `docs/adrs`,
+     `docs/architecture*`, `docs/design*`, `docs/api*`, `openapi*`,
+     `swagger*`, `api/**`, `spec/**`, `design-system/**`, `tokens*`, and
+     issue or acceptance-criteria docs. Prefill paths that exist; ask only
+     for missing oracle inputs the repo does not reveal.
+   - Treat Architecture & intent inputs as source-of-truth decisions,
+     contracts, and acceptance criteria, not implementation summaries.
    - **Interview for the rest** — short, concrete questions, presenting
      discovered guesses as defaults to confirm rather than asking cold:
      default run policy (dev vs. deployment path for routine QA); core

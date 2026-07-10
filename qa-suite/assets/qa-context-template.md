@@ -16,6 +16,16 @@ guessing.
 - **Posture:** aggressive <!-- default; use "standard" only with a stated reason -->
 - **Reason for standard posture:** N/A <!-- required when Posture is "standard" -->
 
+## Architecture & intent inputs
+
+Optional source-of-truth documents. Use `N/A` when a project has none.
+
+- **ADRs:** <!-- e.g. docs/adr -->
+- **API contracts/specs:** <!-- e.g. openapi.yaml, docs/api.md -->
+- **Design docs:** <!-- e.g. docs/design.md -->
+- **Design tokens/design system files:** <!-- e.g. tokens.json, src/styles/tokens.ts -->
+- **Acceptance criteria:** <!-- e.g. issue link, docs/acceptance.md -->
+
 ## Runtime
 
 - **Default run policy:** <!-- which path agents use when both exist, e.g. "prefer make run (dev path) for routine QA; use Docker Compose only when the task is explicitly deployment/container QA or a release audit" -->
