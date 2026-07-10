@@ -1,6 +1,8 @@
 # qa-suite
 
-qa-suite is a reusable agent skill for running disciplined multi-agent QA on real software projects.
+A structured multi-agent QA framework for AI coding assistants.
+
+Bring consistent, repeatable QA to AI-assisted development. qa-suite coordinates specialized QA agents to review your application and produce structured, evidence-backed reports before you merge or release.
 
 It gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
 
