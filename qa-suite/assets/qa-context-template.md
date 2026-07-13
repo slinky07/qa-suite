@@ -10,6 +10,7 @@ guessing.
 - **Project name:** <!-- e.g. WorldClock -->
 - **Repository docs to read first:** <!-- e.g. AGENTS.md, README.md -->
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
+- **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents assume "general end user" and state the assumption -->
 
 ## Testing posture
 
@@ -36,6 +37,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **App URL(s):** <!-- e.g. http://localhost:8787 -->
 - **How to stop the app (non-destructive):** <!-- e.g. docker compose down (never --volumes) -->
 - **Services that may already be running:** <!-- anything agents must not disturb -->
+- **Disposable test target:** <!-- optional; command/URL for a throwaway instance, seeded profile, or reset path agents may freely mutate, e.g. "make run-ephemeral (fresh SQLite under /tmp)" — N/A ⇒ mutation-dependent flows are reported as Observed only -->
 
 ## Test commands
 

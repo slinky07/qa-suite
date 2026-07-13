@@ -214,9 +214,14 @@ release audit (the full set).
 
 ## Verdict conflicts
 
-When agents disagree, **the most conservative verdict wins.** Smoke says Go
-but regression says No-Go → No-Go. A Go only ever means "nothing wrong in
-my lane."
+When agents disagree, **the most conservative verdict wins**, in this
+order: `No-Go > Blocked > Go with findings > Go`. Smoke says Go but
+regression says No-Go → No-Go. A Go only ever means "nothing wrong in my
+lane."
+
+Observed-only qualifiers always propagate to the final summary — a flow no
+lane completed stays marked observed-only there. The orchestrator flags any
+P0 finding in its summary regardless of verdict.
 
 ## Reports
 
@@ -233,10 +238,31 @@ time means every rerun — even the same lane, same scope, same day —
 creates a new report file. Never overwrite, append to, or delete a
 previous run's report.
 
+### Verdict vocabulary
+
+Four verdict states plus one qualifier, defined here once — no lane file
+redefines them. Severity drives the verdict; priority drives scheduling
+only.
+
+- **No-Go** — at least one confirmed S1/S2 finding in scope, or a core
+  flow demonstrably cannot be completed.
+- **Go with findings** — scope exercised; only S3/S4 findings. The verdict
+  line carries the counts: `Go with findings (1×S3, 3×S4)`.
+- **Go** — scope exercised; no findings.
+- **Blocked** — the environment or tooling prevented exercising the scope;
+  the blocker is named on the verdict line. Never derived from missing
+  coverage alone — an untested area belongs in "Not tested", not in a
+  Blocked verdict.
+- **Observed only** (qualifier) — appended per flow to any Go-family
+  verdict when safety rules prevented completing a mutation-dependent flow:
+  `Go with findings (1×S3; observed-only: curated sets)`. A flow whose
+  completing action was not executed is never reported as a pass or as
+  effective.
+
 Non-negotiable report rules, all agents:
 
-- **Verdict on line one.** Go / No-Go / a one-line state, before anything
-  else.
+- **Verdict on line one.** One state from the verdict vocabulary above,
+  before anything else.
 - **Execution mode is visible.** If a run used single-session fallback,
   every report and the final summary must state:
   `Execution mode: single-session fallback; non-independent evidence`.

@@ -40,7 +40,10 @@ Short by design — no severity/priority matrix, no frameworks. Write to the
 report folder, filename `YYYY-MM-DD-HHMM-smoke-<short-scope>.md` (run's
 local start date and time — reruns always create a new file):
 
-- **Verdict** — Go / No-Go, first line, one sentence.
+- **Verdict** — Go / No-Go / Blocked, first line, one sentence. `Blocked`
+  means the environment or tooling prevented running the checks (e.g. a
+  browser-policy block) — name the blocker on that line. A blocked run is
+  not a build failure, and missing coverage alone is never `Blocked`.
 - **Checklist results** — pass/fail per step, stop point noted if you
   didn't finish.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or
@@ -52,4 +55,5 @@ routed to the appropriate specialist agent by name.
 
 ## Voice
 
-Fast and binary. "Go" or "No-Go" and why, nothing else.
+Fast and binary. "Go" or "No-Go" and why — or "Blocked" and the named
+blocker — nothing else.

@@ -9,6 +9,22 @@ through Docker Compose, and is reachable only over a VPN.
 - **Project name:** PantryBoard
 - **Repository docs to read first:** AGENTS.md, README.md, docs/deployment.md
 - **Report output folder:** QA/
+- **Intended audience:** general consumers — household members comfortable with everyday web apps, no technical background assumed
+
+## Testing posture
+
+- **Posture:** aggressive
+- **Reason for standard posture:** N/A
+
+## Architecture & intent inputs
+
+Optional source-of-truth documents. Use `N/A` when a project has none.
+
+- **ADRs:** docs/adr
+- **API contracts/specs:** docs/openapi.yaml
+- **Design docs:** docs/design.md
+- **Design tokens/design system files:** N/A
+- **Acceptance criteria:** N/A
 
 ## Runtime
 
@@ -20,6 +36,7 @@ through Docker Compose, and is reachable only over a VPN.
 - **App URL(s):** http://localhost:8787
 - **How to stop the app (non-destructive):** docker compose down
 - **Services that may already be running:** local Postgres on 5432, Tailscale daemon, Caddy reverse proxy
+- **Disposable test target:** make run-qa — throwaway Compose stack on http://localhost:8788 with a seeded demo household and its own Postgres volume; agents may freely add, apply, and delete data there; reset with make run-qa-reset
 
 ## Test commands
 
