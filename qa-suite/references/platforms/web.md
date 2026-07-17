@@ -54,6 +54,9 @@ the visible symptom plainly without inventing a standard.
 | VW-WEB-09 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or truncate gracefully |
 | VW-WEB-10 | Text contrast ≥4.5:1 (≥3:1 large text) (WCAG 1.4.3); non-text UI element contrast ≥3:1 (WCAG 1.4.11) |
 | VW-WEB-11 | Focus/hover/disabled states visually distinct and consistent across the app |
+| VW-WEB-12 | One surface, one primary job: flag only demonstrated interference from unrelated visible tasks, consistent with IA-01 |
+| VW-WEB-13 | Visible hierarchy: the primary action and its relationship to the current task are identifiable without unnecessary full-surface scrolling or guessing |
+| VW-WEB-14 | Coherent visual system: elements with the same role use consistent visual treatment; cite this check only for observable same-role inconsistency |
 
 ## performance-qa — metrics
 

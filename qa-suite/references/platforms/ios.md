@@ -50,6 +50,9 @@ the visible symptom plainly without inventing a standard.
 | VW-IOS-10 | Empty, loading, and error states render intentionally — not blank or broken screens |
 | VW-IOS-11 | Long-string overflow: fields and labels tested with a realistic 3x-length string wrap or truncate gracefully |
 | VW-IOS-12 | Text contrast ≥4.5:1 (≥3:1 large text); non-text UI element contrast ≥3:1 |
+| VW-IOS-13 | One surface, one primary job: flag only demonstrated interference from unrelated visible tasks, consistent with IA-01 |
+| VW-IOS-14 | Visible hierarchy: the primary action and its relationship to the current task are identifiable without unnecessary full-surface scrolling or guessing |
+| VW-IOS-15 | Coherent visual system: elements with the same role use consistent visual treatment; cite this check only for observable same-role inconsistency |
 
 ## performance-qa — metrics
 
