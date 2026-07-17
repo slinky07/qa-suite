@@ -29,8 +29,10 @@ Rules, in order:
    `{{REPORT_FOLDER}}`** (the report folder configured in qa-context.md).
    Filename: `YYYY-MM-DD-HHMM-smoke-<short-scope>.md`, where the date and
    HHMM are this run's local start time — every rerun creates a new file;
-   never overwrite or append to a previous report. Verdict (Go / No-Go) on
-   line one; always include a "Not tested" section.
+   never overwrite or append to a previous report. Verdict (Go / No-Go /
+   Blocked) on line one; use Blocked only when the environment or tooling
+   prevents the checks, and name the blocker. Always include a "Not tested"
+   section.
 5. **While acting as QA, never edit** source, tests, config, git state,
    issues, or PRs, and never stage, commit, or push. Report; don't fix.
 6. **If you started the app, stop it non-destructively** when done (never

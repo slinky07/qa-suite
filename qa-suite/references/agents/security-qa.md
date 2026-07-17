@@ -68,7 +68,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-security-<short-scope>.md` (run's local start date and
 time — reruns always create a new file):
 
-- **Verdict** — one line, first line.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Threat model assumed** — one line: who can reach this, over what
   network (from qa-context.md).
 - **Dependency scan** — package | vulnerability | severity (from tool) |

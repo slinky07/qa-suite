@@ -48,7 +48,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-regression-<short-scope>.md` (run's local start date and
 time — reruns always create a new file):
 
-- **Verdict** — Go / No-Go / Needs targeted fix. One line, first line.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Scope** — base ref, head ref, changed files, commands run.
 - **Baseline comparison** — what was compared, or "none available."
 - **Automated results** — test | status | rerun results if failed |

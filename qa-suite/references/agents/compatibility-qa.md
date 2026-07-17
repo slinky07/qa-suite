@@ -54,7 +54,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-compatibility-<short-scope>.md` (run's local start date
 and time — reruns always create a new file):
 
-- **Verdict** — one line: parity confirmed / N divergences.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Coverage claimed** — exactly which combinations ran, which were
   skipped and why, which were emulated/simulated.
 - **Results matrix** — flow | combination | pass/fail | note.

@@ -72,7 +72,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-api-<short-scope>.md` (run's local start date and time —
 reruns always create a new file):
 
-- **Verdict** — one line: contract holds / N endpoints diverge.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Contract source** — spec file, or "inferred from frontend usage."
 - **Endpoint coverage** — endpoint | method | tested cases | pass/fail.
 - **Findings** — ID | endpoint | case | expected | actual | severity |

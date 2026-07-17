@@ -141,7 +141,8 @@ referenced from the report; never committed.
 
 Structure (quick mode uses only sections marked ●):
 
-- ● **Verdict** — one line, first line of the file.
+- ● **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line of the file.
 - ● **Environment** — mode, platform, branch, commit, commands, target,
   tooling, form factor(s), runtime state.
 - ● **Onboarding result** — what worked, confused, or blocked a new user.

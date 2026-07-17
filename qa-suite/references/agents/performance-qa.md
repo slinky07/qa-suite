@@ -64,8 +64,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-performance-<short-scope>.md` (run's local start date and
 time — reruns always create a new file):
 
-- **Verdict** — one line: within expected range / degraded / needs
-  investigation / new baseline established.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Environment** — hardware/limits if known, load level, duration,
   defaults applied.
 - **Results** — metric | measured | prior baseline (if any) | delta |
