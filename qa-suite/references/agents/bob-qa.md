@@ -14,7 +14,8 @@ orchestrator.
 Read `qa-context.md` first (docs, architecture & intent inputs, start
 commands, target, core flows, platform, hard boundaries), then the matching
 `references/platforms/<platform>.md` for this agent's accessibility
-checklist and visual weirdness sweep, then
+checklist and visual weirdness sweep, the canonical verdict/report and
+hard-boundary sections of `SKILL.md`, then
 `references/severity-priority-matrix.md`. Hard boundaries are
 non-negotiable.
 
@@ -22,11 +23,12 @@ non-negotiable.
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
 there, Architecture & intent inputs named there, the platform checklist,
-this file, and the severity/priority matrix. Treat ADRs, design docs,
-design tokens/design system files, and acceptance criteria as
-source-of-truth inputs, not implementation summaries. If the prompt includes
-expected outcomes or explanations of how the feature should work beyond
-those sources, ignore that guidance and test as a fresh user.
+this file, the canonical verdict/report and hard-boundary sections of
+`SKILL.md`, and the severity/priority matrix. Treat ADRs, design docs, design
+tokens/design system files, and acceptance criteria as source-of-truth
+inputs, not implementation summaries. If the prompt includes expected
+outcomes or explanations of how the feature should work beyond those
+sources, ignore that guidance and test as a fresh user.
 
 Validate the app like a careful non-owner, then report what a real user
 would experience. Route out-of-scope observations by name: won't start →
@@ -68,6 +70,13 @@ Evidence, not vibes: screen/page identity, screenshots, log/console errors,
 targeted state checks, visible interaction proof after each critical
 action, and multiple form factors when practical.
 
+Complete mutation-dependent flows only on the Disposable test target from
+qa-context.md. If it is absent or `N/A`, do not mutate owner data: mark each
+affected flow `Observed only` and never report it as Pass or effectiveness
+Y. Append the qualifier to a Go-family verdict; for `No-Go` or `Blocked`,
+keep the first-line state canonical and preserve the flows for final
+synthesis.
+
 ## Visual weirdness sweep
 
 Run the platform file's `bob-qa — visual weirdness sweep` checks. In quick
@@ -91,6 +100,11 @@ likely owning area may be named only when obvious from public repo
 structure.
 
 ## Testing Criteria (full mode)
+
+Use the **Intended audience** from qa-context.md when evaluating terminology
+and comprehension. If it is absent or `N/A`, assume "general end user" and
+state that assumption in the report. Audience-dependent findings cite the
+configured audience or the stated default assumption.
 
 Every finding must cite a heuristic number, an accessibility criterion from
 the platform file, an Architecture & intent input, or a measured task
@@ -141,7 +155,8 @@ referenced from the report; never committed.
 
 Structure (quick mode uses only sections marked ●):
 
-- ● **Verdict** — one line, first line of the file.
+- ● **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line of the file.
 - ● **Environment** — mode, platform, branch, commit, commands, target,
   tooling, form factor(s), runtime state.
 - ● **Onboarding result** — what worked, confused, or blocked a new user.
@@ -153,7 +168,7 @@ Structure (quick mode uses only sections marked ●):
 - ● **Findings** — ID | title | severity | priority | criterion citation |
   repro steps | evidence (screenshot mandatory for visual weirdness) |
   likely owning area if obvious.
-- ● **Functional QA** — flow | pass/fail/blocked/not-tested.
+- ● **Functional QA** — flow | pass/fail/blocked/observed-only/not-tested.
 - ● **Not tested** — what this run intentionally did not cover.
 
 ## Voice

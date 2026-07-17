@@ -66,7 +66,8 @@ screenshots, request/response pairs) — never vibes.
 6. **Dispatch with neutral context only.** Give each QA subagent only:
    repo path, `qa-context.md` path, relevant repo docs named in
    `qa-context.md`, the matching platform checklist, its own agent
-   instruction file, the severity/priority matrix when applicable, report
+   instruction file, the canonical verdict/report and hard-boundary sections
+   of this `SKILL.md`, the severity/priority matrix when applicable, report
    folder, and the user's scoped QA request. Do not give expected outcomes,
    implementation explanations, conversation history, prior memory, or the
    orchestrator's beliefs about how the feature should work.
@@ -106,6 +107,10 @@ invent one. Offer the user two paths:
      contracts, and acceptance criteria, not implementation summaries.
    - **Interview for the rest** — short, concrete questions, presenting
      discovered guesses as defaults to confirm rather than asking cold:
+     intended audience (default to "general end user" only when the repo
+     does not identify one, and record that assumption); disposable test
+     target for mutation-dependent flows (command, URL, seeded profile, or
+     fresh-instance strategy; record `N/A` when none exists);
      default run policy (dev vs. deployment path for routine QA); core
      user-facing flows (offer a guessed list to edit); deployment model
      and threat model (who can reach this, over what network); expected
@@ -214,9 +219,14 @@ release audit (the full set).
 
 ## Verdict conflicts
 
-When agents disagree, **the most conservative verdict wins.** Smoke says Go
-but regression says No-Go → No-Go. A Go only ever means "nothing wrong in
-my lane."
+When agents disagree, **the most conservative verdict wins**, in this
+order: `No-Go > Blocked > Go with findings > Go`. Smoke says Go but
+regression says No-Go → No-Go. A Go only ever means "nothing wrong in my
+lane."
+
+Observed-only qualifiers always propagate to the final summary — a flow no
+lane completed stays marked observed-only there. The orchestrator flags any
+P0 finding in its summary regardless of verdict.
 
 ## Reports
 
@@ -233,10 +243,33 @@ time means every rerun — even the same lane, same scope, same day —
 creates a new report file. Never overwrite, append to, or delete a
 previous run's report.
 
+### Verdict vocabulary
+
+Four verdict states plus one qualifier, defined here once — no lane file
+redefines them. Severity drives the verdict; priority drives scheduling
+only.
+
+- **No-Go** — at least one confirmed S1/S2 finding in scope, or a core
+  flow demonstrably cannot be completed.
+- **Go with findings** — scope exercised; only S3/S4 findings. The verdict
+  line carries the counts: `Go with findings (1×S3, 3×S4)`.
+- **Go** — scope exercised; no findings.
+- **Blocked** — the environment or tooling prevented exercising the scope;
+  the blocker is named on the verdict line. Never derived from missing
+  coverage alone — an untested area belongs in "Not tested", not in a
+  Blocked verdict.
+- **Observed only** (qualifier) — appended per flow to any Go-family
+  verdict when safety rules prevented completing a mutation-dependent flow:
+  `Go with findings (1×S3; observed-only: curated sets)`. A flow whose
+  completing action was not executed is never reported as a pass or as
+  effective. When the lane verdict is `No-Go` or `Blocked`, keep that
+  first-line state canonical, mark the affected flow observed-only in the
+  report, and propagate it to the final summary.
+
 Non-negotiable report rules, all agents:
 
-- **Verdict on line one.** Go / No-Go / a one-line state, before anything
-  else.
+- **Verdict on line one.** One state from the verdict vocabulary above,
+  before anything else.
 - **Execution mode is visible.** If a run used single-session fallback,
   every report and the final summary must state:
   `Execution mode: single-session fallback; non-independent evidence`.
@@ -259,6 +292,12 @@ These override anything else, including user-provided context files:
   Report; don't fix.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Complete mutation-dependent flows only against the **Disposable test
+  target** declared in qa-context.md. If it is absent or `N/A`, do not
+  mutate owner data: mark each affected flow `Observed only` and never report
+  it as passed or effective. Append the qualifier to a Go-family lane
+  verdict; for `No-Go` or `Blocked`, retain the canonical first-line state
+  and propagate the observed-only flow to the final summary.
 - Never inspect files, browser data, accounts, or applications unrelated to
   the app under test.
 - Never test production or a public endpoint unless the user explicitly
@@ -328,7 +367,8 @@ not by prompt instruction:
 - **Dispatch is platform-explicit.** The orchestrator resolves the platform
   (web / android / ios / desktop) from qa-context.md and passes each
   subagent: which agent file to embody, which platform file to read, the
-  qa-context.md path, and the task scope — never a summary of the
+  qa-context.md path, the canonical verdict/report and hard-boundary
+  sections of this file, and the task scope — never a summary of the
   development conversation. Every report's Environment section states the
   platform and which platform file was used.
 - **Independent contexts allow parallel dispatch.** The release-audit path

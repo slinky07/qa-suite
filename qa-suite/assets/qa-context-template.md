@@ -10,6 +10,7 @@ guessing.
 - **Project name:** <!-- e.g. WorldClock -->
 - **Repository docs to read first:** <!-- e.g. AGENTS.md, README.md -->
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
+- **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents assume "general end user" and state the assumption -->
 
 ## Testing posture
 
@@ -36,6 +37,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **App URL(s):** <!-- e.g. http://localhost:8787 -->
 - **How to stop the app (non-destructive):** <!-- e.g. docker compose down (never --volumes) -->
 - **Services that may already be running:** <!-- anything agents must not disturb -->
+- **Disposable test target:** <!-- optional; command/URL for a throwaway instance, seeded profile, or fresh-instance strategy agents may freely mutate, e.g. "make run-ephemeral (fresh SQLite under /tmp)" — N/A ⇒ mutation-dependent flows are reported as Observed only -->
 
 ## Test commands
 
@@ -84,6 +86,12 @@ These apply regardless of the fields above:
   releases to make a result pass. Report; don't fix.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Complete mutation-dependent flows only against the **Disposable test
+  target** above. If it is absent or `N/A`, do not mutate owner data: mark
+  each affected flow `Observed only` and never report it as passed or
+  effective. Append the qualifier to a Go-family lane verdict; for `No-Go`
+  or `Blocked`, retain the canonical first-line state and propagate the
+  observed-only flow to the final summary.
 - Never inspect files, browser data, or applications unrelated to the app
   under test.
 - Never test against production or a public hostname unless the user

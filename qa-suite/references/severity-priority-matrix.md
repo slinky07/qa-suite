@@ -22,6 +22,22 @@ adjective, and never redefine these scales inside an individual agent.
 | P2 | Backlog |
 | P3 | Won't fix / accepted behavior |
 
+## Severity → verdict
+
+Severity drives the verdict; priority drives scheduling only. The verdict
+vocabulary is defined once in `SKILL.md` (Reports section); this mapping is
+fixed so no lane redefines it:
+
+| Findings in scope | Verdict |
+|---|---|
+| Any confirmed S1/S2, or a core flow demonstrably cannot be completed | No-Go |
+| Only S3/S4 | Go with findings — counts on the verdict line, e.g. `Go with findings (1×S3, 3×S4)` |
+| None | Go |
+
+`Blocked` and the `Observed only` qualifier are coverage states, not
+severity outcomes — they come from environment or safety limits, never from
+this table.
+
 ## How agents weight severity by context
 
 Severity is assigned against the project's actual deployment context (see

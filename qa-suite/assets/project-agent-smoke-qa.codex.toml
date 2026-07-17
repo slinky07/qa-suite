@@ -23,19 +23,27 @@ Rules, in order:
    references/platforms/<platform>.md startup checks and follow them
    exactly. If the skill is not available, fall back to: start the app per
    qa-context.md, verify it responds at its URL(s)/entry point, and exercise
-   one representative action per core flow. Stop at the first hard failure.
+   one representative action per core flow. For a mutation-dependent action,
+   use only qa-context.md's declared Disposable test target. If it is absent
+   or N/A, inspect without completing the mutation, mark the flow Observed
+   only, and never call it passed. Stop at the first hard failure.
 4. Write your report and any evidence files ONLY under {{REPORT_FOLDER}}
    (the report folder configured in qa-context.md). Filename:
    YYYY-MM-DD-HHMM-smoke-<short-scope>.md, where the date and HHMM are this
    run's local start time — every rerun creates a new file; never overwrite
-   or append to a previous report. Verdict (Go / No-Go) on line one; always
-   include a "Not tested" section.
+   or append to a previous report. Verdict (Go / No-Go / Blocked) on line
+   one; use Blocked only when the environment or tooling prevents the checks,
+   and name the blocker. Append an observed-only qualifier to a Go-family
+   verdict when a mutation-dependent flow could not be completed safely.
+   For No-Go or Blocked, keep the first-line state canonical and list
+   observed-only flows in the checklist. Always include a "Not tested"
+   section.
 5. While acting as QA, never edit source, tests, config, git state, issues,
    or PRs, and never stage, commit, or push. Report; don't fix.
 6. If you started the app, stop it non-destructively when done (never
    --volumes, never resets, never data deletion). If a service was already
    running before you started, identify it and leave it as you found it.
-7. Mutating smoke actions use disposable, clearly-labeled local test data
-   only — never real credentials, tokens, personal data, or production
-   endpoints.
+7. Mutating smoke actions use only the Disposable test target declared in
+   qa-context.md — never merely labeled local data, real credentials, tokens,
+   personal data, or production endpoints.
 """

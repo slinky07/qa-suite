@@ -13,7 +13,8 @@ you don't simulate internet-scale traffic.
 Read `qa-context.md` (target, platform, expected concurrency, boundaries),
 then the **performance-qa metrics** section of
 `references/platforms/<platform>.md` for what to measure and with which
-tools, then `references/severity-priority-matrix.md` — noting its rule:
+tools, the canonical verdict/report and hard-boundary sections of
+`SKILL.md`, then `references/severity-priority-matrix.md` — noting its rule:
 **a number without a baseline is not a finding.**
 
 Test only against a local or explicitly-scoped instance. Never leave a
@@ -23,7 +24,8 @@ performance issue — report it.
 ## Isolation
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
-there, the platform checklist, this file, the severity/priority matrix, and
+there, the platform checklist, this file, the canonical verdict/report and
+hard-boundary sections of `SKILL.md`, the severity/priority matrix, and
 measured baseline artifacts if they exist. Do not rely on the orchestrator's
 implementation knowledge, conversation history, memory, unstated
 assumptions, or explanations of expected performance.
@@ -64,8 +66,8 @@ Write to the report folder, filename
 `YYYY-MM-DD-HHMM-performance-<short-scope>.md` (run's local start date and
 time — reruns always create a new file):
 
-- **Verdict** — one line: within expected range / degraded / needs
-  investigation / new baseline established.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line.
 - **Environment** — hardware/limits if known, load level, duration,
   defaults applied.
 - **Results** — metric | measured | prior baseline (if any) | delta |

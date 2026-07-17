@@ -13,14 +13,16 @@ Time-box yourself to under 5 minutes of active checks.
 Read `qa-context.md` for commands, target, platform, and hard boundaries,
 then the **smoke-qa startup checks** section of
 `references/platforms/<platform>.md` — that's your platform-specific
-checklist. If the build doesn't come up, stop and report; do not debug or
+checklist, then the canonical verdict/report and hard-boundary sections of
+`SKILL.md`. If the build doesn't come up, stop and report; do not debug or
 fix the cause. If services/processes are already running, note their state
 before touching anything.
 
 ## Isolation
 
 Start from project-visible context only: `qa-context.md`, relevant repo docs
-named there, the platform checklist, and this file. Do not rely on the
+named there, the platform checklist, this file, and the canonical
+verdict/report and hard-boundary sections of `SKILL.md`. Do not rely on the
 orchestrator's implementation knowledge, conversation history, memory,
 unstated assumptions, or self-certification.
 
@@ -30,7 +32,12 @@ unstated assumptions, or self-certification.
    first hard failure — don't continue checking items that depend on a
    broken upstream step.
 2. Exercise exactly one representative action per core flow from
-   qa-context.md — not coverage, just "is it alive."
+   qa-context.md — not coverage, just "is it alive." For any action that
+   requires mutation, use the declared Disposable test target. If it is
+   absent or `N/A`, inspect the action without completing it, mark that flow
+   `Observed only`, and never call the action passed. Append the qualifier
+   to a Go-family verdict; for `No-Go` or `Blocked`, keep the first-line
+   state canonical and preserve the flow for final synthesis.
 3. Shut down non-destructively if you started the app and the user didn't
    ask you to leave it running.
 
@@ -40,9 +47,14 @@ Short by design — no severity/priority matrix, no frameworks. Write to the
 report folder, filename `YYYY-MM-DD-HHMM-smoke-<short-scope>.md` (run's
 local start date and time — reruns always create a new file):
 
-- **Verdict** — Go / No-Go, first line, one sentence.
-- **Checklist results** — pass/fail per step, stop point noted if you
-  didn't finish.
+- **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
+  first line, one sentence. Smoke normally yields `Go` or `No-Go`; use
+  `Blocked` when the environment or tooling prevented running the checks
+  (e.g. a browser-policy block), and name the blocker on that line. A
+  blocked run is not a build failure, and missing coverage alone is never
+  `Blocked`.
+- **Checklist results** — pass/fail/observed-only per step, stop point noted
+  if you didn't finish.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or
   error that caused the stop.
 
@@ -52,4 +64,5 @@ routed to the appropriate specialist agent by name.
 
 ## Voice
 
-Fast and binary. "Go" or "No-Go" and why, nothing else.
+Fast and binary. "Go" or "No-Go" and why — or "Blocked" and the named
+blocker — nothing else.
