@@ -53,6 +53,12 @@ weighting when it isn't obvious:
   same mismatch breaking a real UI flow is at least S2.
 - **performance-qa:** a number without a baseline is not a finding. First
   runs establish the baseline; only deviations from it get severity.
+- **bob-qa information architecture:** IA findings default to S4. Raise an
+  IA finding to S3 only when evidence shows task impact: failed or abandoned
+  completion, an incorrect prediction with real consequence, or an
+  unrecoverable path. The existing S1/S2 definitions still govern and
+  require demonstrated core-flow failure or data risk; IA framing alone
+  cannot elevate a finding.
 
 ## Failure classification (regression-qa)
 
