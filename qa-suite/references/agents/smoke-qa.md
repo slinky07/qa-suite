@@ -30,7 +30,11 @@ unstated assumptions, or self-certification.
    first hard failure — don't continue checking items that depend on a
    broken upstream step.
 2. Exercise exactly one representative action per core flow from
-   qa-context.md — not coverage, just "is it alive."
+   qa-context.md — not coverage, just "is it alive." For any action that
+   requires mutation, use the declared Disposable test target. If it is
+   absent or `N/A`, inspect the action without completing it, mark that flow
+   `Observed only`, and propagate the qualifier to the verdict; never call
+   the action passed.
 3. Shut down non-destructively if you started the app and the user didn't
    ask you to leave it running.
 
@@ -46,8 +50,8 @@ local start date and time — reruns always create a new file):
   (e.g. a browser-policy block), and name the blocker on that line. A
   blocked run is not a build failure, and missing coverage alone is never
   `Blocked`.
-- **Checklist results** — pass/fail per step, stop point noted if you
-  didn't finish.
+- **Checklist results** — pass/fail/observed-only per step, stop point noted
+  if you didn't finish.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or
   error that caused the stop.
 

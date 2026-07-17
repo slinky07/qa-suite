@@ -106,6 +106,10 @@ invent one. Offer the user two paths:
      contracts, and acceptance criteria, not implementation summaries.
    - **Interview for the rest** — short, concrete questions, presenting
      discovered guesses as defaults to confirm rather than asking cold:
+     intended audience (default to "general end user" only when the repo
+     does not identify one, and record that assumption); disposable test
+     target for mutation-dependent flows (command, URL, seeded profile, or
+     fresh-instance strategy; record `N/A` when none exists);
      default run policy (dev vs. deployment path for routine QA); core
      user-facing flows (offer a guessed list to edit); deployment model
      and threat model (who can reach this, over what network); expected
@@ -285,6 +289,11 @@ These override anything else, including user-provided context files:
   Report; don't fix.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Complete mutation-dependent flows only against the **Disposable test
+  target** declared in qa-context.md. If it is absent or `N/A`, do not
+  mutate owner data: mark each affected flow `Observed only`, propagate the
+  qualifier to the verdict, and never report that flow as passed or
+  effective.
 - Never inspect files, browser data, accounts, or applications unrelated to
   the app under test.
 - Never test production or a public endpoint unless the user explicitly

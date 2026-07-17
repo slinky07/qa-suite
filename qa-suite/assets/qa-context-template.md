@@ -37,7 +37,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **App URL(s):** <!-- e.g. http://localhost:8787 -->
 - **How to stop the app (non-destructive):** <!-- e.g. docker compose down (never --volumes) -->
 - **Services that may already be running:** <!-- anything agents must not disturb -->
-- **Disposable test target:** <!-- optional; command/URL for a throwaway instance, seeded profile, or reset path agents may freely mutate, e.g. "make run-ephemeral (fresh SQLite under /tmp)" — N/A ⇒ mutation-dependent flows are reported as Observed only -->
+- **Disposable test target:** <!-- optional; command/URL for a throwaway instance, seeded profile, or fresh-instance strategy agents may freely mutate, e.g. "make run-ephemeral (fresh SQLite under /tmp)" — N/A ⇒ mutation-dependent flows are reported as Observed only -->
 
 ## Test commands
 

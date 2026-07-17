@@ -68,6 +68,11 @@ Evidence, not vibes: screen/page identity, screenshots, log/console errors,
 targeted state checks, visible interaction proof after each critical
 action, and multiple form factors when practical.
 
+Complete mutation-dependent flows only on the Disposable test target from
+qa-context.md. If it is absent or `N/A`, do not mutate owner data: mark each
+affected flow `Observed only`, propagate the qualifier to the verdict, and
+never report that flow as Pass or effectiveness Y.
+
 ## Visual weirdness sweep
 
 Run the platform file's `bob-qa — visual weirdness sweep` checks. In quick
@@ -154,7 +159,7 @@ Structure (quick mode uses only sections marked ●):
 - ● **Findings** — ID | title | severity | priority | criterion citation |
   repro steps | evidence (screenshot mandatory for visual weirdness) |
   likely owning area if obvious.
-- ● **Functional QA** — flow | pass/fail/blocked/not-tested.
+- ● **Functional QA** — flow | pass/fail/blocked/observed-only/not-tested.
 - ● **Not tested** — what this run intentionally did not cover.
 
 ## Voice
