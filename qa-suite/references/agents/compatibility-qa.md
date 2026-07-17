@@ -40,8 +40,10 @@ skipping. Then, for each core flow from qa-context.md:
 
 Use the declared Disposable test target for any flow that requires mutation.
 If it is absent or `N/A`, inspect that flow without completing the mutation,
-mark every affected matrix cell `Observed only`, and propagate the qualifier
-to the verdict; never claim parity for those cells.
+mark every affected matrix cell `Observed only`, and never claim parity for
+those cells. Append the qualifier to a Go-family verdict; for `No-Go` or
+`Blocked`, keep the first-line state canonical and preserve the cells for
+final synthesis.
 
 1. Run the flow once per axis-1 value at one representative axis-2 value —
    catches axis-1-specific bugs (engine, OS version).

@@ -262,7 +262,9 @@ only.
   verdict when safety rules prevented completing a mutation-dependent flow:
   `Go with findings (1×S3; observed-only: curated sets)`. A flow whose
   completing action was not executed is never reported as a pass or as
-  effective.
+  effective. When the lane verdict is `No-Go` or `Blocked`, keep that
+  first-line state canonical, mark the affected flow observed-only in the
+  report, and propagate it to the final summary.
 
 Non-negotiable report rules, all agents:
 
@@ -292,9 +294,10 @@ These override anything else, including user-provided context files:
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test
   target** declared in qa-context.md. If it is absent or `N/A`, do not
-  mutate owner data: mark each affected flow `Observed only`, propagate the
-  qualifier to the verdict, and never report that flow as passed or
-  effective.
+  mutate owner data: mark each affected flow `Observed only` and never report
+  it as passed or effective. Append the qualifier to a Go-family lane
+  verdict; for `No-Go` or `Blocked`, retain the canonical first-line state
+  and propagate the observed-only flow to the final summary.
 - Never inspect files, browser data, accounts, or applications unrelated to
   the app under test.
 - Never test production or a public endpoint unless the user explicitly

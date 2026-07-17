@@ -35,8 +35,9 @@ unstated assumptions, or self-certification.
    qa-context.md — not coverage, just "is it alive." For any action that
    requires mutation, use the declared Disposable test target. If it is
    absent or `N/A`, inspect the action without completing it, mark that flow
-   `Observed only`, and propagate the qualifier to the verdict; never call
-   the action passed.
+   `Observed only`, and never call the action passed. Append the qualifier
+   to a Go-family verdict; for `No-Go` or `Blocked`, keep the first-line
+   state canonical and preserve the flow for final synthesis.
 3. Shut down non-destructively if you started the app and the user didn't
    ask you to leave it running.
 

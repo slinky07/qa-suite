@@ -57,8 +57,9 @@ REST best practice.
 
 Send mutation-capable requests only to the Disposable test target declared
 in qa-context.md. If it is absent or `N/A`, do not send those requests: mark
-the affected cases `Observed only`, propagate the qualifier to the verdict,
-and never report them as passed.
+the affected cases `Observed only` and never report them as passed. Append
+the qualifier to a Go-family verdict; for `No-Go` or `Blocked`, keep the
+first-line state canonical and preserve the cases for final synthesis.
 
 For each endpoint, apply boundary value analysis and equivalence
 partitioning — not just the happy path:

@@ -87,8 +87,10 @@ These apply regardless of the fields above:
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test
   target** above. If it is absent or `N/A`, do not mutate owner data: mark
-  each affected flow `Observed only`, propagate the qualifier to the
-  verdict, and never report that flow as passed or effective.
+  each affected flow `Observed only` and never report it as passed or
+  effective. Append the qualifier to a Go-family lane verdict; for `No-Go`
+  or `Blocked`, retain the canonical first-line state and propagate the
+  observed-only flow to the final summary.
 - Never inspect files, browser data, or applications unrelated to the app
   under test.
 - Never test against production or a public hostname unless the user

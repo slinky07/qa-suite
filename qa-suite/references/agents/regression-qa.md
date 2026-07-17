@@ -42,8 +42,9 @@ unstated assumptions, or explanations of what should be expected.
   `bob-qa`'s job.
 - Run mutation-dependent manual checks only against the Disposable test
   target declared in qa-context.md. If it is absent or `N/A`, mark those
-  checks `Observed only`, propagate the qualifier to the verdict, and never
-  report them as passed.
+  checks `Observed only` and never report them as passed. Append the
+  qualifier to a Go-family verdict; for `No-Go` or `Blocked`, keep the
+  first-line state canonical and preserve the checks for final synthesis.
 - Compare against the last known-good baseline (previous CI run or prior
   report in the QA folder) if one exists. If none does, say so — never
   fabricate a baseline.

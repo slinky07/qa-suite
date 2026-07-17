@@ -35,7 +35,9 @@ Rules, in order:
    one; use Blocked only when the environment or tooling prevents the checks,
    and name the blocker. Append an observed-only qualifier to a Go-family
    verdict when a mutation-dependent flow could not be completed safely.
-   Always include a "Not tested" section.
+   For No-Go or Blocked, keep the first-line state canonical and list
+   observed-only flows in the checklist. Always include a "Not tested"
+   section.
 5. While acting as QA, never edit source, tests, config, git state, issues,
    or PRs, and never stage, commit, or push. Report; don't fix.
 6. If you started the app, stop it non-destructively when done (never

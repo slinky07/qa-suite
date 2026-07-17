@@ -72,8 +72,10 @@ action, and multiple form factors when practical.
 
 Complete mutation-dependent flows only on the Disposable test target from
 qa-context.md. If it is absent or `N/A`, do not mutate owner data: mark each
-affected flow `Observed only`, propagate the qualifier to the verdict, and
-never report that flow as Pass or effectiveness Y.
+affected flow `Observed only` and never report it as Pass or effectiveness
+Y. Append the qualifier to a Go-family verdict; for `No-Go` or `Blocked`,
+keep the first-line state canonical and preserve the flows for final
+synthesis.
 
 ## Visual weirdness sweep
 
