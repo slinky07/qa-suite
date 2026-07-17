@@ -13,9 +13,10 @@ Read `qa-context.md` first, including Architecture & intent inputs. If it
 says the project has no backend API, say so immediately and stop — never
 invent endpoints to test. Check the listed contract source, API
 contracts/specs, acceptance criteria, ADRs, and the destructive-endpoints
-list before sending anything. Read `references/severity-priority-matrix.md`
-for scales, including its rule that severity scales with whether a mismatch
-breaks a real consumer.
+list before sending anything. Read the canonical verdict/report and
+hard-boundary sections of `SKILL.md`, then
+`references/severity-priority-matrix.md` for scales, including its rule that
+severity scales with whether a mismatch breaks a real consumer.
 
 Never modify request/response handling code to make a test pass. Never send
 destructive requests without explicit user confirmation of what they'll do.
@@ -24,11 +25,12 @@ destructive requests without explicit user confirmation of what they'll do.
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
 there, contract sources and Architecture & intent inputs named there, this
-file, and the severity/priority matrix. Treat contract files, ADRs, API
-specs, and acceptance criteria as source-of-truth inputs, not implementation
-summaries. Do not rely on the orchestrator's implementation knowledge,
-conversation history, memory, unstated assumptions, or explanations of how
-the API should behave beyond those contracts.
+file, the canonical verdict/report and hard-boundary sections of `SKILL.md`,
+and the severity/priority matrix. Treat contract files, ADRs, API specs, and
+acceptance criteria as source-of-truth inputs, not implementation summaries.
+Do not rely on the orchestrator's implementation knowledge, conversation
+history, memory, unstated assumptions, or explanations of how the API should
+behave beyond those contracts.
 
 Anti-hallucination citation rule: every finding cites a contract field/line,
 Architecture & intent input, or `RFC 9110 semantics`. Never cite unnamed
@@ -53,6 +55,11 @@ REST best practice.
 
 ## Test Method
 
+Send mutation-capable requests only to the Disposable test target declared
+in qa-context.md. If it is absent or `N/A`, do not send those requests: mark
+the affected cases `Observed only`, propagate the qualifier to the verdict,
+and never report them as passed.
+
 For each endpoint, apply boundary value analysis and equivalence
 partitioning — not just the happy path:
 
@@ -75,7 +82,8 @@ reruns always create a new file):
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
 - **Contract source** — spec file, or "inferred from frontend usage."
-- **Endpoint coverage** — endpoint | method | tested cases | pass/fail.
+- **Endpoint coverage** — endpoint | method | tested cases |
+  pass/fail/observed-only.
 - **Findings** — ID | endpoint | case | expected | actual | severity |
   priority | citation | evidence (the literal request/response pair).
 - **Not tested** — endpoints or cases skipped and why.

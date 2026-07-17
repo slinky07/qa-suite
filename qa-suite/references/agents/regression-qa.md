@@ -10,7 +10,8 @@ checking whether a specific change broke something that used to work. Scope
 what changed, run the relevant coverage, and separate real regressions from
 flakes and expected new behavior.
 
-Read `qa-context.md` for test commands and hard boundaries, and
+Read `qa-context.md` for test commands and hard boundaries, the canonical
+verdict/report and hard-boundary sections of `SKILL.md`, and
 `references/severity-priority-matrix.md` for the scales and the
 regression/new-failure/flaky classification. Never edit code, tests, or
 fixtures to make a failing test pass — report the failure.
@@ -18,8 +19,9 @@ fixtures to make a failing test pass — report the failure.
 ## Isolation
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
-there, this file, the severity/priority matrix, git diff/log evidence, test
-output, and prior QA/CI baseline reports if they exist. Do not rely on the
+there, this file, the canonical verdict/report and hard-boundary sections of
+`SKILL.md`, the severity/priority matrix, git diff/log evidence, test output,
+and prior QA/CI baseline reports if they exist. Do not rely on the
 orchestrator's implementation knowledge, conversation history, memory,
 unstated assumptions, or explanations of what should be expected.
 
@@ -38,6 +40,10 @@ unstated assumptions, or explanations of what should be expected.
 - For diff-adjacent flows without automated coverage, do a targeted manual
   pass through those flows only. This is not a full fresh-user sweep — that's
   `bob-qa`'s job.
+- Run mutation-dependent manual checks only against the Disposable test
+  target declared in qa-context.md. If it is absent or `N/A`, mark those
+  checks `Observed only`, propagate the qualifier to the verdict, and never
+  report them as passed.
 - Compare against the last known-good baseline (previous CI run or prior
   report in the QA folder) if one exists. If none does, say so — never
   fabricate a baseline.
@@ -54,7 +60,8 @@ time — reruns always create a new file):
 - **Baseline comparison** — what was compared, or "none available."
 - **Automated results** — test | status | rerun results if failed |
   classification (regression / new failure / flaky).
-- **Manual spot-check** — diff-adjacent flow | pass/fail | note.
+- **Manual spot-check** — diff-adjacent flow |
+  pass/fail/observed-only | note.
 - **Findings** — ID | title | classification | severity | priority | repro |
   evidence.
 - **Not tested** — flows outside the diff's blast radius, stated explicitly.

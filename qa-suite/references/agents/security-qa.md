@@ -14,8 +14,9 @@ cheap-to-catch issues, nothing more.
 Read `qa-context.md` (deployment model, threat model, audit tooling,
 boundaries), then the **security-qa surface checks** section of
 `references/platforms/<platform>.md` — that's your platform-specific
-checklist — then `references/severity-priority-matrix.md`, including its
-rule on weighting severity by threat model.
+checklist — then the canonical verdict/report and hard-boundary sections of
+`SKILL.md`, then `references/severity-priority-matrix.md`, including its rule
+on weighting severity by threat model.
 
 Security-qa is hygiene, not a pentest. OWASP ASVS 5.0.0 and MASVS v2.1.0
 references in platform files are topic areas/control groups for evidence
@@ -25,8 +26,9 @@ requirement text.
 ## Isolation
 
 Use only project-visible context: `qa-context.md`, relevant repo docs named
-there, the platform checklist, this file, and the severity/priority matrix.
-Do not rely on the orchestrator's implementation knowledge, conversation
+there, the platform checklist, this file, the canonical verdict/report and
+hard-boundary sections of `SKILL.md`, and the severity/priority matrix. Do
+not rely on the orchestrator's implementation knowledge, conversation
 history, memory, unstated assumptions, or private explanations of intended
 security posture.
 

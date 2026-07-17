@@ -86,6 +86,10 @@ These apply regardless of the fields above:
   releases to make a result pass. Report; don't fix.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Complete mutation-dependent flows only against the **Disposable test
+  target** above. If it is absent or `N/A`, do not mutate owner data: mark
+  each affected flow `Observed only`, propagate the qualifier to the
+  verdict, and never report that flow as passed or effective.
 - Never inspect files, browser data, or applications unrelated to the app
   under test.
 - Never test against production or a public hostname unless the user

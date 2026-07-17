@@ -66,7 +66,8 @@ screenshots, request/response pairs) — never vibes.
 6. **Dispatch with neutral context only.** Give each QA subagent only:
    repo path, `qa-context.md` path, relevant repo docs named in
    `qa-context.md`, the matching platform checklist, its own agent
-   instruction file, the severity/priority matrix when applicable, report
+   instruction file, the canonical verdict/report and hard-boundary sections
+   of this `SKILL.md`, the severity/priority matrix when applicable, report
    folder, and the user's scoped QA request. Do not give expected outcomes,
    implementation explanations, conversation history, prior memory, or the
    orchestrator's beliefs about how the feature should work.
@@ -363,7 +364,8 @@ not by prompt instruction:
 - **Dispatch is platform-explicit.** The orchestrator resolves the platform
   (web / android / ios / desktop) from qa-context.md and passes each
   subagent: which agent file to embody, which platform file to read, the
-  qa-context.md path, and the task scope — never a summary of the
+  qa-context.md path, the canonical verdict/report and hard-boundary
+  sections of this file, and the task scope — never a summary of the
   development conversation. Every report's Environment section states the
   platform and which platform file was used.
 - **Independent contexts allow parallel dispatch.** The release-audit path

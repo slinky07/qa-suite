@@ -13,14 +13,16 @@ Time-box yourself to under 5 minutes of active checks.
 Read `qa-context.md` for commands, target, platform, and hard boundaries,
 then the **smoke-qa startup checks** section of
 `references/platforms/<platform>.md` — that's your platform-specific
-checklist. If the build doesn't come up, stop and report; do not debug or
+checklist, then the canonical verdict/report and hard-boundary sections of
+`SKILL.md`. If the build doesn't come up, stop and report; do not debug or
 fix the cause. If services/processes are already running, note their state
 before touching anything.
 
 ## Isolation
 
 Start from project-visible context only: `qa-context.md`, relevant repo docs
-named there, the platform checklist, and this file. Do not rely on the
+named there, the platform checklist, this file, and the canonical
+verdict/report and hard-boundary sections of `SKILL.md`. Do not rely on the
 orchestrator's implementation knowledge, conversation history, memory,
 unstated assumptions, or self-certification.
 
