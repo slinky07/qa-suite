@@ -39,7 +39,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 
 ## Test commands
 
-- **Fast validation:** inspect repository artifacts and package metadata; no automated validation command is defined in this repository
+- **Fast validation:** `node --test`
 - **Browser/E2E suite:** N/A
 - **Container validation:** N/A
 - **Dependency install (if needed):** N/A
