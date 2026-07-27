@@ -85,10 +85,10 @@ screenshots, request/response pairs) — never vibes.
      independent evidence.
 7. **Dispatch with neutral context only.** Build every QA subagent prompt
    from **Specialist dispatch envelope** below. Apply **Verbatim dispatch**.
-   Do not give expected outcomes outside an authorized confirmation manifest,
-   implementation explanations, conversation history, prior memory, lane
-   selection reasons, or the orchestrator's beliefs about how the feature
-   should work.
+   Do not give expected outcomes outside the lifecycle context permitted for
+   the current mission, implementation explanations, conversation history,
+   prior memory, lane selection reasons, or the orchestrator's beliefs about
+   how the feature should work.
 8. **Enforce qa-context.md's default run policy.** When both a dev path and
    a deployment path exist, use the policy's preferred path for routine QA;
    only take the deployment path (e.g. Docker) when the task is explicitly
@@ -116,9 +116,11 @@ The required dispatch field `mission` is separate lifecycle routing metadata:
 Every selected lane receives only:
 
 - lane name and its canonical primary question;
-- lifecycle `mission` and declared candidate;
-- repository, `qa-context.md`, selected agent, relevant project document,
-  platform checklist, severity/priority matrix, and report-folder paths;
+- lifecycle `mission`, declared candidate, and resolved platform;
+- repository, `qa-context.md`, selected agent, and report-folder paths, plus
+  relevant project-document and applicable platform-checklist and
+  severity/priority-matrix paths;
+- this `SKILL.md`'s canonical verdict/report and hard-boundary sections;
 - scope source blocks produced under **Verbatim dispatch**;
 - only the lifecycle context permitted for that `mission` by
   **Post-fix lifecycle — Mission modes**; and
@@ -169,7 +171,8 @@ Before computing the final verdict, the orchestrator:
    lifecycle evidence, not as a second new finding, while recording separately
    evidenced different behavior as a genuinely new finding;
 4. lists conflicting factual conclusions or recommendations with their
-   supporting evidence instead of averaging or silently resolving them; and
+   safe, redacted supporting evidence references instead of averaging,
+   silently resolving, or copying sensitive raw evidence; and
 5. presents lane results separately from the orchestrator-owned
    `Final assessment` (`Final release assessment` for a release audit), then
    applies valid risk acceptance and the most conservative verdict.
@@ -177,6 +180,10 @@ Before computing the final verdict, the orchestrator:
 Assumptions never count as findings and never affect a verdict unless the
 same run supplies the lane-required evidence to confirm them. Write
 `Assumptions: None` when a report has none.
+
+Contract-defined defaults that a lane explicitly authorizes are declared test
+inputs, not assumptions. Record the applied fallback where that lane requires;
+do not hide it under `Assumptions` or treat it as unsupported.
 
 ## First-run setup (no qa-context.md found)
 
@@ -211,7 +218,8 @@ invent one. Offer the user two paths:
    - **Interview for the rest** — short, concrete questions, presenting
      discovered guesses as defaults to confirm rather than asking cold:
      intended audience (default to "general end user" only when the repo
-     does not identify one, and record that assumption); disposable test
+     does not identify one, and record that contract-defined fallback);
+     disposable test
      target for mutation-dependent flows (command, URL, seeded profile, or
      fresh-instance strategy; record `N/A` when none exists);
      candidate identity check when it was not discoverable (record `N/A` when
@@ -324,15 +332,15 @@ after the human commits an orchestrator update.
 
 ## The agents
 
-| Agent | The one question it answers | File |
-|---|---|---|
-| smoke-qa | Does the build come up at all? (<5 min, binary) | `references/agents/smoke-qa.md` |
-| regression-qa | Did this change break something that worked? | `references/agents/regression-qa.md` |
-| bob-qa | Is the UI/UX usable and accessible for a fresh user? (quick/full modes) | `references/agents/bob-qa.md` |
-| performance-qa | Is it fast enough, and is that getting worse? | `references/agents/performance-qa.md` |
-| security-qa | Any cheap-to-catch security hygiene issues? (not a pentest) | `references/agents/security-qa.md` |
-| api-qa | Does the API honor its contract, independent of the UI? | `references/agents/api-qa.md` |
-| compatibility-qa | Does it behave the same across the platform matrix? | `references/agents/compatibility-qa.md` |
+| Agent | Specialist perspective | The one question it answers | File |
+|---|---|---|---|
+| smoke-qa | Release verification engineer | Does this build come up and do the declared critical paths respond? | `references/agents/smoke-qa.md` |
+| regression-qa | Regression and change-impact QA engineer | Did this change break something that worked? | `references/agents/regression-qa.md` |
+| bob-qa | End-user behavior, usability, and accessibility reviewer | Is the UI/UX usable and accessible for a fresh user? | `references/agents/bob-qa.md` |
+| performance-qa | Performance and reliability QA engineer | Is it fast enough, and is that getting worse? | `references/agents/performance-qa.md` |
+| security-qa | Application security QA engineer performing a hygiene review | Are there any cheap-to-catch security hygiene issues? | `references/agents/security-qa.md` |
+| api-qa | API contract and integration QA engineer | Does the API honor its contract, independent of the UI? | `references/agents/api-qa.md` |
+| compatibility-qa | Platform compatibility QA engineer | Does it behave the same across the platform matrix? | `references/agents/compatibility-qa.md` |
 
 ## When to run what
 
@@ -601,6 +609,15 @@ Non-negotiable report rules, all agents:
   section with the strongest available candidate identifier and the identity
   check result. Use `N/A` only when qa-context.md records no applicable
   check.
+- **Assumptions are separate.** Every report has an `Assumptions` section;
+  write `None` when it is empty. Assumptions are not findings and do not
+  affect the verdict until the same run supplies the lane-required evidence.
+- **Sensitive output is redacted.** Reports and final summaries never
+  reproduce credentials, tokens, session or cookie values, personal data,
+  private user identifiers, or credential-bearing or signed URLs. Preserve
+  the evidence shape needed to reproduce the result, replace prohibited
+  values with `<redacted>`, and cite a safe local evidence reference when
+  detail must remain outside the report.
 - **Every finding carries Severity AND Priority** from the shared matrix.
 - **Every report has a "Not tested" section.** A report that doesn't state
   its limits overclaims by default.
