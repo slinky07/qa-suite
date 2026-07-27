@@ -93,9 +93,35 @@ Post-fix runs bind every report to one frozen candidate. They confirm each unres
 
 QA-Suite is orchestration-first. When Claude Code, Codex, Claude.ai, or another host provides subagents, task agents, background agents, workers, or any equivalent delegation tool, qa-suite dispatches a separate independent QA agent for each selected lane.
 
+Each lane has a compact specialist contract: a simulated professional
+perspective, one primary question, a specialist mission, priorities, decision
+rules, evidence requirements, and scope boundaries. These perspectives are
+semantic steering. They are not credentials, certification, guaranteed
+expertise, or a substitute for qualified human assessment. Operational rules
+and evidence outrank the role title.
+
 The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or `Blocked`, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
 
+Lane selection follows the affected risks or the user's explicit request. The
+orchestrator records a brief reason for every selected lane and any expected
+lane it skips, but keeps those reasons out of the specialist prompt so they do
+not steer the result.
+
 Each QA subagent receives only project-visible context: `qa-context.md`, relevant repo docs named there, the matching platform checklist, its own lane instructions, the severity/priority matrix when applicable, the report folder, and the user's scoped QA request. Subagents do not inherit the implementation agent's prior context, conversation history, memory, unstated assumptions, or explanation of how the feature should work. `bob-qa` is especially isolated so it can keep a fresh-user mindset; `smoke-qa` is independent evidence, not orchestrator self-certification.
+
+Every dispatch names the canonical primary question and lifecycle
+`mission: discovery | confirmation | regression`. Mission mode, not the
+specialist identity, controls whether a confirmation manifest or graduated
+regression corpus is allowed. Scope and manifest values remain subject to the
+single canonical verbatim-dispatch rule in `qa-suite/SKILL.md`.
+
+During synthesis, the orchestrator validates evidence, keeps assumptions
+separate and verdict-neutral, deduplicates through the finding-ledger matching
+contract, and names unresolved factual or recommendation conflicts. Lane
+results remain visible separately from the orchestrator-owned final assessment
+or final release assessment. Reports and summaries preserve useful evidence
+shape while redacting credentials, sessions, personal data, private
+user identifiers, and sensitive URLs.
 
 Single-session sequential execution is fallback only for hosts with no subagent or delegation facility. Reports and final summaries from fallback runs must explicitly label themselves as `single-session fallback; non-independent evidence`.
 
@@ -127,15 +153,15 @@ Generated agents are deliberately narrow: smoke only, `qa-context.md` first, def
 
 ## Agents
 
-| Agent              | One question it answers                                    |
-| ------------------ | ---------------------------------------------------------- |
-| `smoke-qa`         | Does the build come up at all?                             |
-| `regression-qa`    | Did this change break something that worked?               |
-| `bob-qa`           | Is the UI/UX usable and accessible for a fresh user?       |
-| `performance-qa`   | Is it fast enough, and is it getting worse?                |
-| `security-qa`      | Any cheap-to-catch security hygiene issues? Not a pentest. |
-| `api-qa`           | Does the API honor its contract, independent of the UI?    |
-| `compatibility-qa` | Does it behave the same across the platform matrix?        |
+| Agent | Specialist perspective | One question it answers |
+|---|---|---|
+| `smoke-qa` | Release verification engineer | Does this build come up and do the declared critical paths respond? |
+| `regression-qa` | Regression and change-impact QA engineer | Did this change break something that worked? |
+| `bob-qa` | End-user behavior, usability, and accessibility reviewer | Is the UI/UX usable and accessible for a fresh user? |
+| `performance-qa` | Performance and reliability QA engineer | Is it fast enough, and is that getting worse? |
+| `security-qa` | Application security QA engineer performing a hygiene review | Are there any cheap-to-catch security hygiene issues? |
+| `api-qa` | API contract and integration QA engineer | Does the API honor its contract, independent of the UI? |
+| `compatibility-qa` | Platform compatibility QA engineer | Does it behave the same across the platform matrix? |
 
 ## Platform Checklists
 
@@ -154,6 +180,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 * One agent, one question. Out-of-scope observations go to the right sibling agent.
 * Evidence over adjectives. Use criterion numbers, measurements, screenshots, logs, and literal request/response pairs.
+* Specialist titles steer attention; they never increase confidence without evidence.
 * Never claim untested coverage. Every report names what was not tested.
 * Valid human-accepted risks are excluded during final synthesis; then the most conservative verdict wins. A Go only means nothing failed in that agent’s lane.
 

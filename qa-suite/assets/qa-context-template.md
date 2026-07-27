@@ -10,7 +10,7 @@ guessing.
 - **Project name:** <!-- e.g. WorldClock -->
 - **Repository docs to read first:** <!-- e.g. AGENTS.md, README.md -->
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
-- **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents assume "general end user" and state the assumption -->
+- **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents use the contract-defined "general end user" fallback and state it -->
 
 ## Finding ledger
 
