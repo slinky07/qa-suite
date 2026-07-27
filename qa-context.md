@@ -11,6 +11,12 @@ scope instead of inventing an app surface.
 - **Repository docs to read first:** README.md, qa-suite/SKILL.md, .claude-plugin/plugin.json, .codex-plugin/plugin.json
 - **Report output folder:** QA/
 
+## Finding ledger
+
+- **Path:** findings.jsonl
+- **Repository visibility (`repo_visibility`):** public
+- **Named components:** codex-install, claude-code-install, project-initialization, qa-orchestration, command-wrappers, agent-wrappers, release-artifacts
+
 ## Testing posture
 
 - **Posture:** aggressive

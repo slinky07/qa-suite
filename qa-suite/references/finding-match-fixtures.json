@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "cross-lane-same-login-defect",
+      "expected": "merge",
+      "left": {
+        "lane": "smoke-qa",
+        "component": "authentication",
+        "location": "sign-in form",
+        "defect_record": {
+          "repro_steps": [
+            "Submit valid credentials through the sign-in form.",
+            "Observe the request complete and the loading state remain visible."
+          ],
+          "expected_result": "The response supplies a session and the authenticated view opens.",
+          "actual_result": "POST /login returns an empty successful response, so the loading state never completes.",
+          "environment": "candidate abc123, local web target"
+        }
+      },
+      "right": {
+        "lane": "api-qa",
+        "component": "authentication",
+        "location": "POST /login",
+        "defect_record": {
+          "repro_steps": [
+            "Send valid credentials to POST /login.",
+            "Inspect the successful response body."
+          ],
+          "expected_result": "The response supplies the session consumed by the authenticated client.",
+          "actual_result": "POST /login returns HTTP 200 with an empty body; the client cannot leave its loading state.",
+          "environment": "candidate abc123, local API target"
+        }
+      },
+      "rationale": "Both records establish the same empty login response and downstream failure on the same candidate; lane and location wording differ only by observation boundary."
+    },
+    {
+      "id": "same-component-distinct-auth-defects",
+      "expected": "split",
+      "left": {
+        "lane": "bob-qa",
+        "component": "authentication",
+        "location": "sign-in form",
+        "defect_record": {
+          "repro_steps": [
+            "Submit an invalid password.",
+            "Read the inline error."
+          ],
+          "expected_result": "The form identifies invalid credentials without revealing account existence.",
+          "actual_result": "The form says that the email address has no account.",
+          "environment": "candidate def456, local web target"
+        }
+      },
+      "right": {
+        "lane": "regression-qa",
+        "component": "authentication",
+        "location": "sign-in form",
+        "defect_record": {
+          "repro_steps": [
+            "Sign in with valid credentials.",
+            "Refresh the authenticated page."
+          ],
+          "expected_result": "The authenticated session survives the refresh.",
+          "actual_result": "The refresh returns to the sign-in form because the session cookie is absent.",
+          "environment": "candidate def456, local web target"
+        }
+      },
+      "rationale": "The blocking component and location match, but the failed behaviors, repros, and expected results are distinct."
+    }
+  ]
+}
