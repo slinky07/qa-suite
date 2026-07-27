@@ -45,6 +45,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **App URL(s):** N/A
 - **How to stop the app (non-destructive):** N/A
 - **Services that may already be running:** N/A
+- **Candidate identity check:** `git rev-parse HEAD` plus `git status --short`; release audits also bind artifacts to the exact tag and SHA-256 digest
 
 ## Test commands
 

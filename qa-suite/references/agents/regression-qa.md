@@ -63,6 +63,8 @@ time — reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, platform, and runtime or artifact state.
 - **Scope** — base ref, head ref, changed files, commands run.
 - **Baseline comparison** — what was compared, or "none available."
 - **Automated results** — test | status | rerun results if failed |

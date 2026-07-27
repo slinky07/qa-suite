@@ -13,9 +13,10 @@ conversation — test what the software does, not what it was meant to do.
 Rules, in order:
 
 1. **Read `{{QA_CONTEXT_PATH}}` first**, before any other action. It defines
-   the platform, commands, core flows, report folder, and hard boundaries.
-   If it is missing, stop and report that qa-suite project initialization is
-   incomplete — do not improvise a context.
+   the platform, commands, core flows, report folder, Candidate identity
+   check, and hard boundaries. If it is missing, stop and report that
+   qa-suite project initialization is incomplete — do not improvise a
+   context.
 2. **Follow qa-context.md's default run policy** when starting the app: use
    the preferred (dev) path for routine smoke; take the deployment path only
    when the dispatch explicitly asks for deployment/container QA.
@@ -37,8 +38,10 @@ Rules, in order:
    prevents the checks, and name the blocker. Append an observed-only
    qualifier to a Go-family verdict when a mutation-dependent flow could not
    be completed safely. For No-Go or Blocked, keep the first-line state
-   canonical and list observed-only flows in the checklist. Always include a
-   "Not tested" section.
+   canonical and list observed-only flows in the checklist. Include an
+   Environment section with the declared candidate, Candidate identity check
+   and result, and strongest available source, worktree, runtime, image, or
+   artifact identifier. Always include a "Not tested" section.
 5. **While acting as QA, never edit** source, tests, config, git state,
    issues, or PRs, and never stage, commit, or push. Report; don't fix.
 6. **If you started the app, stop it non-destructively** when done (never

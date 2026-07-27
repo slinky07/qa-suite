@@ -38,8 +38,8 @@ screenshots, request/response pairs) — never vibes.
    another location, use that path and remember to check it there for the
    rest of the session. If none exists, this is a **first run — go to
    First-run setup below** before running any agent.
-2. **Load the finding ledger.** Read the ledger path, `repo_visibility`,
-   and named components from qa-context.md, then read
+2. **Load the finding ledger and choose the mission.** Read the ledger path,
+   `repo_visibility`, and named components from qa-context.md, then read
    `references/finding-ledger.md`. The ledger must exist at a repo-relative,
    non-ignored path and every non-empty line must be a supported, unique
    finding row. Fail loudly before lane dispatch when the path is missing,
@@ -47,7 +47,9 @@ screenshots, request/response pairs) — never vibes.
    the rows visible to the current lifecycle mode; never inject the complete
    ledger into a lane. Enforce these checks and build the manifest with the
    dependency-free `scripts/finding-ledger.mjs` helper; do not substitute an
-   ad hoc parser.
+   ad hoc parser. Mission is `discovery` by default. Use the post-fix
+   protocol only for a post-fix request with unresolved `open` or `regressed`
+   findings.
 3. **Determine the platform** (web / android / ios / desktop) from
    qa-context.md, and read the matching file in `references/platforms/`
    **before** running bob-qa, smoke-qa, performance-qa, security-qa, or
@@ -147,8 +149,10 @@ invent one. Offer the user two paths:
      (package.json, Makefile, Gradle config, compose files, etc.) and
      prefill every field they answer: platform, start commands, test
      commands, URL, dependency audit tool, and repository visibility when
-     local repository metadata makes it available. Never ask the user for
-     something the repo already answers.
+     local repository metadata makes it available. Also prefill the strongest
+     candidate identity check the project exposes, such as a version endpoint,
+     `--version` output, deployment ID, image digest, or source revision plus
+     worktree state. Never ask the user for something the repo already answers.
    - **Discover oracle inputs before asking.** Check conventional
      architecture and intent paths such as `docs/adr`, `docs/adrs`,
      `docs/architecture*`, `docs/design*`, `docs/api*`, `openapi*`,
@@ -163,6 +167,8 @@ invent one. Offer the user two paths:
      does not identify one, and record that assumption); disposable test
      target for mutation-dependent flows (command, URL, seeded profile, or
      fresh-instance strategy; record `N/A` when none exists);
+     candidate identity check when it was not discoverable (record `N/A` when
+     the project exposes no stronger runtime or artifact identity);
      default run policy (dev vs. deployment path for routine QA); core
      user-facing flows (offer a guessed list to edit); stable named
      components derived from those flows; repository visibility when it
@@ -292,6 +298,7 @@ after the human commits an orchestrator update.
 | Before a release | smoke-qa, then every applicable release lane: bob-qa (full) for a user-facing surface, performance-qa for a runtime performance surface, security-qa for a dependency or exposure surface, api-qa for an API, compatibility-qa for a supported platform matrix | lanes whose primary risk is absent |
 | Dependency updates | security-qa when the dependency is shipped or executed; regression-qa when build or behavior can change | lanes with no affected dependency risk |
 | First run on a new project | smoke-qa; add bob-qa (full) only for a user-facing surface and performance-qa baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
+| Post-fix cycle with unresolved findings | freeze and rebuild; smoke-qa; one confirmation mission per finding through its originating lane; impact-scoped regression | full recertification unless explicitly requested as a release audit |
 
 The broad release, first-run, PR, dependency, and backend/API triggers are
 impact-scoped. A full release audit means every applicable lane, not every
@@ -305,6 +312,138 @@ If the user's ask is ambiguous ("test my app"), don't run everything —
 that's the overkill this framework exists to prevent. Ask whether this is a
 routine pass (smoke + regression), a UI review (add bob-qa quick), or a
 release audit (the full applicable set).
+
+## Post-fix lifecycle
+
+This protocol is inert unless the ledger contains unresolved `open` or
+`regressed` findings and the current request validates fixes. Routine runs
+remain discovery missions.
+
+### Mission modes
+
+`mission` is neutral dispatch metadata with three values:
+
+- **`discovery` (default)** — use the existing isolated lane context. Inject
+  no finding manifest and no graduated regression corpus.
+- **`confirmation`** — inject only the unresolved finding manifest selected
+  for the originating lane. The mission assigns one disposition to each
+  selected finding on one frozen candidate.
+- **`regression`** — inject fixed findings with committed sanitized defect
+  records as graduated regression testware. Select regression lanes by the
+  fix's auditable impact analysis.
+
+Visibility means not injected, not unreadable. The ledger remains
+repo-visible. Mission mode, not lane identity, controls injected lifecycle
+context.
+
+### Candidate identity and freeze
+
+Before a post-fix dispatch:
+
+1. freeze one revision or artifact;
+2. rebuild or restart the target from that frozen candidate;
+3. run the optional `Candidate identity check` from qa-context.md; and
+4. record the strongest available identifier: artifact or image digest,
+   deployment ID mapped to source, full commit SHA plus worktree state, or
+   another immutable build identity.
+
+Source identity alone is sufficient only when the tested object is the source
+tree. If the running target cannot be tied to the declared candidate, every
+requested confirmation disposition is `Blocked`. Confirmation against a
+moved `HEAD`, a rebuilt artifact with a different digest, or an unverified
+stale process is invalid.
+
+Every lane report has an `Environment` section that states the declared
+candidate, the identity check and result, and any source, worktree, artifact,
+image, deployment, or runtime identifier available. A candidate change
+supersedes earlier certification evidence for synthesis. Reports remain
+immutable historical evidence for their original candidate.
+
+### Confirmation missions
+
+Dispatch one fresh instance of each finding's originating lane. Do not create
+a confirmation lane. Follow **Verbatim dispatch** for these manifest fields:
+
+- finding ID;
+- current frozen candidate;
+- recorded environment;
+- recorded reproduction steps;
+- original expected result;
+- original actual result; and
+- recorded evidence reference.
+
+The current candidate is neutral routing metadata. Copy all recorded values
+verbatim from the selected row. Do not pass the development conversation, fix
+explanation, fix diff, an expected verdict, or steering language.
+
+Each mission asks only: `What is the present disposition of finding X on
+candidate C?` A confirmation run may report a separate newly discovered
+defect, but the orchestrator creates a new ledger entry for it. It never folds
+new behavior into the selected finding's disposition.
+
+### Confirmation dispositions
+
+Dispositions are per-finding report states, not verdicts:
+
+- **`Fixed`** — equivalent reproduction ran, the expected result occurred,
+  and the original failure was absent.
+- **`Still present`** — equivalent reproduction produced the original
+  failure.
+- **`Partial`** — part of the failure remains or the acceptance result is
+  incomplete.
+- **`Blocked`** — equivalent confirmation was impossible because the
+  environment, data, candidate identity, or test basis was unavailable.
+
+There is no `Cannot reproduce` disposition. Missing equivalence is `Blocked`,
+never optimistically `Fixed`. An intermittent finding's manifest includes its
+recorded repetition procedure; any recurrence is not `Fixed`. The
+mutation-dependent safety cap remains canonical in **Hard boundaries**:
+without a Disposable test target, equivalent mutating confirmation is
+`Blocked`, not `Fixed`.
+
+Reconciliation sets a row to `fixed` only from a `Fixed` disposition.
+`Still present` and `Partial` remain unresolved. `Blocked` does not change the
+finding's lifecycle status. A recurrence of a fixed regression check enters
+the ledger as `regressed` under the matching rules. Human-controlled
+`accepted` and `wontfix` statuses never change mechanically.
+
+### Disposition synthesis
+
+Apply the canonical verdict vocabulary; dispositions never create another
+verdict system:
+
+- any S1/S2 finding `Still present` or `Partial` → `No-Go`;
+- only `Blocked` S1/S2 findings remain, with none `Still present` or
+  `Partial` → `Blocked`;
+- only S3/S4 findings are not `Fixed` → `Go with findings`; and
+- every in-scope finding is `Fixed` → `Go`.
+
+Exclude currently valid `accepted` and `wontfix` findings as defined by
+**Risk acceptance**, but always list them under `Known accepted risks`.
+
+### Supersession and impact scope
+
+Never combine evidence from different candidate identifiers as current
+certification. Mark older candidate evidence `Superseded` before synthesis
+and state which evidence replaces it.
+
+The default post-fix sequence is:
+
+1. freeze and rebuild or restart the candidate;
+2. run smoke, always;
+3. run one confirmation mission per unresolved finding through its
+   originating lane; and
+4. run regression lanes selected by an auditable change-impact analysis.
+
+Synthesis lists every lane that ran, every lane that was skipped, and the
+impact reason. An unjustifiably narrow blast radius is a tunnel-vision risk.
+Full recertification happens only for an explicit release-audit request.
+
+The per-cycle report includes:
+
+`Finding | Candidate | Disposition | Evidence`
+
+A `Fixed` finding gets one row and no added narrative.
 
 ## Verdict conflicts
 
@@ -411,6 +550,10 @@ Non-negotiable report rules, all agents:
 - **Execution mode is visible.** If a run used single-session fallback,
   every report and the final summary must state:
   `Execution mode: single-session fallback; non-independent evidence`.
+- **Candidate identity is visible.** Every report has an `Environment`
+  section with the strongest available candidate identifier and the identity
+  check result. Use `N/A` only when qa-context.md records no applicable
+  check.
 - **Every finding carries Severity AND Priority** from the shared matrix.
 - **Every report has a "Not tested" section.** A report that doesn't state
   its limits overclaims by default.

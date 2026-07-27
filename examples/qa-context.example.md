@@ -43,6 +43,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **How to stop the app (non-destructive):** docker compose down
 - **Services that may already be running:** local Postgres on 5432, Tailscale daemon, Caddy reverse proxy
 - **Disposable test target:** make run-qa — fresh throwaway Compose stack on http://localhost:8788 with a seeded demo household and its own uniquely named Postgres data directory; agents may freely add, apply, and delete data there; stop non-destructively with make stop-qa
+- **Candidate identity check:** curl -fsS http://localhost:8788/version — returns the full source commit and container image digest
 
 ## Test commands
 

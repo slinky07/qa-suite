@@ -75,8 +75,9 @@ time — reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
-- **Environment** — hardware/limits if known, load level, duration,
-  defaults applied.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, hardware/limits if known, load level, duration, defaults
+  applied.
 - **Results** — metric | measured | prior baseline (if any) | delta |
   verdict.
 - **Resource usage** — CPU/memory over the window, trend noted.
