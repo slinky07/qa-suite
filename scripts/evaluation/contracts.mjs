@@ -3,6 +3,7 @@ import { isAbsolute } from "node:path";
 import { parseJsonStrict } from "../../qa-suite/scripts/finding-ledger.mjs";
 
 const CASE_ID = /^fx_[0-9a-f]{32}$/;
+const RUN_ID = /^run_[0-9a-f]{32}$/;
 const SUITE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-v1$/;
 const SEAL_TOKEN = /^seal_[0-9a-f]{64}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -22,6 +23,7 @@ export const LANES = new Set([
   "smoke-qa",
 ]);
 export const SEVERITIES = ["S1", "S2", "S3", "S4"];
+export const CASE_DISCLOSURE_PATH = "evaluation-case.json";
 
 const PRIORITIES = new Set(["P0", "P1", "P2", "P3"]);
 const SPECIALIST_VERDICTS = new Set([
@@ -169,6 +171,107 @@ function assertSafeRelativePath(value, label) {
 
 function fixtureRoot(caseId) {
   return `tests/evaluation/fixtures/${caseId}`;
+}
+
+function pathContains(parent, child) {
+  return child === parent || child.startsWith(`${parent}/`);
+}
+
+export function validateCaseDisclosure(value) {
+  assertExactKeys(
+    value,
+    [
+      "case_id",
+      "lane",
+      "mission",
+      "qa_context",
+      "run_id",
+      "schema_version",
+      "subject_commit",
+      "subject_root",
+      "writable_roots",
+    ],
+    "case disclosure",
+  );
+  assertVersion(value.schema_version, "case disclosure");
+  assertString(value.run_id, "case disclosure.run_id", RUN_ID);
+  assertString(value.case_id, "case disclosure.case_id", CASE_ID);
+  assertEnum(value.lane, LANES, "case disclosure.lane");
+  if (value.mission !== "discovery") {
+    throw new Error("case disclosure.mission must equal discovery");
+  }
+  const expectedContext = `${fixtureRoot(value.case_id)}/qa-context.md`;
+  if (value.qa_context !== expectedContext) {
+    throw new Error(
+      `case disclosure.qa_context must equal ${expectedContext}`,
+    );
+  }
+  assertString(
+    value.subject_commit,
+    "case disclosure.subject_commit",
+    FULL_COMMIT,
+  );
+  if (value.subject_root !== "qa-suite") {
+    throw new Error("case disclosure.subject_root must equal qa-suite");
+  }
+  assertArray(value.writable_roots, "case disclosure.writable_roots", {
+    minimum: 1,
+    maximum: 1,
+  });
+  value.writable_roots.forEach((path, index) =>
+    assertSafeRelativePath(
+      path,
+      `case disclosure.writable_roots[${index}]`,
+    ),
+  );
+  assertUnique(
+    value.writable_roots,
+    "case disclosure.writable_roots",
+  );
+  for (const [index, root] of value.writable_roots.entries()) {
+    if (
+      pathContains(root, value.qa_context) ||
+      pathContains(value.qa_context, root) ||
+      pathContains(root, value.subject_root) ||
+      pathContains(value.subject_root, root) ||
+      pathContains(root, CASE_DISCLOSURE_PATH) ||
+      pathContains(CASE_DISCLOSURE_PATH, root)
+    ) {
+      throw new Error(
+        `case disclosure.writable_roots[${index}] overlaps immutable input`,
+      );
+    }
+  }
+  return value;
+}
+
+export function createCaseDisclosure({
+  runId,
+  subjectCommit,
+  suite,
+  suiteCase,
+  writableRoots,
+}) {
+  validateSuite(suite);
+  validateSuiteCase(suiteCase, "suite case");
+  const canonicalCase = suite.cases.find(({ id }) => id === suiteCase.id);
+  if (
+    canonicalCase === undefined ||
+    canonicalJson(canonicalCase) !== canonicalJson(suiteCase)
+  ) {
+    throw new Error("suite case does not match the canonical suite entry");
+  }
+  return validateCaseDisclosure({
+    case_id: suiteCase.id,
+    lane: suite.lane,
+    mission: "discovery",
+    qa_context: suiteCase.qa_context,
+    run_id: runId,
+    schema_version: 1,
+    subject_commit: subjectCommit,
+    subject_root: "qa-suite",
+    writable_roots: writableRoots,
+  });
 }
 
 function validateOracleCommitments(tokens, label) {
@@ -698,14 +801,14 @@ export function validateOracleSet(oracles, suite) {
   if (nonPairTokens.some((token) => pairTokens.has(token))) {
     throw new Error("oracle pair tokens cannot be reused as other seal tokens");
   }
-  for (const [pairId, entries] of pairs) {
+  for (const entries of pairs.values()) {
     if (
       entries.length !== 2 ||
       entries.filter(({ role }) => role === "adversarial").length !== 1 ||
       entries.filter(({ role }) => role === "control").length !== 1
     ) {
       throw new Error(
-        `oracle pair ${pairId} must contain one adversarial and one control`,
+        "oracle pair must contain one adversarial and one control",
       );
     }
     const smokeChecks = entries.map(
@@ -716,7 +819,7 @@ export function validateOracleSet(oracles, suite) {
       JSON.stringify([...smokeChecks[1]].sort())
     ) {
       throw new Error(
-        `oracle pair ${pairId} must use the same required smoke checks`,
+        "oracle pair must use the same required smoke checks",
       );
     }
   }

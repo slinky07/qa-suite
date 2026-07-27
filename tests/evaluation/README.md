@@ -7,10 +7,13 @@ not change the behavior of any distributed lane.
 The machine authority for the data contracts is
 `scripts/evaluation/contracts.mjs`;
 `scripts/evaluation/scoring.mjs` owns the explicitly non-qualifying preview
-math. This README explains the trust boundary and intended delivery sequence;
-it is not a second schema. The foundation is contracts-only. It exposes no
-runnable evaluator or qualifying runner, and no output from this PR can be
-treated as a passing evaluation.
+math. `scripts/evaluation/git-snapshot.mjs` and
+`scripts/evaluation/runner.mjs` own the non-qualifying Git snapshot,
+single-case disclosure, lane-root preparation, and artifact closure mechanics.
+`scripts/evaluation/run-case.mjs` is their strict CLI. This README explains
+the trust boundary and intended delivery sequence; it is not a second schema.
+The repository still exposes no qualifying evaluator, and no preparation or
+closure output can be treated as a passing evaluation.
 
 Pure scoring functions may produce a deterministic preview for contract tests.
 Every such preview must remain explicitly non-qualifying:
@@ -39,8 +42,8 @@ The completed Issue #30 system will answer:
 > the expected result, while staying within the paired control's false-positive
 > budget?
 
-This foundation defines the data and scoring contracts needed to answer that
-question later. It does not answer it yet.
+The current contracts and runner mechanics are prerequisites for that answer.
+They do not answer it yet.
 
 ## Authority and trust boundary
 
@@ -55,12 +58,18 @@ The evaluation uses two controller inputs with different disclosure rules:
   and the control budget. It is controller-only input and must never be
   dispatched to a lane or its adapter.
 
+The
+[Issue #30 scoring and opacity acceptance comment](https://github.com/slinky07/qa-suite/issues/30#issuecomment-4954141078)
+is binding: Issue #31 owns canonical verdict scoring, `Blocked` is incomplete
+coverage rather than detection, Bob uses the Issue #29 v2 public/sealed split,
+and controls retain an explicit false-positive budget.
+
 Omitting oracle text from a prompt is not isolation. A qualifying evaluation
 will also need a standalone lane root that cannot read the controller checkout,
 Git object database, oracle files, prior reports, inherited development
 conversation, secret environment, or non-loopback network.
 
-The future runner must preserve this order:
+The completed evaluator must preserve this order:
 
 1. Freeze the controller commit and QA-Suite subject commit.
 2. Read the public suite and select one opaque case.
@@ -75,13 +84,129 @@ The future runner must preserve this order:
 8. Open the sealed oracle only inside the controller and score the closed,
   measured evidence.
 
-Until that runner exists and verifies each step, all scoring is unverified and
-not evidence.
+The current runner implements steps 1–3 and the input/artifact measurement
+parts of step 6. It deliberately does not launch a lane, attest operating
+system or model-context isolation, run an adapter, open an oracle, or score.
+Every preparation and closure retains the three top-level non-qualification
+fields. A successful closure records:
+
+```json
+{
+  "verification_status": "unverified",
+  "qualification": "not-evidence",
+  "result": null,
+  "claims": {
+    "input_integrity": "verified",
+    "artifact_inventory": "closed",
+    "execution_isolation": "not-attested",
+    "network_isolation": "not-attested",
+    "context_isolation": "not-attested",
+    "fixture_opacity": "not-attested",
+    "state_authentication": "not-attested",
+    "adapter_status": "not-run",
+    "method_order": "unverified_by_report"
+  }
+}
+```
+
+Preparation uses the same claims except
+`artifact_inventory: "not-closed"`.
+
+No verified byte or closed artifact can compensate for an unattested
+execution boundary.
 
 “Public” distinguishes this suite from the sealed oracle; it does not mean the
-whole suite is a lane prompt. A future runner may dispatch only a neutral
-single-case envelope. Oracle commitments, other cases, and controller paths
-remain controller-side and must not enter lane or adapter input.
+whole suite is a lane prompt. The runner writes only
+`evaluation-case.json`, a strict neutral single-case disclosure. Oracle
+commitments, smoke assertions, other cases, the suite, the fixture manifest,
+controller paths, and controller state remain outside the lane root.
+The runner rejects exact controller-confidential tokens and non-selected case
+IDs, but it cannot prove that a selected public fixture contains no semantic
+hint about its role or expected defect. That is why `fixture_opacity` remains
+`not-attested`; reviewed fixture construction and a later sealed-controller
+check are still required.
+
+## Preparation and closure
+
+`prepare` resolves the controller and subject refs once, verifies that the
+running controller files equal the frozen controller commit, reads fixture
+and subject bytes from Git objects instead of the working tree, and creates
+fresh exclusive lane and state directories under separate parent paths. The
+lane root contains only:
+
+- the selected case's manifest-declared fixture files;
+- the exact subject commit's `qa-suite/` tree;
+- `evaluation-case.json`; and
+- the declared writable artifact roots.
+
+Regular input modes are frozen to `0444` or `0555`. Immutable directories use
+`0555`. The single writable root must exactly match the QA context's report
+folder and uses `0700`; callers cannot add fixture or convenience roots.
+Git object counts, sizes, path depth, and unique parent-node shape are checked
+before subject or fixture blobs are read. Tree walks enforce running node,
+file, byte, depth, and path limits.
+Symlinks, hardlinks, submodules, special files, path escapes, unsupported Git
+modes, manifest drift, duplicate paths, and limit violations fail closed.
+
+Controller state and the hash-chained JSONL journal live outside the lane.
+`close` accepts new regular files only below the disclosed writable roots,
+rechecks immutable bytes and modes, closes a deterministic SHA-256 inventory,
+and rejects every controller-confidential commitment or non-selected case ID
+found in a path or file. Accepted artifacts are copied through no-follow file
+descriptors into the private controller state at `artifacts/`; source metadata
+is checked before and after capture. Snapshot files use `0400`, directories
+use `0500`, and `artifacts[].path` in `closed.json` is resolved only beneath
+that captured root. Later adapters must never consume the mutable lane copy.
+
+Closure first writes a non-authoritative `closed.pending.json`, then appends
+the hash-bound terminal `closed` journal event, and only then atomically
+publishes `closed.json`. A terminal event without the published record is
+incomplete and fails closed; `closed.json` is never visible before its
+terminal event. After `close_started` succeeds, a validation failure before
+the terminal event appends `invalid`; an unreadable or invalid state or
+journal fails before any transition.
+
+The journal chain detects partial writes and accidental corruption. It is
+unkeyed and stored in the same user boundary, so it does not resist a hostile
+same-user process that rewrites the state and recomputes the chain. Likewise,
+read-only snapshot modes are not host-enforced immutability against that
+process. Host-protected state, executor quiescence, or external authentication
+remains mandatory before any result can qualify.
+
+The CLI does not overwrite or remove a run:
+
+```sh
+node scripts/evaluation/run-case.mjs prepare \
+  --repository /absolute/path/to/qa-suite \
+  --controller-ref <controller-commit> \
+  --subject-ref <subject-commit> \
+  --suite tests/evaluation/suites/<suite>.json \
+  --case <opaque-case-id> \
+  --state-parent /absolute/private/state-parent \
+  --lane-parent /absolute/lane-parent \
+  --writable-root QA
+
+node scripts/evaluation/run-case.mjs close \
+  --state /absolute/private/state-parent/<run-id>/state.json
+```
+
+The two parent directories must be separate, non-nested directories outside
+the controller repository. Preparation does not authorize a person or
+automation to dispatch an agent into the lane root.
+
+## Bob method-order gate
+
+The
+[Issue #30 owner comment](https://github.com/slinky07/qa-suite/issues/30#issuecomment-5062017129)
+requires Bob to inventory the visible interface, form an expected-use model,
+and only then exercise tasks in a logical hierarchy. Current Bob Markdown can
+record IA and task rows, but report order, filenames, and filesystem times do
+not prove execution chronology. The runner therefore records
+`method_order: "unverified_by_report"` and cannot promote a closed Bob report.
+
+A later qualifying host adapter needs controller-sequenced phase events that
+prove interface inventory and expected-use modeling precede every task action.
+Adding both sections to a Markdown report is not that proof.
 
 ## Public suite
 
@@ -151,9 +276,11 @@ every file has a SHA-256 declaration. For example:
 ```
 
 The pure helper can derive a deterministic identity for this declaration, but
-that identity is not proof of fixture bytes. Exact measurement of exported
-fixture bytes and the QA-Suite subject tree used by the lane is deferred to
-the isolated runner.
+that identity is not proof of fixture bytes. `prepare` separately verifies
+the declared modes and hashes against the frozen controller commit, exports
+the actual bytes, and measures the complete standalone input tree. That
+measurement proves input integrity only; it does not attest execution
+isolation or lane behavior.
 
 ## Sealed oracle
 
@@ -295,18 +422,23 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 
 ## Deferred Issue #30 delivery
 
-The following are deliberately outside this contracts-only PR:
+The following remain deliberately outside this runner-mechanics PR:
 
 - real adversarial/control fixture applications and their public inventories;
-- the isolated runner and closed-root file inventory;
-- exact fixture-byte and subject-tree measurement;
+- a host executor that proves fresh-model context, filesystem isolation,
+  secret-environment exclusion, and non-loopback network denial;
+- smoke-first dispatch and deeper-lane gating;
 - lane-specific adapters that parse canonical report tables by stable finding
   ID without using oracle prose;
+- a controller-sequenced Bob phase protocol that can verify the required
+  inventory/model-before-task order;
+- opening the sealed oracle and scanning all closed bytes against its complete
+  token set;
 - baseline runs and retained baseline evidence;
 - remediation, before/after comparison, and retained remediation evidence; and
 - CI scheduling for recurring or release-gated evaluation.
 
 Those capabilities must land through later Issue #30 branches and PRs. Until
-they do, contract tests and scoring previews are maintainer verification aids,
-not QA findings, release certification, issue proposals, or proof that a lane
-passes its evaluation.
+they do, contracts, previews, preparations, and closures are maintainer
+verification aids, not QA findings, release certification, issue proposals,
+or proof that a lane passes its evaluation.
