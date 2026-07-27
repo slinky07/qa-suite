@@ -10,6 +10,7 @@ import {
   assertReleaseTag,
   assertRepository,
   assertVersionContract,
+  fetchReleaseByTag,
   runCommand,
   sha256,
   verifyArtifactSet,
@@ -77,14 +78,6 @@ function remoteTagCommit(repository, tag) {
   }
 
   return object.sha;
-}
-
-function releaseMetadata(repository, tag) {
-  const output = runCommand("gh", [
-    "api",
-    `repos/${repository}/releases/tags/${tag}`,
-  ]);
-  return JSON.parse(output);
 }
 
 async function localAssets(artifactsDirectory) {
@@ -203,7 +196,7 @@ async function main() {
   const localByName = await localAssets(artifactsDirectory);
 
   await verifyArtifactSet(options.ref, artifactsDirectory);
-  const release = releaseMetadata(options.repo, options.tag);
+  const release = fetchReleaseByTag(options.repo, options.tag);
   assertRemoteMetadata(
     release,
     options.tag,

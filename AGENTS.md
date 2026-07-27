@@ -72,7 +72,8 @@ Merging a `VERSION` change to `main` runs
 3. builds and attests both artifacts;
 4. creates a draft GitHub Release with `gh release create --draft
    --verify-tag`;
-5. checks the Release API with `gh api`;
+5. checks the authenticated, paginated Releases API with `gh api` and selects
+   the exact tag (the release-by-tag endpoint does not expose draft releases);
 6. downloads the assets into a fresh directory with `gh release download`;
 7. rechecks names, media types, digests, bytes, and archive/tree parity;
 8. retains machine-readable evidence as a workflow artifact.
@@ -124,11 +125,14 @@ codex plugin add qa-suite@qa-suite
 codex plugin list --marketplace qa-suite
 ```
 
-The publication workflow rebuilds from the tag, rechecks the mutable draft
-immediately before publication, publishes it, then rechecks the immutable
-release and provenance. If a workflow run fails after GitHub has already
-published the release, rerun it with the same tag. The recovery path accepts
-only the exact immutable release, skips republication, and regenerates the
-retained evidence. If a tag or release points at the wrong commit, stop. Do not
-move the tag, overwrite assets, or publish. Fix the process through a new PR
-and obtain explicit owner approval before deleting any remote release or tag.
+The publication workflow runs reviewed release automation from the dispatched
+`main` commit while rebuilding the package only from the requested tag. This
+allows a verifier defect to be repaired without moving a frozen release tag or
+changing its payload. It rechecks the mutable draft immediately before
+publication, publishes it, then rechecks the immutable release and provenance.
+If a workflow run fails after GitHub has already published the release, rerun
+it with the same tag. The recovery path accepts only the exact immutable
+release, skips republication, and regenerates the retained evidence. If a tag
+or release points at the wrong commit, stop. Do not move the tag, overwrite
+assets, or publish. Fix the process through a new PR and obtain explicit owner
+approval before deleting any remote release or tag.
