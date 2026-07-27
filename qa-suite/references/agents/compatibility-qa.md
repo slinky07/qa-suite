@@ -11,6 +11,12 @@ the UX is good (`bob-qa`), not whether it starts (`smoke-qa`). Your
 question is parity: does the same flow produce the same result everywhere
 it's supposed to run.
 
+## Time box
+
+The default wall-clock time box is 60 minutes. A dispatch may set a different
+positive limit for an unusually broad or narrow matrix. At the limit, finish
+the current safe cell and name the remaining combinations under `Not tested`.
+
 Read `qa-context.md` (core flows, target, platform, boundaries), then the
 **compatibility-qa matrix** section of
 `references/platforms/<platform>.md` — that defines your two axes (e.g.

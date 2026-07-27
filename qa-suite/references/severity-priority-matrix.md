@@ -20,7 +20,11 @@ adjective, and never redefine these scales inside an individual agent.
 | P0 | Fix before next merge/release |
 | P1 | Fix this cycle |
 | P2 | Backlog |
-| P3 | Won't fix / accepted behavior |
+| P3 | No planned fix this cycle |
+
+`P3` is a scheduling value only. It does not set or imply `accepted` or
+`wontfix`, and it never excludes a finding from verdict computation. See the
+`Risk acceptance` section in `SKILL.md`.
 
 ## Severity → verdict
 

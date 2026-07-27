@@ -72,23 +72,25 @@ baseline performance for this project
 
 When the request is unclear, qa-suite asks whether this is a routine pass, UI review, or release audit instead of running everything.
 
-| Event                       | Run                                                                   | Skip                                   |
-| --------------------------- | --------------------------------------------------------------------- | -------------------------------------- |
-| Every build / deploy        | `smoke-qa`                                                            | everything else                        |
-| Every PR / merge candidate  | `smoke-qa` -> `regression-qa`                                         | full audits                            |
-| UI-touching change          | add `bob-qa` quick mode                                               | full mode                              |
-| Backend/API-touching change | add `api-qa`                                                          | UI agents                              |
-| Before a release            | `bob-qa` full + `performance-qa` + `security-qa` + `compatibility-qa` | nothing                                |
-| Dependency updates          | `regression-qa` + `security-qa` dependency scan                       | unrelated agents                       |
-| First run on a new project  | `smoke-qa` -> `bob-qa` full + `performance-qa` baseline framing       | baseline comparisons that do not exist |
+| Event or affected risk | Run | Skip |
+|---|---|---|
+| Every build / deploy | `smoke-qa` | lanes without another affected risk |
+| Every PR / merge candidate | `smoke-qa`; add `regression-qa` when shipped behavior, contracts, configuration, or artifacts can regress | `regression-qa` when no deliverable behavior can change; full audits |
+| UI-touching change | add `bob-qa` (quick mode) | full mode unless explicitly requested |
+| Backend/API-touching change | add `api-qa`; add `bob-qa` when a user-facing consumer can change | UI lanes with no affected consumer |
+| Before a release | `smoke-qa`, then every applicable release lane: `bob-qa` (full) for a user-facing surface, `performance-qa` for a runtime performance surface, `security-qa` for a dependency or exposure surface, `api-qa` for an API, `compatibility-qa` for a supported platform matrix | lanes whose primary risk is absent |
+| Dependency updates | `security-qa` when the dependency is shipped or executed; `regression-qa` when build or behavior can change | lanes with no affected dependency risk |
+| First run on a new project | `smoke-qa`; add `bob-qa` (full) only for a user-facing surface and `performance-qa` baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
 
-Run order matters: smoke first, always. If smoke is No-Go, deeper agents stop because they assume a running app.
+The broad release, first-run, PR, dependency, and backend/API triggers are impact-scoped. A full release audit means every applicable lane, not every lane regardless of the project's surfaces.
+
+Run order matters: smoke first, always. If smoke is `No-Go` or `Blocked`, deeper agents stop because they require an exercised smoke target.
 
 ## Orchestration Model
 
 QA-Suite is orchestration-first. When Claude Code, Codex, Claude.ai, or another host provides subagents, task agents, background agents, workers, or any equivalent delegation tool, qa-suite dispatches a separate independent QA agent for each selected lane.
 
-The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is No-Go, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
+The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or `Blocked`, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
 
 Each QA subagent receives only project-visible context: `qa-context.md`, relevant repo docs named there, the matching platform checklist, its own lane instructions, the severity/priority matrix when applicable, the report folder, and the user's scoped QA request. Subagents do not inherit the implementation agent's prior context, conversation history, memory, unstated assumptions, or explanation of how the feature should work. `bob-qa` is especially isolated so it can keep a fresh-user mindset; `smoke-qa` is independent evidence, not orchestrator self-certification.
 
@@ -96,7 +98,7 @@ Single-session sequential execution is fallback only for hosts with no subagent 
 
 ### Codex Notes
 
-In Codex Desktop, Codex CLI, and the Codex IDE extension, qa-suite should run as a root-orchestrated subagent workflow: the main task reads the skill, selects lanes, runs `smoke-qa` first as one child subagent, and then dispatches one direct child subagent for each remaining selected lane after smoke is Go.
+In Codex Desktop, Codex CLI, and the Codex IDE extension, qa-suite should run as a root-orchestrated subagent workflow: the main task reads the skill, selects lanes, runs `smoke-qa` first as one child subagent, and then dispatches one direct child subagent for each remaining selected lane only after a Go-family smoke verdict.
 
 Codex skill instructions can request delegation, so qa-suite does not need separate Codex custom-agent files to enforce this rule. If the active Codex tool offers a way to fork or inherit the current conversation context, leave it off for QA lanes. Each QA subagent should start from a fresh, self-contained prompt containing only project-visible context and its own lane instructions. This keeps Bob fresh, keeps smoke independent, and avoids turning the implementation agent's prior reasoning into QA evidence.
 
@@ -150,7 +152,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * One agent, one question. Out-of-scope observations go to the right sibling agent.
 * Evidence over adjectives. Use criterion numbers, measurements, screenshots, logs, and literal request/response pairs.
 * Never claim untested coverage. Every report names what was not tested.
-* Most conservative verdict wins. A Go only means nothing failed in that agent’s lane.
+* Valid human-accepted risks are excluded during final synthesis; then the most conservative verdict wins. A Go only means nothing failed in that agent’s lane.
 
 ## Release Notes
 
