@@ -11,6 +11,24 @@
   PRs update the skill first and mirror its public contract into wrapper files
   only where needed.
 
+### Maintainer evaluation authority exception
+
+Issue #30 meta-testing is maintainer-only infrastructure that evaluates the
+distributed skill without changing it:
+
+- `scripts/evaluation/*.mjs` is maintainer-only evaluation infrastructure;
+  within it, `scripts/evaluation/contracts.mjs` is the machine authority for
+  evaluation data contracts and `scripts/evaluation/scoring.mjs` owns the
+  explicitly non-qualifying preview math.
+- `tests/evaluation/README.md` is the human-readable authority for the
+  evaluation trust boundary and delivery sequence.
+
+This narrow exception does not make either path a source of distributed lane
+behavior. Evaluation infrastructure must not redefine a contract owned by
+`qa-suite/`, and it must not be mirrored into that tree. The release archives
+contain only `qa-suite/`, so both maintainer-only paths are deliberately
+excluded from `qa-suite.skill` and `qa-suite-source.zip`.
+
 ## Change workflow
 
 Use one issue, one isolated branch, and one PR. Start from refreshed `main`.
