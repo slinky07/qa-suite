@@ -17,6 +17,17 @@ through Docker Compose, and is reachable only over a VPN.
 - **Repository visibility (`repo_visibility`):** private
 - **Named components:** household-invites, grocery-items, pantry-search, preferences, grocery-export
 
+## Issue proposal governance
+
+Optional orchestrator-only configuration. Missing or `N/A` values use the
+portable defaults in the installed qa-suite skill's
+`references/issue-proposals.md`.
+
+- **Tracker:** self-hosted Forgejo Issues
+- **Additional proposal threshold:** also include P1
+- **Issue conventions:** docs/contributing.md#issue-format
+- **Read-only duplicate lookup:** N/A — the tracker is not accessible to QA sessions
+
 ## Testing posture
 
 - **Posture:** aggressive
@@ -90,6 +101,9 @@ These apply regardless of the fields above:
   `rm -rf`, no resets.
 - Never edit source code, tests, config, git history, issues, PRs, or
   releases to make a result pass. Report; don't fix.
+- QA lanes never inspect a remote tracker or draft issues. Only the
+  orchestrator may prepare a local proposal after synthesis. Any tracker
+  mutation requires a later explicit user request.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test

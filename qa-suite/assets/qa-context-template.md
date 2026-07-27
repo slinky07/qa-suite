@@ -18,6 +18,16 @@ guessing.
 - **Repository visibility (`repo_visibility`):** <!-- public / private; public always forces sensitive defect-record redaction, while private never relaxes the default without explicit human clearance -->
 - **Named components:** <!-- stable comma-separated blocking vocabulary derived from core flows, e.g. profiles, city-search, presets, preferences -->
 
+## Issue proposal governance
+
+Optional orchestrator-only configuration. Missing or `N/A` values use the
+portable defaults in `references/issue-proposals.md`.
+
+- **Tracker:** <!-- e.g. GitHub Issues, GitLab Issues, Forgejo, Jira, or N/A -->
+- **Additional proposal threshold:** N/A <!-- may broaden the canonical S1/S2-or-P0 default, e.g. "also include P1"; never suppresses the default -->
+- **Issue conventions:** <!-- repo-visible title/body/template guidance paths, or N/A -->
+- **Read-only duplicate lookup:** <!-- available read-only search path, or N/A when the tracker is inaccessible; sensitive findings require an approved private lookup -->
+
 ## Testing posture
 
 - **Posture:** aggressive <!-- default; use "standard" only with a stated reason -->
@@ -91,6 +101,9 @@ These apply regardless of the fields above:
   `rm -rf`, no resets.
 - Never edit source code, tests, config, git history, issues, PRs, or
   releases to make a result pass. Report; don't fix.
+- QA lanes never inspect a remote tracker or draft issues. Only the
+  orchestrator may prepare a local proposal after synthesis. Any tracker
+  mutation requires a later explicit user request.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test
