@@ -88,6 +88,8 @@ reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, platform, commands, and runtime state.
 - **Contract source** — spec file, or "inferred from frontend usage."
 - **Endpoint coverage** — endpoint | method | tested cases |
   pass/fail/observed-only.

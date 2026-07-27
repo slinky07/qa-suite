@@ -58,6 +58,8 @@ local start date and time — reruns always create a new file):
   (e.g. a browser-policy block), and name the blocker on that line. A
   blocked run is not a build failure, and missing coverage alone is never
   `Blocked`.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, platform file, and runtime or artifact state.
 - **Checklist results** — pass/fail/observed-only per step, stop point noted
   if you didn't finish.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or

@@ -221,9 +221,9 @@ Structure (quick mode uses only sections marked ●):
 
 - ● **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line of the file.
-- ● **Environment** — mode, platform, branch, commit, commands, target,
-  Disposable test target, Intended audience, tooling, form factor(s),
-  runtime state.
+- ● **Environment** — mission, mode, platform, declared candidate, candidate
+  identity check and result, branch, commit, commands, target, Disposable
+  test target, Intended audience, tooling, form factor(s), runtime state.
 - ● **Onboarding result** — what worked, confused, or blocked a new user.
   Narrative allowed here; it's the one unscored section.
 - **Heuristic evaluation** — heuristic # | flow | pass/fail/partial | note.

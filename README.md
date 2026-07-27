@@ -81,10 +81,13 @@ When the request is unclear, qa-suite asks whether this is a routine pass, UI re
 | Before a release | `smoke-qa`, then every applicable release lane: `bob-qa` (full) for a user-facing surface, `performance-qa` for a runtime performance surface, `security-qa` for a dependency or exposure surface, `api-qa` for an API, `compatibility-qa` for a supported platform matrix | lanes whose primary risk is absent |
 | Dependency updates | `security-qa` when the dependency is shipped or executed; `regression-qa` when build or behavior can change | lanes with no affected dependency risk |
 | First run on a new project | `smoke-qa`; add `bob-qa` (full) only for a user-facing surface and `performance-qa` baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
+| Post-fix cycle with unresolved findings | freeze and rebuild; `smoke-qa`; one confirmation mission per finding through its originating lane; impact-scoped regression | full recertification unless explicitly requested as a release audit |
 
 The broad release, first-run, PR, dependency, and backend/API triggers are impact-scoped. A full release audit means every applicable lane, not every lane regardless of the project's surfaces.
 
 Run order matters: smoke first, always. If smoke is `No-Go` or `Blocked`, deeper agents stop because they require an exercised smoke target.
+
+Post-fix runs bind every report to one frozen candidate. They confirm each unresolved finding through its originating lane, mark older-candidate evidence as superseded, and run only the regression lanes justified by the fix's impact. Routine discovery runs receive no finding manifest.
 
 ## Orchestration Model
 

@@ -71,6 +71,8 @@ and time — reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, platform file, and tested runtime or artifact.
 - **Coverage claimed** — exactly which combinations ran, which were
   skipped and why, which were emulated/simulated.
 - **Results matrix** — flow | combination | pass/fail/observed-only | note.

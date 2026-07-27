@@ -44,6 +44,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **How to stop the app (non-destructive):** <!-- e.g. docker compose down (never --volumes) -->
 - **Services that may already be running:** <!-- anything agents must not disturb -->
 - **Disposable test target:** <!-- optional; command/URL for a throwaway instance, seeded profile, or fresh-instance strategy agents may freely mutate, e.g. "make run-ephemeral (fresh SQLite under /tmp)" — N/A ⇒ mutation-dependent flows are reported as Observed only -->
+- **Candidate identity check:** <!-- optional; command or mechanism that ties the tested source, process, image, deployment, or artifact to one immutable candidate, e.g. "curl -fsS http://localhost:8787/version", "app --version", image digest, or full commit SHA plus worktree state; N/A when no stronger check exists -->
 
 ## Test commands
 

@@ -78,6 +78,8 @@ time — reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line.
+- **Environment** — mission, declared candidate, candidate identity check and
+  result, target, platform file, and runtime or artifact state.
 - **Threat model assumed** — one line: who can reach this, over what
   network (from qa-context.md).
 - **Dependency scan** — package | vulnerability | severity (from tool) |
