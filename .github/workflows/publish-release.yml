@@ -1,0 +1,409 @@
+name: Publish release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Verified release tag to publish or resume
+        required: true
+        type: string
+
+concurrency:
+  group: qa-suite-release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  validate:
+    name: Rebuild and verify the release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+    outputs:
+      commit: ${{ steps.candidate.outputs.commit }}
+      tag: ${{ steps.candidate.outputs.tag }}
+
+    steps:
+      - name: Check out the requested tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Resolve the candidate
+        id: candidate
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${REQUESTED_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use v<major>.<minor>.<patch>" >&2
+            exit 1
+          fi
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "${REQUESTED_TAG}" != "v${version}" ]]; then
+            echo "${REQUESTED_TAG} does not match VERSION ${version}" >&2
+            exit 1
+          fi
+          git fetch origin main
+          commit="$(git rev-parse HEAD)"
+          if ! git merge-base --is-ancestor "${commit}" origin/main; then
+            echo "${REQUESTED_TAG} is not contained in origin/main" >&2
+            exit 1
+          fi
+          echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${REQUESTED_TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run repository tests
+        run: node --test
+
+      - name: Rebuild and verify release parity
+        env:
+          RELEASE_TAG: ${{ steps.candidate.outputs.tag }}
+        run: >-
+          node scripts/release/check.mjs
+          --ref HEAD
+          --tag "${RELEASE_TAG}"
+          --output release-artifacts
+
+      - name: Verify the current draft or immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.candidate.outputs.tag }}
+        run: >-
+          node scripts/release/verify-remote.mjs
+          --repo "${GITHUB_REPOSITORY}"
+          --tag "${RELEASE_TAG}"
+          --ref HEAD
+          --artifacts release-artifacts
+          --evidence candidate-release-evidence.json
+          --expected-state draft-or-immutable
+
+      - name: Verify candidate artifact attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.candidate.outputs.commit }}
+        run: |
+          set -euo pipefail
+          signer="${GITHUB_REPOSITORY}/.github/workflows/draft-release.yml"
+          gh attestation verify release-artifacts/qa-suite.skill \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > candidate-attestation-skill.json
+          gh attestation verify release-artifacts/qa-suite-source.zip \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > candidate-attestation-source.json
+
+      - name: Retain the verified publication candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publication-candidate-${{ steps.candidate.outputs.tag }}
+          path: |
+            release-artifacts/
+            candidate-release-evidence.json
+            candidate-attestation-skill.json
+            candidate-attestation-source.json
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Reverify and publish immutably
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      attestations: read
+      contents: write
+
+    steps:
+      - name: Download the verified publication candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: publication-candidate-${{ needs.validate.outputs.tag }}
+          path: publication-candidate
+
+      - name: Reverify the draft and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          expected_content_type() {
+            case "$1" in
+              qa-suite.skill) printf '%s\n' "application/octet-stream" ;;
+              qa-suite-source.zip) printf '%s\n' "application/zip" ;;
+              *) return 1 ;;
+            esac
+          }
+
+          resolve_tag_commit() {
+            local target_json
+            local target_sha
+            local target_type
+            local depth
+            target_json="$(
+              gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}"
+            )"
+            target_sha="$(jq -r '.object.sha' <<< "${target_json}")"
+            target_type="$(jq -r '.object.type' <<< "${target_json}")"
+
+            for depth in {1..8}; do
+              if [[ "${target_type}" == "commit" ]]; then
+                printf '%s\n' "${target_sha}"
+                return
+              fi
+              if [[ "${target_type}" != "tag" ]]; then
+                echo "Unexpected tag target type: ${target_type}" >&2
+                return 1
+              fi
+              target_json="$(
+                gh api "repos/${GITHUB_REPOSITORY}/git/tags/${target_sha}"
+              )"
+              target_sha="$(jq -r '.object.sha' <<< "${target_json}")"
+              target_type="$(jq -r '.object.type' <<< "${target_json}")"
+            done
+
+            echo "Tag indirection exceeds the supported depth" >&2
+            return 1
+          }
+
+          verify_release_json() {
+            local release_json="$1"
+            local expected_draft="$2"
+            local names
+            local name
+            local path
+            local digest
+            local size
+            local content_type
+            names="$(jq -r '.assets[].name' <<< "${release_json}" | sort)"
+            if [[ "${names}" != $'qa-suite-source.zip\nqa-suite.skill' ]]; then
+              echo "Release asset set is not exact" >&2
+              exit 1
+            fi
+            jq -e --argjson draft "${expected_draft}" \
+              '.draft == $draft and .prerelease == false' \
+              <<< "${release_json}" >/dev/null
+
+            while IFS= read -r asset_json; do
+              name="$(jq -r '.name' <<< "${asset_json}")"
+              path="publication-candidate/release-artifacts/${name}"
+              digest="sha256:$(sha256sum "${path}" | cut -d ' ' -f 1)"
+              size="$(stat -c '%s' "${path}")"
+              content_type="$(expected_content_type "${name}")"
+              jq -e \
+                --arg digest "${digest}" \
+                --arg content_type "${content_type}" \
+                --argjson size "${size}" \
+                '.state == "uploaded" and .digest == $digest and .content_type == $content_type and .size == $size' \
+                <<< "${asset_json}" >/dev/null
+            done < <(jq -c '.assets[]' <<< "${release_json}")
+          }
+
+          release_json="$(
+            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+          )"
+          release_was_draft="$(jq -r '.draft' <<< "${release_json}")"
+          if [[ "${release_was_draft}" == "true" ]]; then
+            verify_release_json "${release_json}" true
+          elif [[ "${release_was_draft}" == "false" ]]; then
+            verify_release_json "${release_json}" false
+            jq -e '.immutable == true' <<< "${release_json}" >/dev/null
+          else
+            echo "Release draft state is invalid" >&2
+            exit 1
+          fi
+
+          download_directory="$(mktemp -d)"
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir "${download_directory}"
+          for name in qa-suite.skill qa-suite-source.zip; do
+            cmp "publication-candidate/release-artifacts/${name}" \
+              "${download_directory}/${name}"
+          done
+
+          signer="${GITHUB_REPOSITORY}/.github/workflows/draft-release.yml"
+          gh attestation verify \
+            "publication-candidate/release-artifacts/qa-suite.skill" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > publication-attestation-skill.json
+          gh attestation verify \
+            "publication-candidate/release-artifacts/qa-suite-source.zip" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > publication-attestation-source.json
+
+          tagged_commit="$(resolve_tag_commit)"
+          if [[ "${tagged_commit}" != "${RELEASE_COMMIT}" ]]; then
+            echo "Remote tag moved before publication" >&2
+            exit 1
+          fi
+
+          if [[ "${release_was_draft}" == "true" ]]; then
+            gh release edit "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft=false \
+              --latest
+          else
+            echo "Release is already published and immutable; resuming verification"
+          fi
+
+          tagged_commit="$(resolve_tag_commit)"
+          if [[ "${tagged_commit}" != "${RELEASE_COMMIT}" ]]; then
+            echo "Remote tag moved during publication" >&2
+            exit 1
+          fi
+
+          published_json="$(
+            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+          )"
+          verify_release_json "${published_json}" false
+          jq -e '.immutable == true' <<< "${published_json}" >/dev/null
+
+          second_download="$(mktemp -d)"
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir "${second_download}"
+          for name in qa-suite.skill qa-suite-source.zip; do
+            cmp "publication-candidate/release-artifacts/${name}" \
+              "${second_download}/${name}"
+          done
+
+          jq -n \
+            --arg verified_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg repository "${GITHUB_REPOSITORY}" \
+            --arg tag "${RELEASE_TAG}" \
+            --arg commit "${RELEASE_COMMIT}" \
+            --argjson release "${published_json}" \
+            '{
+              schema_version: 1,
+              verified_at: $verified_at,
+              repository: $repository,
+              tag: $tag,
+              commit: $commit,
+              release_id: $release.id,
+              release_url: $release.html_url,
+              draft: $release.draft,
+              immutable: $release.immutable,
+              assets: [
+                $release.assets[] |
+                {
+                  name,
+                  content_type,
+                  state,
+                  size,
+                  digest
+                }
+              ]
+            }' > publication-evidence.json
+
+      - name: Retain publication evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publication-evidence-${{ needs.validate.outputs.tag }}
+          path: |
+            publication-evidence.json
+            publication-attestation-skill.json
+            publication-attestation-source.json
+          if-no-files-found: error
+          retention-days: 90
+
+  verify:
+    name: Verify the published release
+    needs:
+      - publish
+      - validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Download the publication candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: publication-candidate-${{ needs.validate.outputs.tag }}
+          path: publication-candidate
+
+      - name: Verify the immutable published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: >-
+          node scripts/release/verify-remote.mjs
+          --repo "${GITHUB_REPOSITORY}"
+          --tag "${RELEASE_TAG}"
+          --ref HEAD
+          --artifacts publication-candidate/release-artifacts
+          --evidence final-release-evidence.json
+          --expected-state published
+
+      - name: Verify published artifact attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+        run: |
+          set -euo pipefail
+          signer="${GITHUB_REPOSITORY}/.github/workflows/draft-release.yml"
+          gh attestation verify \
+            publication-candidate/release-artifacts/qa-suite.skill \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > final-attestation-skill.json
+          gh attestation verify \
+            publication-candidate/release-artifacts/qa-suite-source.zip \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${signer}" \
+            --source-digest "${RELEASE_COMMIT}" \
+            --source-ref "refs/heads/main" \
+            --format json > final-attestation-source.json
+
+      - name: Retain final release evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: final-release-evidence-${{ needs.validate.outputs.tag }}
+          path: |
+            final-release-evidence.json
+            final-attestation-skill.json
+            final-attestation-source.json
+          if-no-files-found: error
+          retention-days: 90

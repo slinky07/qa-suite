@@ -156,13 +156,21 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.2.0`:
+
+* Adds canonical cross-lane verdict, observed-only, disposable-target, risk-acceptance, and verbatim-dispatch contracts.
+* Adds evidence-backed Bob IA and trust guidance, smoke `No-Go`/`Blocked` gating, impact-scoped triggers, and explicit lane time boxes.
+* Adds durable contract tests for `qa-context.md` parity and shared QA workflow invariants.
+* Builds both release assets deterministically from the exact Git commit, verifies archive/tree parity and remote digests, and retains release evidence before publication.
+
+Repository package version: `v1.2.0`. The GitHub Releases page is the
+authority for whether that version has been published.
+
 `v1.1.3`:
 
 * Project initialization now generates the repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` and `.codex/agents/<project>-smoke-qa.toml` — instead of offering them as an optional post-confirmation step. A format is skipped only when the host/project clearly does not support it or the user declines.
 * README now names the Claude Code slash commands (`/qa-smoke`, `/qa-regression`, `/qa-release`) and documents plugin update commands for Claude Code and Codex.
 * `qa-suite.skill` and `qa-suite-source.zip` are regenerated from the current `qa-suite/` tree and verified byte-identical to the checkout, fixing the stale-artifact QA findings (BOB-001, COMPAT-001/002, security finding 1).
-
-`v1.1.3` is the current public package release.
 
 `v1.1.2`:
 
