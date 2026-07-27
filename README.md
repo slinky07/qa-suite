@@ -125,6 +125,34 @@ user identifiers, and sensitive URLs.
 
 Single-session sequential execution is fallback only for hosts with no subagent or delegation facility. Reports and final summaries from fallback runs must explicitly label themselves as `single-session fallback; non-independent evidence`.
 
+### Governance-Aware Issue Proposals
+
+After synthesis and finding-ledger reconciliation, the orchestrator prepares a
+copyable issue proposal for each new or materially changed `open` or
+`regressed` S1/S2 or P0 finding. Project-visible `qa-context.md` configuration
+may broaden that threshold. It cannot suppress the default. Fixed, unchanged,
+observation-only, and currently valid `accepted` or `wontfix` items do not
+generate tracker noise. An accepted or `wontfix` finding becomes eligible only
+when current evidence voids its acceptance under the canonical risk-acceptance
+contract; the human-set status and reason remain unchanged.
+Existing project contexts need no migration; missing proposal fields use the
+default threshold and portable Markdown.
+
+The orchestrator reads applicable `AGENTS.md`, `qa-context.md`, README and
+contribution guidance, named contracts, issue templates, and already-accessible
+read-only tracker results. It does not infer tracker rules from the development
+conversation, agent memory, credentials, or unavailable services. A clear
+existing match is reported instead of producing a duplicate. An unavailable
+tracker is disclosed as an unverified duplicate check.
+
+The redacted proposal appears in the final synthesis and in a new immutable
+`YYYY-MM-DD-HHMM-issue-proposals-<short-scope>.md` file under the configured
+QA report folder. Creation is exclusive; a collision receives a numeric
+suffix. QA lanes never inspect a remote tracker or draft issues.
+Neither the lanes nor the orchestrator mutate a tracker during QA. Creating,
+editing, commenting on, labeling, assigning, closing, or moving a tracker item
+requires a later explicit user request.
+
 ### Codex Notes
 
 In Codex Desktop, Codex CLI, and the Codex IDE extension, qa-suite should run as a root-orchestrated subagent workflow: the main task reads the skill, selects lanes, runs `smoke-qa` first as one child subagent, and then dispatches one direct child subagent for each remaining selected lane only after a Go-family smoke verdict.

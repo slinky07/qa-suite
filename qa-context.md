@@ -17,6 +17,16 @@ scope instead of inventing an app surface.
 - **Repository visibility (`repo_visibility`):** public
 - **Named components:** codex-install, claude-code-install, project-initialization, qa-orchestration, command-wrappers, agent-wrappers, release-artifacts
 
+## Issue proposal governance
+
+Optional orchestrator-only configuration. Missing or `N/A` values use the
+portable defaults in `qa-suite/references/issue-proposals.md`.
+
+- **Tracker:** GitHub Issues
+- **Additional proposal threshold:** N/A
+- **Issue conventions:** AGENTS.md and README.md; no repository-visible issue template or title convention
+- **Read-only duplicate lookup:** GitHub issue search for standard findings when it is already available; sensitive findings require an approved private lookup, otherwise skip remote search; report unavailable checks as not verified
+
 ## Testing posture
 
 - **Posture:** aggressive
@@ -94,6 +104,9 @@ These apply regardless of the fields above:
   `rm -rf`, no resets.
 - Never edit source code, tests, config, git history, issues, PRs, or
   releases to make a result pass. Report; don't fix.
+- QA lanes never inspect a remote tracker or draft issues. Only the
+  orchestrator may prepare a local proposal after synthesis. Any tracker
+  mutation requires a later explicit user request.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
 - Never inspect files, browser data, or applications unrelated to the app

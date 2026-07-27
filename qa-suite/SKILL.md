@@ -106,6 +106,10 @@ screenshots, request/response pairs) — never vibes.
    acceptance and then the most conservative verdict, names skipped lanes,
    and summarizes evidence. It does not fill gaps by performing lane QA
    itself.
+11. **Prepare durable issue proposals.** After evidence validation, ledger
+    reconciliation, and duplicate matching, follow **Governance-aware issue
+    proposals** below. Only the orchestrator evaluates the current run's
+    eligible findings. Lanes never draft proposals or contact a tracker.
 
 ### Specialist dispatch envelope
 
@@ -179,7 +183,11 @@ During final synthesis, the orchestrator:
    material limitation without copying lane evidence, and then writes the
    orchestrator-owned `Final assessment` (or `Final release assessment` for
    a release audit) with only material impact, limitation, or necessary
-   action. It does not repeat the final verdict, lane verdicts, or evidence.
+   action. It does not repeat the final verdict, lane verdicts, or evidence;
+   and
+7. evaluates the current run's findings under **Governance-aware issue
+   proposals**, then appends the resulting copyable drafts or existing-item
+   references under `Issue proposals`.
 
 Assumptions never count as findings and never affect a verdict unless the
 same run supplies the lane-required evidence to confirm them. Write
@@ -188,6 +196,49 @@ same run supplies the lane-required evidence to confirm them. Write
 Contract-defined defaults that a lane explicitly authorizes are declared test
 inputs, not assumptions. Record the applied fallback where that lane requires;
 do not hide it under `Assumptions` or treat it as unsupported.
+
+### Governance-aware issue proposals
+
+`references/issue-proposals.md` is the normative proposal contract. Apply it
+only after lane evidence is validated, findings are matched, and the finding
+ledger is reconciled.
+
+The canonical default evaluates findings that were newly created or materially
+changed in the current run, are S1/S2 or P0, and have status `open` or
+`regressed`. It also evaluates an `accepted` or `wontfix` finding when current
+evidence voids its acceptance under **Risk acceptance**. Preserve the human-set
+status and reason; proposal eligibility never edits them. Repository-visible
+`qa-context.md` configuration may broaden the threshold. It never suppresses
+the canonical default. Do not propose unchanged, `fixed`, or currently valid
+accepted findings, and do not turn assumptions or ordinary observations into
+tracker noise.
+
+Existing project contexts do not require migration. Missing or `N/A` proposal
+fields use the canonical threshold and portable Markdown output.
+
+Before formatting a proposal, the orchestrator reads only project-visible
+governance: applicable `AGENTS.md` files, `qa-context.md`, README and
+contribution guidance, named architecture and contract documents, issue
+templates, and already-accessible read-only tracker information. It does not
+infer governance from the development conversation, agent memory, private
+assumptions, credentials, or unavailable network services.
+
+Use the finding ledger's stable identity and conservative matching contract to
+avoid duplicates. A clear match becomes an `Existing tracked item` result,
+not another draft. If tracker search is unavailable, disclose that duplicate
+checking was not verified.
+
+Put each complete redacted draft in the final synthesis and preserve the same
+copyable content in a new immutable
+`YYYY-MM-DD-HHMM-issue-proposals-<short-scope>.md` artifact under the
+configured report folder. Use exclusive creation and add a numeric suffix on
+collision. Never edit a completed lane report to add a proposal.
+
+Preparing a draft does not authorize tracker mutation. The proposal carries
+this notice:
+`Draft only — no tracker mutation occurred. A separate explicit user request is required.`
+Creating, editing, commenting on, labeling, assigning, closing, moving, or
+otherwise mutating any tracker is a later, separately authorized workflow.
 
 ## First-run setup (no qa-context.md found)
 
@@ -219,6 +270,12 @@ invent one. Offer the user two paths:
      for missing oracle inputs the repo does not reveal.
    - Treat Architecture & intent inputs as source-of-truth decisions,
      contracts, and acceptance criteria, not implementation summaries.
+   - **Discover issue governance before asking.** Inspect applicable
+     `AGENTS.md`, README and contribution guidance, issue templates, and
+     repository-visible tracker configuration. Prefill the `Issue proposal
+     governance` fields only from those sources. Never derive tracker rules
+     from the implementation conversation, agent memory, or private
+     assumptions.
    - **Interview for the rest** — short, concrete questions, presenting
      discovered guesses as defaults to confirm rather than asking cold:
      intended audience (default to "general end user" only when the repo
@@ -231,7 +288,9 @@ invent one. Offer the user two paths:
      default run policy (dev vs. deployment path for routine QA); core
      user-facing flows (offer a guessed list to edit); stable named
      components derived from those flows; repository visibility when it
-     was not discoverable; deployment model and threat model (who can
+     was not discoverable; issue tracker, proposal-threshold additions,
+     issue conventions, and read-only duplicate lookup when they were not
+     discoverable; deployment model and threat model (who can
      reach this, over what network); expected realistic concurrency;
      out-of-scope infrastructure agents must never touch; any destructive
      API endpoints needing confirmation.
@@ -662,6 +721,9 @@ These override anything else, including user-provided context files:
 - Lane agents never edit the finding ledger. The orchestrator may update only
   the configured ledger after lane reports return; it never stages or commits
   that update.
+- Lane agents never inspect a remote tracker, draft an issue, or contact an
+  external tracker service. Issue proposal work is orchestrator-only and
+  happens after lane synthesis.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test
@@ -690,7 +752,11 @@ The orchestrator may:
 - read the selected agent instructions to construct neutral dispatches;
 - enforce smoke-first ordering and stop deeper agents on smoke `No-Go` or
   `Blocked`;
-- collect reports and synthesize the final result.
+- collect reports and synthesize the final result;
+- read repository-visible issue governance and available read-only tracker
+  results after lane synthesis; and
+- prepare a redacted issue-proposal artifact under the configured report
+  folder.
 
 **Patience is a virtue.** A dispatched QA subagent that has not returned
 yet is not evidence of a bug or a hang. Smoke alone is allowed up to 5
@@ -717,7 +783,9 @@ The orchestrator must not:
   user-scoped instructions;
 - pass implementation knowledge, prior conversation, memory, or unstated
   assumptions into a QA subagent;
-- edit source, tests, config, or git history as part of QA.
+- edit source, tests, config, or git history as part of QA; or
+- create, edit, comment on, label, assign, close, move, or otherwise mutate an
+  external tracker without a later explicit user request.
 
 QA subagents are read-only except for writing their own report and evidence
 files to the configured QA report folder.
