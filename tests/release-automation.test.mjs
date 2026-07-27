@@ -152,6 +152,7 @@ test("workflows pin actions and separate validation from release authority", asy
     ".claude/agents/**",
     ".claude/commands/**",
     ".agents/plugins/marketplace.json",
+    "scripts/evaluation/**",
   ]) {
     assert.equal(integrity.split(`- "${path}"`).length - 1, 2);
   }
@@ -253,4 +254,6 @@ test("AGENTS.md preserves the human publication gate and recovery rules", async 
     agents,
     /Do\s+not\s+move the tag,\s+overwrite\s+assets, or publish/,
   );
+  assert.match(agents, /scripts\/evaluation\/contracts\.mjs/);
+  assert.match(agents, /deliberately\s+excluded from `qa-suite\.skill`/);
 });
