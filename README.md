@@ -156,15 +156,21 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.3.0`:
+
+* Adds a committed finding ledger with stable defect identity, lifecycle state, conservative cross-lane matching, and a documented three-tier evidence model.
+* Adds strict schema, path, visibility, redaction, and compare-and-swap protections so ledger validation and concurrent writes fail loudly.
+* Repairs draft-release discovery and lets reviewed release automation resume a frozen tag without moving the tag or changing its package payload.
+
+Repository package version: `v1.3.0`. The GitHub Releases page is the
+authority for whether that version has been published.
+
 `v1.2.0`:
 
 * Adds canonical cross-lane verdict, observed-only, disposable-target, risk-acceptance, and verbatim-dispatch contracts.
 * Adds evidence-backed Bob IA and trust guidance, smoke `No-Go`/`Blocked` gating, impact-scoped triggers, and explicit lane time boxes.
 * Adds durable contract tests for `qa-context.md` parity and shared QA workflow invariants.
 * Builds both release assets deterministically from the exact Git commit, verifies archive/tree parity and remote digests, and retains release evidence before publication.
-
-Repository package version: `v1.2.0`. The GitHub Releases page is the
-authority for whether that version has been published.
 
 `v1.1.3`:
 
