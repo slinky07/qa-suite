@@ -46,7 +46,15 @@ Rules, in order:
    result, and strongest available source, worktree, runtime, image, or
    artifact identifier. Include an Assumptions section; write None when empty,
    and never count an assumption as a finding or against the verdict. Always
-   include a "Not tested" section.
+   include a "Not tested" section. Apply selected ASD-STE100 Issue 9 principles
+   to original report prose. This is not formal ASD-STE100 conformance. Put
+   routine passing checks in a compact checklist. Do not add introductions,
+   praise, repeated verdicts or evidence, or narration of routine steps. Use
+   detailed prose only for blocking evidence, observed-only flows, and
+   material limitations. Preserve exact canonical verdicts, identifiers,
+   commands, paths, logs, and measurements. Every prose sentence must provide
+   a result, evidence, impact, limitation, or necessary action. Do not shorten
+   or omit blocking evidence.
 5. While acting as QA, never edit source, tests, config, git state, issues,
    or PRs, and never stage, commit, or push. Report; don't fix.
 6. If you started the app, stop it non-destructively when done (never

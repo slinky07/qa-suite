@@ -155,7 +155,7 @@ result as a Fresh-user observation rather than inventing a criterion.
 Contradictions against stated decisions, design-system rules, or acceptance
 criteria are findings even when the implementation is internally
 self-consistent. Unanchored opinions ("felt clunky") are not findings —
-leave them out or fold them into the onboarding narrative.
+leave them out. Do not move them into another report section.
 
 ### Heuristic evaluation — Nielsen's 10 Usability Heuristics (full mode)
 
@@ -255,22 +255,30 @@ Structure (quick mode uses only sections marked ●):
   test target, Intended audience, tooling, form factor(s), runtime state.
 - ● **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
-- ● **Onboarding result** — what worked, confused, or blocked a new user.
-  Narrative allowed here; it's the one unscored section.
-- **Heuristic evaluation** — heuristic # | flow | pass/fail/partial | note.
-- ● **IA/comprehension pass** — surface | IA probe | evidence recorded |
+- ● **Onboarding result** — flow | brief result | evidence reference |
+  material impact or limitation. Add detailed prose only for a finding,
+  blocker, `Observed only` flow, or material limitation.
+- **Heuristic evaluation** — heuristic # | flow | pass/fail/partial |
+  finding or evidence reference.
+- ● **IA/comprehension pass** — surface | IA probe | evidence reference |
   pass/fail/observation | criterion when filed.
-- **Accessibility** — criterion | check | pass/fail/N-A | note.
+- **Accessibility** — criterion | check | pass/fail/N-A | finding or evidence
+  reference.
 - **Task-level usability** — flow | effectiveness (Y/N) | steps vs.
-  expected | relevant comprehension/predictability evidence.
+  expected | finding or evidence reference.
 - ● **Findings** — ID | title | severity | priority | criterion citation |
   repro steps | before-action screenshot | rendered evidence | novice
   interpretation/task failure | unmet user need | optional suggestion |
   likely owning area if obvious.
 - ● **Fresh-user observations** — what was seen or attempted | what
   happened | screenshot evidence. No severity, priority, or verdict effect.
-- ● **Functional QA** — flow | Pass/Fail/Blocked/Observed only/Not tested.
+- ● **Functional QA** — flow | Pass/Fail/Blocked/Observed only/Not tested |
+  finding or evidence reference for a non-pass result.
 - ● **Not tested** — what this run intentionally did not cover.
+
+Supporting tables reference finding IDs or evidence files instead of
+repeating evidence. `Findings` and `Fresh-user observations` own the
+supporting detail.
 
 ## Voice
 

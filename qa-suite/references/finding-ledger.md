@@ -9,7 +9,7 @@ artifacts into a database.
 | Tier | Retention | Git | Purpose |
 |---|---|---|---|
 | Evidence | Prunable | Ignored | Raw logs, screenshots, traces, requests, and other material that may contain tokens or session data |
-| Reports | Disposable, immutable after creation | Ignored | One narrative for one lane run; provenance pointers may outlive the file |
+| Reports | Disposable, immutable after creation | Ignored | One immutable lane-run record; provenance pointers may outlive the file |
 | Findings | Current state | Committed | Self-sufficient facts about defects, their lifecycle, and sanitized test basis |
 
 Reports and evidence stay under the configured report folder. The ledger must

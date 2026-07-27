@@ -182,6 +182,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Evidence over adjectives. Use criterion numbers, measurements, screenshots, logs, and literal request/response pairs.
 * Specialist titles steer attention; they never increase confidence without evidence.
 * Never claim untested coverage. Every report names what was not tested.
+* Controlled report prose uses selected ASD-STE100 Issue 9 principles. This is not formal ASD-STE100 conformance. Routine passes use compact tables or lists. Findings and blockers retain their supporting evidence. Exact technical text is not rewritten.
 * Valid human-accepted risks are excluded during final synthesis; then the most conservative verdict wins. A Go only means nothing failed in that agent’s lane.
 
 ## Release Notes

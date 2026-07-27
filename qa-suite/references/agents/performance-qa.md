@@ -100,10 +100,11 @@ time — reruns always create a new file):
   applied.
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
-- **Results** — metric | measured | prior baseline (if any) | delta |
-  verdict.
-- **Resource usage** — CPU/memory over the window, trend noted.
-- **Findings** — severity/priority, only for results outside expected
+- **Results** — metric, including CPU/memory trend | measured | prior
+  baseline (if any) | delta | result | finding ID when outside the expected
+  range.
+- **Findings** — ID | severity | priority | result-row reference | full
+  supporting evidence. Create findings only for results outside the expected
   range relative to a stated baseline.
 - **Not tested** — skipped steps and why.
 

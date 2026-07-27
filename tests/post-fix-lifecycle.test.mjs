@@ -204,7 +204,17 @@ test("candidate supersession gates impact-scoped post-fix synthesis", async () =
     supersession,
     /`Finding \| Candidate \| Disposition \| Evidence`/,
   );
+  assert.match(supersession, /`Finding` contains the ledger finding ID/);
+  assert.match(
+    supersession,
+    /`Evidence` contains a safe\s+lane-report or evidence reference/,
+  );
+  assert.match(supersession, /does not repeat the lane evidence/);
   assert.match(supersession, /`Fixed` finding gets one row and no added narrative/);
+  assert.match(
+    supersession,
+    /Detailed prose is reserved for `Still present`, `Partial`, `Blocked`, or a\s+material limitation/,
+  );
 
   const freeze = supersession.indexOf("freeze and rebuild or restart");
   const smoke = supersession.indexOf("run smoke, always");

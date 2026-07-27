@@ -161,7 +161,7 @@ contracts cite this section. They do not restate it.
 
 ### Specialist synthesis
 
-Before computing the final verdict, the orchestrator:
+During final synthesis, the orchestrator:
 
 1. validates every proposed finding against that lane's evidence
    requirements and keeps unsupported premises under `Assumptions`;
@@ -172,10 +172,14 @@ Before computing the final verdict, the orchestrator:
    evidenced different behavior as a genuinely new finding;
 4. lists conflicting factual conclusions or recommendations with their
    safe, redacted supporting evidence references instead of averaging,
-   silently resolving, or copying sensitive raw evidence; and
-5. presents lane results separately from the orchestrator-owned
-   `Final assessment` (`Final release assessment` for a release audit), then
-   applies valid risk acceptance and the most conservative verdict.
+   silently resolving, or copying sensitive raw evidence;
+5. applies valid risk acceptance and the most conservative verdict; and
+6. writes the final verdict on line one, presents each completed lane once in
+   a compact lane-results table with its verdict, report reference, and any
+   material limitation without copying lane evidence, and then writes the
+   orchestrator-owned `Final assessment` (or `Final release assessment` for
+   a release audit) with only material impact, limitation, or necessary
+   action. It does not repeat the final verdict, lane verdicts, or evidence.
 
 Assumptions never count as findings and never affect a verdict unless the
 same run supplies the lane-required evidence to confirm them. Write
@@ -498,7 +502,11 @@ The per-cycle report includes:
 
 `Finding | Candidate | Disposition | Evidence`
 
+`Finding` contains the ledger finding ID. `Evidence` contains a safe
+lane-report or evidence reference; it does not repeat the lane evidence.
 A `Fixed` finding gets one row and no added narrative.
+Detailed prose is reserved for `Still present`, `Partial`, `Blocked`, or a
+material limitation.
 
 ## Verdict conflicts
 
@@ -624,6 +632,22 @@ Non-negotiable report rules, all agents:
 - **Evidence over adjectives.** Criterion numbers, measurements,
   screenshots, literal request/response pairs. "Felt slow" is not a
   finding.
+- **Controlled report prose.** Apply selected ASD-STE100 Issue 9 principles
+  only to original explanatory or procedural prose in reports and final
+  summaries. This is not a claim of formal ASD-STE100 conformance. Use short,
+  clear sentences and active voice. Put one fact per sentence and use one
+  stable term for each concept. Every prose sentence must provide a result,
+  evidence, impact, limitation, or necessary action. Remove introductions,
+  praise, conversational filler, repeated verdicts, duplicated evidence, and
+  narration of routine test steps. Put routine passing checks in compact
+  tables or lists. Use detailed prose only for findings, blockers, `Observed
+  only` flows, and material limitations. Do not shorten or omit evidence that
+  supports a finding or blocker. Canonical verdicts, identifiers, commands,
+  paths, quotations, logs, measurements, sanitized request/response data,
+  official standard names, and other exact technical evidence are exempt from
+  vocabulary restrictions. This rule does not impose a fixed report length
+  and does not remove required report sections. The official reference is
+  [ASD-STE100 Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf).
 - **Reports scale with risk, not effort.** A passing smoke test reads in
   ten seconds. Padding a clean report is a bug.
 
