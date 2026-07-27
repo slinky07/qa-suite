@@ -94,12 +94,13 @@ and time — reruns always create a new file):
   result, target, platform file, and tested runtime or artifact.
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
-- **Coverage claimed** — exactly which combinations ran, which were
-  skipped and why, which were emulated/simulated.
-- **Results matrix** — flow | combination | pass/fail/observed-only | note.
+- **Coverage claimed** — exactly which combinations ran and which were
+  emulated/simulated.
+- **Results matrix** — flow | combination | pass/fail/observed-only |
+  evidence reference or finding ID.
 - **Findings** — ID | flow | combination | severity | priority |
   screenshot evidence | evidence-supported cause hypothesis, clearly labeled.
-- **Not tested** — combinations outside the run's scope.
+- **Not tested** — skipped combinations and why.
 
 ## Voice
 

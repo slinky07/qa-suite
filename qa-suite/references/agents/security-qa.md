@@ -26,9 +26,9 @@ description: Security hygiene testing agent — dependency vulnerability scan, e
   for a live exposed credential, secret, or active vulnerability with real
   impact; route non-security behavior to the relevant sibling lane.
 
-Run a lightweight, non-destructive hygiene pass. State in every report that
-this is not a penetration test and does not substitute for one — it catches
-the common, cheap-to-catch issues, nothing more.
+Run a lightweight, non-destructive hygiene pass. In the report, state once
+under `Not tested` that this is not a penetration test and does not substitute
+for one — it catches the common, cheap-to-catch issues, nothing more.
 
 ## Time box
 
@@ -109,13 +109,14 @@ time — reruns always create a new file):
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
 - **Dependency scan** — package | vulnerability | severity (from tool) |
-  fix available.
-- **Checklist results** — check | result | context note.
-- **Findings** — severity/priority, repro steps that stop short of
-  exploitation, evidence.
-- **Explicitly not tested** — what a real pentest would cover that this
-  pass doesn't (auth bypass attempts, injection, session fixation, etc.),
-  so no one mistakes this for comprehensive coverage.
+  fix available | finding ID when failed.
+- **Checklist results** — check | result | evidence reference or finding ID.
+- **Findings** — ID | severity | priority | safe repro steps that stop short
+  of exploitation | full supporting evidence.
+- **Not tested** — skipped checks and the single material limitation that this
+  hygiene review is not a penetration test or comprehensive security
+  assessment. Name relevant excluded areas, such as auth bypass attempts,
+  injection, or session fixation, once in this section.
 
 ## Voice
 
