@@ -310,6 +310,55 @@ export function assertRepository(repository) {
   }
 }
 
+export function selectReleaseByTag(releasePages, tag, options = {}) {
+  assertReleaseTag(tag);
+  if (
+    !Array.isArray(releasePages) ||
+    releasePages.some((page) => !Array.isArray(page))
+  ) {
+    throw new Error("GitHub Releases API pagination response is invalid");
+  }
+
+  const matches = releasePages
+    .flat()
+    .filter((release) => release?.tag_name === tag);
+
+  if (matches.length > 1) {
+    throw new Error(`Multiple releases use tag ${tag}`);
+  }
+  if (matches.length === 0) {
+    if (options.allowMissing === true) {
+      return null;
+    }
+    throw new Error(`Release ${tag} was not found`);
+  }
+
+  return matches[0];
+}
+
+export function fetchReleaseByTag(repository, tag, options = {}) {
+  assertRepository(repository);
+  assertReleaseTag(tag);
+
+  const output = runCommand("gh", [
+    "api",
+    "--paginate",
+    "--slurp",
+    `repos/${repository}/releases?per_page=100`,
+  ]);
+
+  let releasePages;
+  try {
+    releasePages = JSON.parse(output);
+  } catch (error) {
+    throw new Error(
+      `GitHub Releases API returned invalid JSON: ${error.message}`,
+    );
+  }
+
+  return selectReleaseByTag(releasePages, tag, options);
+}
+
 export function assertExpectedReleaseState(release, expectedState) {
   if (expectedState === "draft") {
     if (release.draft !== true) {

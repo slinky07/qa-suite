@@ -23,16 +23,17 @@ jobs:
       attestations: read
       contents: read
     outputs:
+      automation_commit: ${{ steps.candidate.outputs.automation_commit }}
       commit: ${{ steps.candidate.outputs.commit }}
       tag: ${{ steps.candidate.outputs.tag }}
 
     steps:
-      - name: Check out the requested tag
+      - name: Check out the release automation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
 
       - name: Use Node.js 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -49,17 +50,18 @@ jobs:
             echo "Tag must use v<major>.<minor>.<patch>" >&2
             exit 1
           fi
-          version="$(tr -d '[:space:]' < VERSION)"
+          version="$(git show "${REQUESTED_TAG}:VERSION" | tr -d '[:space:]')"
           if [[ "${REQUESTED_TAG}" != "v${version}" ]]; then
             echo "${REQUESTED_TAG} does not match VERSION ${version}" >&2
             exit 1
           fi
           git fetch origin main
-          commit="$(git rev-parse HEAD)"
+          commit="$(git rev-parse "${REQUESTED_TAG}^{commit}")"
           if ! git merge-base --is-ancestor "${commit}" origin/main; then
             echo "${REQUESTED_TAG} is not contained in origin/main" >&2
             exit 1
           fi
+          echo "automation_commit=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
           echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
           echo "tag=${REQUESTED_TAG}" >> "${GITHUB_OUTPUT}"
 
@@ -71,7 +73,7 @@ jobs:
           RELEASE_TAG: ${{ steps.candidate.outputs.tag }}
         run: >-
           node scripts/release/check.mjs
-          --ref HEAD
+          --ref "${RELEASE_TAG}"
           --tag "${RELEASE_TAG}"
           --output release-artifacts
 
@@ -83,7 +85,7 @@ jobs:
           node scripts/release/verify-remote.mjs
           --repo "${GITHUB_REPOSITORY}"
           --tag "${RELEASE_TAG}"
-          --ref HEAD
+          --ref "${RELEASE_TAG}"
           --artifacts release-artifacts
           --evidence candidate-release-evidence.json
           --expected-state draft-or-immutable
@@ -131,6 +133,17 @@ jobs:
       contents: write
 
     steps:
+      - name: Check out the release automation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.automation_commit }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
       - name: Download the verified publication candidate
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -218,7 +231,9 @@ jobs:
           }
 
           release_json="$(
-            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+            node scripts/release/lookup-release.mjs \
+              --repo "${GITHUB_REPOSITORY}" \
+              --tag "${RELEASE_TAG}"
           )"
           release_was_draft="$(jq -r '.draft' <<< "${release_json}")"
           if [[ "${release_was_draft}" == "true" ]]; then
@@ -278,7 +293,9 @@ jobs:
           fi
 
           published_json="$(
-            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+            node scripts/release/lookup-release.mjs \
+              --repo "${GITHUB_REPOSITORY}" \
+              --tag "${RELEASE_TAG}"
           )"
           verify_release_json "${published_json}" false
           jq -e '.immutable == true' <<< "${published_json}" >/dev/null
@@ -344,12 +361,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out the release tag
+      - name: Check out the release automation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ needs.validate.outputs.tag }}
+          ref: ${{ needs.validate.outputs.automation_commit }}
 
       - name: Use Node.js 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -370,7 +387,7 @@ jobs:
           node scripts/release/verify-remote.mjs
           --repo "${GITHUB_REPOSITORY}"
           --tag "${RELEASE_TAG}"
-          --ref HEAD
+          --ref "${RELEASE_TAG}"
           --artifacts publication-candidate/release-artifacts
           --evidence final-release-evidence.json
           --expected-state published

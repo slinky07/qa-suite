@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { assertExpectedReleaseState } from "../scripts/release/lib.mjs";
+import {
+  assertExpectedReleaseState,
+  selectReleaseByTag,
+} from "../scripts/release/lib.mjs";
 
 async function text(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -34,6 +37,7 @@ test("release scripts are valid JavaScript", () => {
   for (const path of [
     "scripts/release/lib.mjs",
     "scripts/release/check.mjs",
+    "scripts/release/lookup-release.mjs",
     "scripts/release/verify-remote.mjs",
   ]) {
     execFileSync(process.execPath, ["--check", path], { stdio: "pipe" });
@@ -98,6 +102,7 @@ test("workflows pin actions and separate validation from release authority", asy
   assert.match(draftRelease, /--verify-tag/);
   assert.match(draftRelease, /--fail-on-no-commits/);
   assert.match(draftRelease, /gh release upload/);
+  assert.match(draftRelease, /lookup-release\.mjs/);
   assert.match(draftRelease, /verify-remote\.mjs/);
   assert.match(draftRelease, /persist-credentials: false/);
   assert.doesNotMatch(draftRelease, /workflow_dispatch/);
@@ -105,12 +110,17 @@ test("workflows pin actions and separate validation from release authority", asy
   assert.doesNotMatch(publishRelease, /immutable-releases/);
   assert.match(publishRelease, /git\/ref\/tags\/\$\{RELEASE_TAG\}/);
   assert.match(publishRelease, /expected-state draft-or-immutable/);
+  assert.match(publishRelease, /ref: \$\{\{ github\.sha \}\}/);
+  assert.match(publishRelease, /automation_commit/);
+  assert.match(publishRelease, /--ref "\$\{RELEASE_TAG\}"/);
+  assert.match(publishRelease, /lookup-release\.mjs/);
   assert.match(publishRelease, /already published and immutable/);
   assert.match(publishRelease, /--draft=false/);
   assert.match(publishRelease, /expected-state published/);
   assert.match(publishRelease, /source-digest/);
   assert.match(publishRelease, /source-ref "refs\/heads\/main"/);
   assert.doesNotMatch(workflows, /--clobber/);
+  assert.doesNotMatch(workflows, /releases\/tags\/\$\{RELEASE_TAG\}/);
   assert.doesNotMatch(draftRelease, /--draft=false/);
 
   const firstTagCheck = publishRelease.indexOf(
@@ -131,6 +141,31 @@ test("workflows pin actions and separate validation from release authority", asy
   ]) {
     assert.equal(integrity.split(`- "${path}"`).length - 1, 2);
   }
+});
+
+test("paginated release lookup selects drafts without the tag endpoint", () => {
+  const draft = {
+    id: 123,
+    tag_name: "v1.2.0",
+    draft: true,
+  };
+
+  assert.equal(
+    selectReleaseByTag([[draft], []], "v1.2.0"),
+    draft,
+  );
+  assert.equal(
+    selectReleaseByTag([[]], "v1.2.0", { allowMissing: true }),
+    null,
+  );
+  assert.throws(
+    () => selectReleaseByTag([[]], "v1.2.0"),
+    /was not found/,
+  );
+  assert.throws(
+    () => selectReleaseByTag([[draft], [draft]], "v1.2.0"),
+    /Multiple releases/,
+  );
 });
 
 test("publication retries accept only draft or immutable exact-state candidates", () => {
@@ -179,6 +214,8 @@ test("AGENTS.md preserves the human publication gate and recovery rules", async 
 
   assert.match(agents, /gh release create --draft\s+--verify-tag/);
   assert.match(agents, /gh api/);
+  assert.match(agents, /paginated Releases API/);
+  assert.match(agents, /does not expose draft releases/);
   assert.match(agents, /gh release download/);
   assert.match(agents, /gh workflow run publish-release\.yml -f tag=vX\.Y\.Z/);
   assert.match(agents, /gh run download <run-id>/);
@@ -186,9 +223,16 @@ test("AGENTS.md preserves the human publication gate and recovery rules", async 
   assert.match(agents, /owner-admin gate/);
   assert.match(agents, /must see `true` before dispatching/);
   assert.match(agents, /`GITHUB_TOKEN` cannot read/);
-  assert.match(agents, /recovery path accepts\s+only the exact immutable release/);
   assert.match(
     agents,
-    /Do\s+not\s+move the tag,\s+overwrite assets, or publish/,
+    /reviewed release automation from the dispatched\s+`main` commit/,
+  );
+  assert.match(
+    agents,
+    /recovery path accepts\s+only the exact immutable\s+release/,
+  );
+  assert.match(
+    agents,
+    /Do\s+not\s+move the tag,\s+overwrite\s+assets, or publish/,
   );
 });
