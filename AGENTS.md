@@ -82,6 +82,11 @@ The workflow never uses `--clobber` and never publishes the draft. A retry may
 upload a missing asset only after every existing asset matches the exact local
 build. A mismatch or extra asset fails closed.
 
+GitHub exposes draft releases only to tokens with write access to repository
+contents. The draft-verification and pre-publication validation jobs therefore
+declare `contents: write` even though those steps only query metadata and
+download assets. Verification after publication remains read-only.
+
 Immutable releases are required before publication. Enabling and confirming
 this one-time repository setting is an owner-admin gate:
 
@@ -105,6 +110,12 @@ gh run download <run-id> \
   --dir /tmp/qa-suite-release-evidence-vX.Y.Z
 jq . /tmp/qa-suite-release-evidence-vX.Y.Z/release-evidence.json
 ```
+
+Normally the draft workflow must succeed before publication. If it created the
+exact draft and then failed only because of a release-automation defect, repair
+the automation through a PR. The publication workflow must then run from the
+repaired `main`, repeat all candidate checks, and retain replacement validation
+evidence before it may publish.
 
 Publish only through the verification workflow:
 

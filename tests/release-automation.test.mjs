@@ -123,6 +123,20 @@ test("workflows pin actions and separate validation from release authority", asy
   assert.doesNotMatch(workflows, /releases\/tags\/\$\{RELEASE_TAG\}/);
   assert.doesNotMatch(draftRelease, /--draft=false/);
 
+  const draftVerifier = draftRelease.slice(
+    draftRelease.indexOf("  verify:"),
+  );
+  const publicationValidator = publishRelease.slice(
+    publishRelease.indexOf("  validate:"),
+    publishRelease.indexOf("  publish:"),
+  );
+  const publishedVerifier = publishRelease.slice(
+    publishRelease.indexOf("  verify:"),
+  );
+  assert.match(draftVerifier, /contents: write/);
+  assert.match(publicationValidator, /contents: write/);
+  assert.match(publishedVerifier, /contents: read/);
+
   const firstTagCheck = publishRelease.indexOf(
     'tagged_commit="$(resolve_tag_commit)"',
   );
@@ -221,12 +235,16 @@ test("AGENTS.md preserves the human publication gate and recovery rules", async 
   assert.match(agents, /gh run download <run-id>/);
   assert.match(agents, /never uses `--clobber`/);
   assert.match(agents, /owner-admin gate/);
+  assert.match(agents, /draft releases only to tokens with write access/);
+  assert.match(agents, /Verification after publication remains read-only/);
   assert.match(agents, /must see `true` before dispatching/);
   assert.match(agents, /`GITHUB_TOKEN` cannot read/);
   assert.match(
     agents,
     /reviewed release automation from the dispatched\s+`main` commit/,
   );
+  assert.match(agents, /failed only because of a release-automation defect/);
+  assert.match(agents, /retain replacement validation\s+evidence/);
   assert.match(
     agents,
     /recovery path accepts\s+only the exact immutable\s+release/,
