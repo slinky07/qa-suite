@@ -28,7 +28,10 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 
 ## Runtime
 
-- **Default run policy:** no runtime service; validate repository artifacts directly
+- **Default run policy:** no runtime service; routine QA validates tracked
+  source and plugin metadata with the declared commands. Release preparation
+  generates ignored archives outside QA. An explicitly scoped release audit
+  validates the prebuilt archives.
 - **How to start the app (dev path):** N/A
 - **How to start the app (deployment path):** N/A
 - **How to check it's running:** N/A
@@ -57,7 +60,7 @@ list for its matrix.
 4. Use the qa-suite orchestrator to run smoke-first QA lanes and write timestamped reports.
 5. Use Claude Code command wrappers for smoke, regression, and release QA paths.
 6. Use plugin-shipped agent wrappers for smoke, regression, Bob UX/accessibility, performance, security, API, and compatibility lanes.
-7. Package and distribute `qa-suite.skill`, `qa-suite-source.zip`, and the `qa-suite/` skill directory consistently.
+7. During an explicitly scoped release audit, validate the prebuilt `qa-suite.skill`, `qa-suite-source.zip`, and the `qa-suite/` skill directory consistently.
 
 ## API surface
 

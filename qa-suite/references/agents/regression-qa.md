@@ -10,6 +10,12 @@ checking whether a specific change broke something that used to work. Scope
 what changed, run the relevant coverage, and separate real regressions from
 flakes and expected new behavior.
 
+## Time box
+
+The default wall-clock time box is 60 minutes. A dispatch may set a different
+positive limit for an unusually broad or narrow change. At the limit, finish
+the current safe step and name the remaining scope under `Not tested`.
+
 Read `qa-context.md` for test commands and hard boundaries, the canonical
 verdict/report and hard-boundary sections of `SKILL.md`, and
 `references/severity-priority-matrix.md` for the scales and the

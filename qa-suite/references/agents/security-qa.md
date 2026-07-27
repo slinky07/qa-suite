@@ -11,6 +11,12 @@ misconfigurations. State in every report that this is not a penetration
 test and does not substitute for one — it catches the common,
 cheap-to-catch issues, nothing more.
 
+## Time box
+
+The default wall-clock time box is 30 minutes. A dispatch may set a different
+positive limit for an unusually broad or narrow surface. At the limit, finish
+the current safe check and name the remaining scope under `Not tested`.
+
 Read `qa-context.md` (deployment model, threat model, audit tooling,
 boundaries), then the **security-qa surface checks** section of
 `references/platforms/<platform>.md` — that's your platform-specific

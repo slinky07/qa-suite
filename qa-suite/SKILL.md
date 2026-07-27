@@ -44,8 +44,10 @@ screenshots, request/response pairs) — never vibes.
    compatibility-qa — those five have platform-specific checklists that live
    there, not in the agent files.
 3. **Pick which agents to run** from the trigger table below (or the user's
-   explicit ask). Read only the agent files you're actually running, from
-   `references/agents/`.
+   explicit ask). A lane's existence never implies its execution. Select a
+   lane only when the request, change, or project exposes its primary risk.
+   Read only the selected agent files from `references/agents/`. Record why
+   each lane ran or was skipped in the final summary.
 4. **Read `references/severity-priority-matrix.md`** before writing any
    finding. Every finding gets both a Severity and a Priority. Never
    redefine these scales.
@@ -57,9 +59,9 @@ screenshots, request/response pairs) — never vibes.
      UX/accessibility, performance, security, API contract, or
      compatibility.
    - Run `smoke-qa` first as its own independent subagent. If smoke reports
-     No-Go, stop and do not dispatch deeper agents.
-   - After smoke is Go, dispatch remaining selected lanes independently;
-     parallel dispatch is allowed when the host supports it.
+     `No-Go` or `Blocked`, stop and do not dispatch deeper agents.
+   - After a Go-family smoke verdict, dispatch remaining selected lanes
+     independently; parallel dispatch is allowed when the host supports it.
    - Only when no subagent/delegation facility exists may you run the lanes
      sequentially in the same session. That is fallback mode, not
      independent evidence.
@@ -68,17 +70,46 @@ screenshots, request/response pairs) — never vibes.
    `qa-context.md`, the matching platform checklist, its own agent
    instruction file, the canonical verdict/report and hard-boundary sections
    of this `SKILL.md`, the severity/priority matrix when applicable, report
-   folder, and the user's scoped QA request. Do not give expected outcomes,
-   implementation explanations, conversation history, prior memory, or the
-   orchestrator's beliefs about how the feature should work.
+   folder, and the user's scoped QA request. Apply **Verbatim dispatch**
+   below. Do not give expected outcomes, implementation explanations,
+   conversation history, prior memory, or the orchestrator's beliefs about
+   how the feature should work.
 7. **Enforce qa-context.md's default run policy.** When both a dev path and
    a deployment path exist, use the policy's preferred path for routine QA;
    only take the deployment path (e.g. Docker) when the task is explicitly
    deployment/container QA or a release audit. State which path was used in
    the report's Environment section.
 8. **Synthesize, don't retest.** The orchestrator reads the completed
-   reports, applies the most conservative verdict, names skipped lanes, and
-   summarizes evidence. It does not fill gaps by performing lane QA itself.
+   reports, applies valid risk acceptance and then the most conservative
+   verdict, names skipped lanes, and summarizes evidence. It does not fill
+   gaps by performing lane QA itself.
+
+### Verbatim dispatch
+
+Scope text and confirmation-manifest values are source text, not orchestrator
+prose. Copy scope wording verbatim from the current explicit human request or
+from complete named-flow entries in `qa-context.md`. Copy lifecycle-selected
+manifest fields verbatim from their finding-ledger rows. Representation-only
+escaping is allowed. Rewording is not.
+
+Keep separate source blocks separate. Do not paraphrase, summarize, interpret,
+expand, narrow, merge, or repair their wording.
+
+The orchestrator may add neutral routing metadata and canonical instructions:
+repository and context paths, platform, lane, mission, candidate identifier,
+report folder, time box, and the lane's canonical question. These additions
+must not interpret the copied scope or test basis.
+
+A time-box override is valid only when the lane file permits it and the value
+is a positive number of minutes. Reject a zero, negative, or non-numeric
+override before dispatch; never infer or silently substitute a value.
+
+If source text is ambiguous, conflicting, referential, or unsafe to dispatch,
+ask the human for safe explicit wording. Do not resolve it by paraphrasing.
+Hard boundaries override verbatim copying.
+
+This section is the only normative definition of verbatim dispatch. Other
+contracts cite this section. They do not restate it.
 
 ## First-run setup (no qa-context.md found)
 
@@ -199,34 +230,88 @@ straight to the workflow.
 
 ## When to run what
 
-| Event | Run | Skip |
+| Event or affected risk | Run | Skip |
 |---|---|---|
-| Every build / deploy | smoke-qa | everything else |
-| Every PR / merge candidate | smoke-qa → regression-qa | full audits |
-| UI-touching change | + bob-qa (quick mode) | full mode |
-| Backend/API-touching change | + api-qa | UI agents |
-| Before a release | bob-qa (full) + performance-qa + security-qa + compatibility-qa | — |
-| Dependency updates | regression-qa + security-qa (dependency scan) | — |
-| First run on a new project | smoke-qa → bob-qa (full) + performance-qa (baseline framing) | comparisons against baselines that don't exist |
+| Every build / deploy | smoke-qa | lanes without another affected risk |
+| Every PR / merge candidate | smoke-qa; add regression-qa when shipped behavior, contracts, configuration, or artifacts can regress | regression-qa when no deliverable behavior can change; full audits |
+| UI-touching change | add bob-qa (quick mode) | full mode unless explicitly requested |
+| Backend/API-touching change | add api-qa; add bob-qa when a user-facing consumer can change | UI lanes with no affected consumer |
+| Before a release | smoke-qa, then every applicable release lane: bob-qa (full) for a user-facing surface, performance-qa for a runtime performance surface, security-qa for a dependency or exposure surface, api-qa for an API, compatibility-qa for a supported platform matrix | lanes whose primary risk is absent |
+| Dependency updates | security-qa when the dependency is shipped or executed; regression-qa when build or behavior can change | lanes with no affected dependency risk |
+| First run on a new project | smoke-qa; add bob-qa (full) only for a user-facing surface and performance-qa baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
 
-**Run order matters: smoke first, always.** If smoke says No-Go, nothing
-else runs — every other agent assumes a running app.
+The broad release, first-run, PR, dependency, and backend/API triggers are
+impact-scoped. A full release audit means every applicable lane, not every
+lane regardless of the project's surfaces.
+
+**Run order matters: smoke first, always.** If smoke reports `No-Go` or
+`Blocked`, nothing else runs because deeper agents require an exercised
+smoke target.
 
 If the user's ask is ambiguous ("test my app"), don't run everything —
 that's the overkill this framework exists to prevent. Ask whether this is a
 routine pass (smoke + regression), a UI review (add bob-qa quick), or a
-release audit (the full set).
+release audit (the full applicable set).
 
 ## Verdict conflicts
 
 When agents disagree, **the most conservative verdict wins**, in this
-order: `No-Go > Blocked > Go with findings > Go`. Smoke says Go but
-regression says No-Go → No-Go. A Go only ever means "nothing wrong in my
-lane."
+order: `No-Go > Blocked > Go with findings > Go`. Apply **Risk acceptance**
+below during final synthesis before choosing that final verdict; never
+rewrite a lane report. Smoke says Go but regression says No-Go → No-Go. A Go
+only ever means "nothing wrong in my lane."
 
 Observed-only qualifiers always propagate to the final summary — a flow no
 lane completed stays marked observed-only there. The orchestrator flags any
 P0 finding in its summary regardless of verdict.
+
+### Risk acceptance
+
+`accepted` and `wontfix` are finding statuses, not verdicts. They do not
+change Severity or Priority. Both have the same effect on final verdict
+computation.
+
+A human is the only decision authority for these statuses. The human must
+identify the finding, choose the status, and provide a non-empty
+`status_reason` that is safe to repeat in the committed ledger and final
+summary. An orchestrator may record a complete, explicit human decision only
+as a mechanical transcription. It must not infer, generate, recommend,
+auto-apply, renew, or clear the status or reason. A recurrence count and `P3`
+never imply acceptance. The orchestrator may state neutrally that human
+acceptance is available, but not present it as a way to obtain a preferred
+verdict.
+
+Apply risk acceptance during final synthesis. Do not rewrite lane reports or
+hide lane findings. Exclude each currently valid `accepted` or `wontfix`
+finding from the findings and Severity counts that contribute to the final
+verdict. Preserve all coverage states, then apply the conservative verdict
+order to what remains. Do not inject accepted status into discovery lanes.
+
+Every final summary contains a `Known accepted risks` section. List every
+in-scope `accepted` or `wontfix` finding by finding ID, status, recorded
+Severity, `status_reason`, and current disposition. Mark findings that were
+not exercised in the current cycle. Write `None` when none applies. A
+matching `Still present` disposition is expected and does not contribute to
+the verdict.
+
+Acceptance covers only the finding as recorded. It remains valid for the
+same finding at the same or lower Severity and the same or narrower affected
+scope. A higher Severity voids acceptance only when current evidence
+demonstrates greater impact; relabeling unchanged evidence does not. A wider
+scope under the finding-ledger match rules also voids it. Uncertainty never
+extends acceptance.
+
+If current evidence describes a distinct finding under the ledger match
+rules, create a separate finding and retain the original acceptance only for
+its original record. If a disposition was assigned to the accepted finding
+but equivalence to its recorded test basis cannot be established, acceptance
+is void for that synthesis.
+
+Voiding ends verdict exclusion. It does not authorize an agent to change the
+human-set status. The finding re-enters verdict computation at its current
+Severity. Keep it under `Known accepted risks`, mark it
+`Acceptance void — human review required`, and state the cause. Only a human
+may renew acceptance or choose another status.
 
 ## Reports
 
@@ -316,7 +401,8 @@ The orchestrator may:
 - prepare or confirm `qa-context.md`;
 - identify the target repo, platform, report folder, and selected QA lanes;
 - read the selected agent instructions to construct neutral dispatches;
-- enforce smoke-first ordering and stop deeper agents on smoke No-Go;
+- enforce smoke-first ordering and stop deeper agents on smoke `No-Go` or
+  `Blocked`;
 - collect reports and synthesize the final result.
 
 **Patience is a virtue.** A dispatched QA subagent that has not returned
@@ -326,10 +412,13 @@ lanes legitimately run much longer. The orchestrator must never scrap a
 running subagent and perform its lane itself because it "seems slow" —
 90 seconds without output is normal, not failure. Treat a lane as failed
 only when the host reports the subagent errored or timed out, or it exceeds
-a generous cap of at least 3x the lane's stated time box. Even then, the
-remedy is to re-dispatch the lane once or report it as not run — taking the
-lane over personally converts independent evidence into contaminated
-self-certification and is always the wrong move.
+a generous cap of at least 3x its effective time box. The effective time box
+is a valid positive dispatch override permitted by the lane when one is
+supplied; otherwise it is the lane file's default. A supplied invalid
+override stops dispatch until corrected; it never falls back silently. Even
+then, the remedy is to re-dispatch the lane once or report it as not run —
+taking the lane over personally converts independent evidence into
+contaminated self-certification and is always the wrong move.
 
 The orchestrator must not:
 
@@ -362,19 +451,20 @@ not by prompt instruction:
   `run with shared development context` as a validity caveat.
 - **The orchestrator (main chat) is a dispatcher, not a tester.** It reads
   qa-context.md, picks agents from the trigger table, dispatches them, then
-  applies the most-conservative-verdict rule across their reports. It never
-  performs testing itself.
+  applies valid risk acceptance during final synthesis and then the
+  most-conservative-verdict rule. It does not rewrite lane reports or perform
+  testing itself.
 - **Dispatch is platform-explicit.** The orchestrator resolves the platform
   (web / android / ios / desktop) from qa-context.md and passes each
   subagent: which agent file to embody, which platform file to read, the
   qa-context.md path, the canonical verdict/report and hard-boundary
-  sections of this file, and the task scope — never a summary of the
-  development conversation. Every report's Environment section states the
-  platform and which platform file was used.
-- **Independent contexts allow parallel dispatch.** The release-audit path
-  runs bob-qa (full) + performance-qa + security-qa + compatibility-qa in
-  parallel where the host supports it. smoke-qa always completes first,
-  alone — its No-Go gates everything.
+  sections of this file, and the task scope under **Verbatim dispatch** —
+  never a summary of the development conversation. Every report's
+  Environment section states the platform and which platform file was used.
+- **Independent contexts allow parallel dispatch.** After smoke, selected
+  applicable release-audit lanes may run in parallel where the host supports
+  it. smoke-qa always completes first, alone — its `No-Go` or `Blocked`
+  verdict gates everything deeper.
 
 ## Adapting to the host platform
 

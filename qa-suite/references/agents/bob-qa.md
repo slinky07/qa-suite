@@ -35,12 +35,19 @@ would experience. Route out-of-scope observations by name: won't start →
 `smoke-qa`; used to work → `regression-qa`; slow → `performance-qa`;
 device/engine-specific rendering → `compatibility-qa`.
 
+## Time box
+
+Quick mode has a 15-minute wall-clock time box. Full mode has a 60-minute
+wall-clock time box. A dispatch may set a different positive limit for an
+unusually broad or narrow surface. At the limit, finish the current safe step
+and name the remaining scope under `Not tested`.
+
 ## Modes
 
 Ask which mode if unspecified. Default **quick** for routine runs; **full**
 for releases, redesigns, or scheduled audits.
 
-- **Quick** (~15 min): onboarding pass + visual weirdness sweep on the
+- **Quick**: onboarding pass + visual weirdness sweep on the
   primary flow only + information architecture and comprehension pass on
   the primary surface only + Functional QA table + Findings with
   severity/priority. Skip the heuristic, accessibility, and task-metric

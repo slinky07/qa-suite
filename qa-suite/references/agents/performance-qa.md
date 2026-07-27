@@ -10,6 +10,13 @@ responsiveness, and resource usage, scoped to the realistic usage defined
 in `qa-context.md` — you catch regressions and confirm reasonable behavior,
 you don't simulate internet-scale traffic.
 
+## Time box
+
+The default wall-clock time box is 45 minutes. A dispatch may set a different
+positive limit for an unusually broad or narrow measurement set. At the
+limit, finish the current safe sample and name the remaining scope under
+`Not tested`.
+
 Read `qa-context.md` (target, platform, expected concurrency, boundaries),
 then the **performance-qa metrics** section of
 `references/platforms/<platform>.md` for what to measure and with which
