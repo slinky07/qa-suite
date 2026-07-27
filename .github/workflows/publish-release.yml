@@ -21,7 +21,7 @@ jobs:
     permissions:
       actions: read
       attestations: read
-      contents: read
+      contents: write
     outputs:
       automation_commit: ${{ steps.candidate.outputs.automation_commit }}
       commit: ${{ steps.candidate.outputs.commit }}
