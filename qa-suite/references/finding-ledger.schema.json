@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/finding-ledger.schema.json",
+  "title": "QA-Suite finding ledger row",
+  "description": "Schema version 1 for one current-state finding.jsonl row.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "lane",
+    "severity",
+    "priority",
+    "component",
+    "location",
+    "oracle",
+    "status",
+    "status_reason",
+    "candidate_first_seen",
+    "candidate_last_confirmed",
+    "first_seen",
+    "last_seen",
+    "occurrences",
+    "defect_record",
+    "reports",
+    "sensitivity"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "lane": {
+      "enum": [
+        "smoke-qa",
+        "regression-qa",
+        "bob-qa",
+        "performance-qa",
+        "security-qa",
+        "api-qa",
+        "compatibility-qa"
+      ]
+    },
+    "severity": {
+      "enum": ["S1", "S2", "S3", "S4"]
+    },
+    "priority": {
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "component": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1
+    },
+    "oracle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "open",
+        "fixed",
+        "regressed",
+        "accepted",
+        "wontfix"
+      ]
+    },
+    "status_reason": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "candidate_first_seen": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_last_confirmed": {
+      "type": "string",
+      "minLength": 1
+    },
+    "first_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "occurrences": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "defect_record": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/defect_record"
+        },
+        {
+          "const": "redacted"
+        },
+        {
+          "const": "sidecar-local"
+        }
+      ]
+    },
+    "reports": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/report_pointer"
+      }
+    },
+    "sensitivity": {
+      "$ref": "#/$defs/sensitivity"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["accepted", "wontfix"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "status_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sensitivity": {
+            "properties": {
+              "storage": {
+                "const": "committed"
+              }
+            },
+            "required": ["storage"]
+          }
+        },
+        "required": ["sensitivity"]
+      },
+      "then": {
+        "properties": {
+          "defect_record": {
+            "$ref": "#/$defs/defect_record"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sensitivity": {
+            "properties": {
+              "storage": {
+                "const": "redacted"
+              }
+            },
+            "required": ["storage"]
+          }
+        },
+        "required": ["sensitivity"]
+      },
+      "then": {
+        "properties": {
+          "defect_record": {
+            "const": "redacted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sensitivity": {
+            "properties": {
+              "storage": {
+                "const": "sidecar-local"
+              }
+            },
+            "required": ["storage"]
+          }
+        },
+        "required": ["sensitivity"]
+      },
+      "then": {
+        "properties": {
+          "defect_record": {
+            "const": "sidecar-local"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "fixed"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "sensitivity": {
+            "properties": {
+              "storage": {
+                "const": "committed"
+              }
+            },
+            "required": ["storage"]
+          },
+          "defect_record": {
+            "$ref": "#/$defs/defect_record"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "defect_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repro_steps",
+        "expected_result",
+        "actual_result",
+        "environment"
+      ],
+      "properties": {
+        "repro_steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "expected_result": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actual_result": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "report_pointer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lane", "pointer", "candidate"],
+      "properties": {
+        "lane": {
+          "enum": [
+            "smoke-qa",
+            "regression-qa",
+            "bob-qa",
+            "performance-qa",
+            "security-qa",
+            "api-qa",
+            "compatibility-qa"
+          ]
+        },
+        "pointer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "storage", "clearance"],
+      "properties": {
+        "classification": {
+          "enum": [
+            "standard",
+            "security-s1-s2",
+            "uncertain",
+            "human-sensitive",
+            "human-cleared"
+          ]
+        },
+        "storage": {
+          "enum": ["committed", "redacted", "sidecar-local"]
+        },
+        "clearance": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/human_clearance"
+            }
+          ]
+        }
+      }
+    },
+    "human_clearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by", "at", "reason"],
+      "properties": {
+        "by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

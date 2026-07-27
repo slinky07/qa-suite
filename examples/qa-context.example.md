@@ -11,6 +11,12 @@ through Docker Compose, and is reachable only over a VPN.
 - **Report output folder:** QA/
 - **Intended audience:** general consumers — household members comfortable with everyday web apps, no technical background assumed
 
+## Finding ledger
+
+- **Path:** findings.jsonl
+- **Repository visibility (`repo_visibility`):** private
+- **Named components:** household-invites, grocery-items, pantry-search, preferences, grocery-export
+
 ## Testing posture
 
 - **Posture:** aggressive

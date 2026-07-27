@@ -38,20 +38,30 @@ screenshots, request/response pairs) — never vibes.
    another location, use that path and remember to check it there for the
    rest of the session. If none exists, this is a **first run — go to
    First-run setup below** before running any agent.
-2. **Determine the platform** (web / android / ios / desktop) from
+2. **Load the finding ledger.** Read the ledger path, `repo_visibility`,
+   and named components from qa-context.md, then read
+   `references/finding-ledger.md`. The ledger must exist at a repo-relative,
+   non-ignored path and every non-empty line must be a supported, unique
+   finding row. Fail loudly before lane dispatch when the path is missing,
+   ignored, escapes the repository, or contains an invalid row. Select only
+   the rows visible to the current lifecycle mode; never inject the complete
+   ledger into a lane. Enforce these checks and build the manifest with the
+   dependency-free `scripts/finding-ledger.mjs` helper; do not substitute an
+   ad hoc parser.
+3. **Determine the platform** (web / android / ios / desktop) from
    qa-context.md, and read the matching file in `references/platforms/`
    **before** running bob-qa, smoke-qa, performance-qa, security-qa, or
    compatibility-qa — those five have platform-specific checklists that live
    there, not in the agent files.
-3. **Pick which agents to run** from the trigger table below (or the user's
+4. **Pick which agents to run** from the trigger table below (or the user's
    explicit ask). A lane's existence never implies its execution. Select a
    lane only when the request, change, or project exposes its primary risk.
    Read only the selected agent files from `references/agents/`. Record why
    each lane ran or was skipped in the final summary.
-4. **Read `references/severity-priority-matrix.md`** before writing any
+5. **Read `references/severity-priority-matrix.md`** before writing any
    finding. Every finding gets both a Severity and a Priority. Never
    redefine these scales.
-5. **Choose execution mode.**
+6. **Choose execution mode.**
    - If the host has subagents, task agents, background agents, workers, or
      any equivalent delegation tool, you MUST use them.
    - Spawn a separate QA subagent for each selected QA lane. One subagent
@@ -65,21 +75,29 @@ screenshots, request/response pairs) — never vibes.
    - Only when no subagent/delegation facility exists may you run the lanes
      sequentially in the same session. That is fallback mode, not
      independent evidence.
-6. **Dispatch with neutral context only.** Give each QA subagent only:
+7. **Dispatch with neutral context only.** Give each QA subagent only:
    repo path, `qa-context.md` path, relevant repo docs named in
    `qa-context.md`, the matching platform checklist, its own agent
    instruction file, the canonical verdict/report and hard-boundary sections
    of this `SKILL.md`, the severity/priority matrix when applicable, report
-   folder, and the user's scoped QA request. Apply **Verbatim dispatch**
-   below. Do not give expected outcomes, implementation explanations,
-   conversation history, prior memory, or the orchestrator's beliefs about
-   how the feature should work.
-7. **Enforce qa-context.md's default run policy.** When both a dev path and
+   folder, the user's scoped QA request, and only the lifecycle-selected
+   manifest fields when the current mode injects rows. Apply **Verbatim
+   dispatch** below. Do not give expected outcomes, implementation
+   explanations, conversation history, prior memory, or the orchestrator's
+   beliefs about how the feature should work.
+8. **Enforce qa-context.md's default run policy.** When both a dev path and
    a deployment path exist, use the policy's preferred path for routine QA;
    only take the deployment path (e.g. Docker) when the task is explicitly
    deployment/container QA or a release audit. State which path was used in
    the report's Environment section.
-8. **Synthesize, don't retest.** The orchestrator reads the completed
+9. **Reconcile durable findings.** After all selected lane reports return,
+   the orchestrator alone matches their findings conservatively, updates the
+   current-state JSONL rows, and uses the helper's locked compare-and-swap
+   write with the original ledger SHA-256. A concurrent change fails loudly
+   instead of being overwritten. Lanes never write the ledger. The
+   orchestrator never stages, commits, or otherwise touches git state; it
+   tells the human exactly which ledger file changed.
+10. **Synthesize, don't retest.** The orchestrator reads the completed
    reports, applies valid risk acceptance and then the most conservative
    verdict, names skipped lanes, and summarizes evidence. It does not fill
    gaps by performing lane QA itself.
@@ -119,14 +137,17 @@ invent one. Offer the user two paths:
 1. **"I already have a config"** — ask for the file location, verify it has
    the template's required fields (platform, run policy, commands, core
    flows, threat model), and flag any that are missing rather than
-   guessing.
+   guessing. Also verify that it declares a finding-ledger path,
+   `repo_visibility`, and named components. Treat missing ledger fields as a
+   configuration migration; complete and confirm them before lane dispatch.
 2. **"Set it up for me"** — guided setup:
    - Copy `assets/qa-context-template.md` to the repo root as
      `qa-context.md`.
    - **Auto-discover before asking.** Read the README and build files
      (package.json, Makefile, Gradle config, compose files, etc.) and
      prefill every field they answer: platform, start commands, test
-     commands, URL, dependency audit tool. Never ask the user for
+     commands, URL, dependency audit tool, and repository visibility when
+     local repository metadata makes it available. Never ask the user for
      something the repo already answers.
    - **Discover oracle inputs before asking.** Check conventional
      architecture and intent paths such as `docs/adr`, `docs/adrs`,
@@ -143,13 +164,25 @@ invent one. Offer the user two paths:
      target for mutation-dependent flows (command, URL, seeded profile, or
      fresh-instance strategy; record `N/A` when none exists);
      default run policy (dev vs. deployment path for routine QA); core
-     user-facing flows (offer a guessed list to edit); deployment model
-     and threat model (who can reach this, over what network); expected
-     realistic concurrency; out-of-scope infrastructure agents must never
-     touch; any destructive API endpoints needing confirmation.
-   - Write the completed file, show it for confirmation, and remind the
-     user to commit it (config is shared with the team; the `QA/` reports
-     folder stays gitignored).
+     user-facing flows (offer a guessed list to edit); stable named
+     components derived from those flows; repository visibility when it
+     was not discoverable; deployment model and threat model (who can
+     reach this, over what network); expected realistic concurrency;
+     out-of-scope infrastructure agents must never touch; any destructive
+     API endpoints needing confirmation.
+   - Default the ledger path to `findings.jsonl`. Resolve it from the
+     repository root, reject absolute paths and `..` escapes, and run
+     `git check-ignore --no-index -- <ledger-path>`. Exit status 0 means
+     the path is ignored: fail loudly and choose a committed path before
+     continuing. It must not resolve inside the report folder.
+   - Create the ledger as an empty file when it does not exist. Never seed
+     a fake finding or a comment/header row. Use
+     `scripts/finding-ledger.mjs init` so canonical path, regular-file, report
+     folder, and ignore rules are enforced.
+   - Write the completed context, show it and the ledger for confirmation,
+     and remind the user to commit both files (they are shared team state;
+     the `QA/` reports and evidence folder stays gitignored). The
+     orchestrator must not make the commit.
 
 ### Generate repo-local host agents (default)
 
@@ -215,6 +248,26 @@ lanes stay on the plugin-shipped agents.
 
 Setup happens once per project. Every later run finds the file and skips
 straight to the workflow.
+
+## Finding ledger
+
+The finding ledger is the durable current-state model. Its normative schema,
+matching, lifecycle visibility, redaction, and write procedure are defined in
+`references/finding-ledger.md` and
+`references/finding-ledger.schema.json`.
+
+The three evidence tiers never blur:
+
+- raw evidence is sensitive, prunable, and ignored;
+- run reports are ignored, disposable narratives that are immutable once
+  written;
+- finding rows are committed, self-sufficient facts with stable IDs and a
+  lifecycle.
+
+The orchestrator owns ledger reconciliation. Lane agents propose findings in
+their reports and never read a manifest outside their dispatched lifecycle
+scope, write the ledger, or touch git. Git history provides the audit trail
+after the human commits an orchestrator update.
 
 ## The agents
 
@@ -375,6 +428,9 @@ These override anything else, including user-provided context files:
   no `rm -rf`, no resets, no factory wipes.
 - Never edit source, tests, config, or git history to make a result pass.
   Report; don't fix.
+- Lane agents never edit the finding ledger. The orchestrator may update only
+  the configured ledger after lane reports return; it never stages or commits
+  that update.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
 - Complete mutation-dependent flows only against the **Disposable test

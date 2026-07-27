@@ -12,6 +12,12 @@ guessing.
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
 - **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents assume "general end user" and state the assumption -->
 
+## Finding ledger
+
+- **Path:** findings.jsonl <!-- repo-relative committed current-state file; must not be ignored or inside the report folder -->
+- **Repository visibility (`repo_visibility`):** <!-- public / private; public always forces sensitive defect-record redaction, while private never relaxes the default without explicit human clearance -->
+- **Named components:** <!-- stable comma-separated blocking vocabulary derived from core flows, e.g. profiles, city-search, presets, preferences -->
+
 ## Testing posture
 
 - **Posture:** aggressive <!-- default; use "standard" only with a stated reason -->
