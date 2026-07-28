@@ -10,9 +10,11 @@ The machine authority for the data contracts is
 math. `scripts/evaluation/git-snapshot.mjs` and
 `scripts/evaluation/runner.mjs` own the non-qualifying Git snapshot,
 single-case disclosure, lane-root preparation, and artifact closure mechanics.
-`scripts/evaluation/run-case.mjs` is their strict CLI. This README explains
-the trust boundary and intended delivery sequence; it is not a second schema.
-The repository still exposes no qualifying evaluator, and no preparation or
+`scripts/evaluation/bob-host-protocol.mjs` owns the non-qualifying
+controller sequence for Bob host adapters. `scripts/evaluation/run-case.mjs`
+is the snapshot runner's strict CLI. This README explains the trust boundary
+and intended delivery sequence; it is not a second schema. The repository
+still exposes no qualifying evaluator, and no preparation, protocol, or
 closure output can be treated as a passing evaluation.
 
 Pure scoring functions may produce a deterministic preview for contract tests.
@@ -204,9 +206,26 @@ record IA and task rows, but report order, filenames, and filesystem times do
 not prove execution chronology. The runner therefore records
 `method_order: "unverified_by_report"` and cannot promote a closed Bob report.
 
-A later qualifying host adapter needs controller-sequenced phase events that
-prove interface inventory and expected-use modeling precede every task action.
-Adding both sections to a Markdown report is not that proof.
+The controller now exposes a narrow, injected-adapter protocol with three
+ordered calls:
+
+1. `interface_inventory`, with observation capability only;
+2. `expected_use_model`, with the accepted inventory and observation
+   capability only; and
+3. `task_execution`, with accepted inventory/model output and task-action
+   capability.
+
+The protocol rejects unknown fields, non-inventoried controls, invalid task
+parents, incomplete task coverage, and task results outside the modeled
+order. Inline phase records carry no adapter-asserted artifact digest; the
+controller hashes each accepted output into the transcript. The transcript
+remains `unverified`, `not-evidence`, and `result: null`; every isolation and
+method-order claim remains `not-attested`. This proves the controller call
+sequence only. It does not prove that an unreviewed adapter withheld other
+tools, that the inventory or model is semantically correct, or that a real
+host obeyed the requests.
+Report sections, filenames, timestamps, and lane-authored event files remain
+unacceptable chronology evidence.
 
 ## Public suite
 
@@ -422,16 +441,17 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 
 ## Deferred Issue #30 delivery
 
-The following remain deliberately outside this runner-mechanics PR:
+The following remain deliberately outside this protocol constituent:
 
 - real adversarial/control fixture applications and their public inventories;
-- a host executor that proves fresh-model context, filesystem isolation,
-  secret-environment exclusion, and non-loopback network denial;
+- a reviewed host adapter that proves fresh invocation, filesystem
+  confinement, command-environment control, tool inventory, and network
+  policy without conflating provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - lane-specific adapters that parse canonical report tables by stable finding
   ID without using oracle prose;
-- a controller-sequenced Bob phase protocol that can verify the required
-  inventory/model-before-task order;
+- host-bound, authenticated evidence that a real Bob execution obeyed the
+  controller's inventory/model-before-task protocol;
 - opening the sealed oracle and scanning all closed bytes against its complete
   token set;
 - baseline runs and retained baseline evidence;
@@ -439,6 +459,6 @@ The following remain deliberately outside this runner-mechanics PR:
 - CI scheduling for recurring or release-gated evaluation.
 
 Those capabilities must land through later Issue #30 branches and PRs. Until
-they do, contracts, previews, preparations, and closures are maintainer
-verification aids, not QA findings, release certification, issue proposals,
-or proof that a lane passes its evaluation.
+they do, contracts, previews, preparations, protocol transcripts, and closures
+are maintainer verification aids, not QA findings, release certification,
+issue proposals, or proof that a lane passes its evaluation.
