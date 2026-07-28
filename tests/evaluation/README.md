@@ -300,6 +300,32 @@ or CLI entrypoint. Its record and unkeyed SHA-256 source digest are transport
 data, not evidence: this constituent does not authenticate the provider,
 model, MCP server, tool result, sandbox, or qualifying execution.
 
+### Codex-to-gateway journal binding
+
+`bindCodexBrowserGatewayJournal()` accepts raw controller-captured bytes for
+one Codex JSONL turn, browser policy, browser closure, and gateway journal,
+plus the controller-selected MCP alias and expected gateway source digest. It
+reuses the pinned Codex parser and the gateway's policy, tool, invocation,
+closure, MCP-response, and journal contracts. The join requires one closed,
+violation-free gateway lifecycle, its canonical policy and closure, an exact
+zero-rooted journal chain, one measured browser start, one terminal proxy
+summary, no failed tool calls, and zero pending CDP requests.
+
+Every parsed Codex gateway call consumes exactly one ordered
+`tool_completed` record. The join binds the configured MCP alias, phase tool,
+validated arguments, canonical decoded JSON result, Codex item sequences, and
+gateway journal sequence. A screenshot's returned PNG bytes must match the
+byte count and SHA-256 in its decoded artifact result. Missing, extra,
+duplicated, reordered, or substituted calls and receipts fail closed.
+Non-call page, console, and proxy payloads remain hash-chained gateway records;
+the join does not restate or reinterpret their gateway-owned schemas.
+
+The returned binding contains only identities, sequences, and digests. It
+remains `verification_status: "unverified"`, `qualification: "not-evidence"`,
+and `result: null`. It does not inspect the final agent message, validate a Bob
+phase output, launch Codex, follow a mutable journal path, authenticate the
+unkeyed records or provider, attest the sandbox, or qualify execution.
+
 ### Non-qualifying direct-process boundary
 
 `scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three

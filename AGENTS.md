@@ -35,6 +35,12 @@ distributed skill without changing it:
   reasoning, one final agent message, and exact usage fields. It does not
   launch Codex, interpret browser tools, validate a Bob phase output, bind a
   gateway journal, or qualify evidence.
+- `bindCodexBrowserGatewayJournal()` in
+  `scripts/evaluation/browser-gateway.mjs` is the pure non-qualifying join
+  between one raw Codex turn and one controller-supplied browser policy,
+  closure, and captured journal. It consumes every gateway call and receipt
+  once in order, including the screenshot byte/artifact join, but never
+  interprets the final Bob phase output or authenticates either process.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of
