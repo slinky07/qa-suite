@@ -444,32 +444,201 @@ export function validateTaskExecution(
 
 function phaseRequest(binding, phase, priorOutputs) {
   const interactive = phase === "task_execution";
-  return {
-    allowed_capabilities: interactive
-      ? ["observe-interface", "perform-task-actions"]
-      : ["observe-interface"],
-    binding: {
-      case_id: binding.case_id,
-      dispatch_id: binding.dispatch_id,
-      lane: binding.lane,
-      run_id: binding.run_id,
-      schema_version: binding.schema_version,
-      subject_commit: binding.subject_commit,
+  return validateBobHostPhaseRequest(
+    {
+      allowed_capabilities: interactive
+        ? ["observe-interface", "perform-task-actions"]
+        : ["observe-interface"],
+      binding: {
+        case_id: binding.case_id,
+        dispatch_id: binding.dispatch_id,
+        lane: binding.lane,
+        run_id: binding.run_id,
+        schema_version: binding.schema_version,
+        subject_commit: binding.subject_commit,
+      },
+      phase,
+      prior_outputs: structuredClone(priorOutputs),
+      ...(phase === "task_execution"
+        ? {
+            report_identifiers: structuredClone(
+              binding.report_identifiers,
+            ),
+          }
+        : {}),
+      qualification: "not-evidence",
+      result: null,
+      schema_version: 1,
+      verification_status: "unverified",
     },
-    phase,
-    prior_outputs: structuredClone(priorOutputs),
-    ...(phase === "task_execution"
-      ? {
-          report_identifiers: structuredClone(
-            binding.report_identifiers,
-          ),
-        }
-      : {}),
-    qualification: "not-evidence",
-    result: null,
-    schema_version: 1,
-    verification_status: "unverified",
+    binding,
+  );
+}
+
+export function validateBobHostPhaseRequest(value, expectedBinding) {
+  assertObject(value, "Bob host phase request");
+  if (!PHASES.includes(value.phase)) {
+    throw new Error("Bob host phase request.phase is invalid");
+  }
+  const taskPhase = value.phase === "task_execution";
+  assertExactKeys(
+    value,
+    [
+      "allowed_capabilities",
+      "binding",
+      "phase",
+      "prior_outputs",
+      "qualification",
+      "result",
+      "schema_version",
+      "verification_status",
+      ...(taskPhase ? ["report_identifiers"] : []),
+    ],
+    "Bob host phase request",
+  );
+  if (
+    value.schema_version !== 1 ||
+    value.verification_status !== "unverified" ||
+    value.qualification !== "not-evidence" ||
+    value.result !== null
+  ) {
+    throw new Error("Bob host phase request must remain non-qualifying");
+  }
+  const expectedCapabilities = taskPhase
+    ? ["observe-interface", "perform-task-actions"]
+    : ["observe-interface"];
+  assertBoundedArray(
+    value.allowed_capabilities,
+    "Bob host phase request.allowed_capabilities",
+    {
+      minimum: expectedCapabilities.length,
+      maximum: expectedCapabilities.length,
+    },
+  );
+  if (
+    canonicalJson(value.allowed_capabilities) !==
+      canonicalJson(expectedCapabilities)
+  ) {
+    throw new Error(
+      "Bob host phase request capabilities do not match its phase",
+    );
+  }
+  assertExactKeys(
+    value.binding,
+    [
+      "case_id",
+      "dispatch_id",
+      "lane",
+      "run_id",
+      "schema_version",
+      "subject_commit",
+    ],
+    "Bob host phase request.binding",
+  );
+  if (
+    value.binding.schema_version !== 1 ||
+    value.binding.lane !== "bob-qa"
+  ) {
+    throw new Error("Bob host phase request.binding is invalid");
+  }
+  assertString(
+    value.binding.case_id,
+    "Bob host phase request.binding.case_id",
+    CASE_ID,
+  );
+  assertString(
+    value.binding.dispatch_id,
+    "Bob host phase request.binding.dispatch_id",
+    DISPATCH_ID,
+  );
+  assertString(
+    value.binding.run_id,
+    "Bob host phase request.binding.run_id",
+    RUN_ID,
+  );
+  assertString(
+    value.binding.subject_commit,
+    "Bob host phase request.binding.subject_commit",
+    COMMIT,
+  );
+  assertExactKeys(
+    expectedBinding,
+    [
+      "case_id",
+      "controller_commit",
+      "dispatch_id",
+      "lane",
+      "report_identifiers",
+      "run_id",
+      "schema_version",
+      "subject_commit",
+      "suite_id",
+    ],
+    "expected Bob host binding",
+  );
+  const selectedBinding = bindingFromPreparation(
+    {
+      ...expectedBinding,
+      qualification: "not-evidence",
+      result: null,
+      verification_status: "unverified",
+    },
+    expectedBinding.dispatch_id,
+    expectedBinding.report_identifiers,
+  );
+  const expectedPhaseBinding = {
+    case_id: selectedBinding.case_id,
+    dispatch_id: selectedBinding.dispatch_id,
+    lane: selectedBinding.lane,
+    run_id: selectedBinding.run_id,
+    schema_version: selectedBinding.schema_version,
+    subject_commit: selectedBinding.subject_commit,
   };
+  if (
+    canonicalJson(value.binding) !==
+      canonicalJson(expectedPhaseBinding)
+  ) {
+    throw new Error(
+      "Bob host phase request.binding does not match the selected controller binding",
+    );
+  }
+  assertExactKeys(
+    value.prior_outputs,
+    ["expected_use_model", "interface_inventory"],
+    "Bob host phase request.prior_outputs",
+  );
+  if (value.phase === "interface_inventory") {
+    if (
+      value.prior_outputs.interface_inventory !== null ||
+      value.prior_outputs.expected_use_model !== null
+    ) {
+      throw new Error("inventory request must not disclose prior outputs");
+    }
+  } else {
+    validateInterfaceInventory(value.prior_outputs.interface_inventory);
+    if (taskPhase) {
+      validateExpectedUseModel(
+        value.prior_outputs.expected_use_model,
+        value.prior_outputs.interface_inventory,
+      );
+      validateBobReportIdentifiers(
+        value.report_identifiers,
+        value.binding.case_id,
+        "Bob host phase request.report_identifiers",
+      );
+      if (
+        canonicalJson(value.report_identifiers) !==
+          canonicalJson(selectedBinding.report_identifiers)
+      ) {
+        throw new Error(
+          "Bob host phase request.report_identifiers do not match the selected controller identifiers",
+        );
+      }
+    } else if (value.prior_outputs.expected_use_model !== null) {
+      throw new Error("modeling request must not disclose a later output");
+    }
+  }
+  return value;
 }
 
 function eventHash(value) {

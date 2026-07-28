@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   executePreparedBobCase,
   requestsFromBobHostTranscript,
+  validateBobHostPhaseRequest,
   validateBobHostTranscript,
   validateExpectedUseModel,
   validateInterfaceInventory,
@@ -238,6 +239,12 @@ test("controller withholds task capabilities until inventory and modeling comple
   assert.equal("controller_commit" in host.requests[0].binding, false);
   assert.equal("suite_id" in host.requests[0], false);
   assert.equal("oracle" in host.requests[0], false);
+  host.requests.forEach((request) => {
+    assert.equal(
+      validateBobHostPhaseRequest(request, transcript.binding),
+      request,
+    );
+  });
 
   assert.equal(transcript.verification_status, "unverified");
   assert.equal(transcript.qualification, "not-evidence");
@@ -249,6 +256,165 @@ test("controller withholds task capabilities until inventory and modeling comple
   );
   assert.deepEqual(requestsFromBobHostTranscript(transcript), host.requests);
   assert.equal(validateBobHostTranscript(transcript), transcript);
+});
+
+test("phase request authority rejects capability, disclosure, and claim drift", async () => {
+  const host = adapter();
+  const transcript = await executeCase({
+    adapter: host,
+    dispatchId: "dispatch_0123456789abcdef0123456789abcdef",
+    preparation: preparation(),
+  });
+  const [inventoryRequest, modelRequest, taskRequest] = host.requests;
+  const taskWithoutReportIdentifiers = structuredClone(taskRequest);
+  delete taskWithoutReportIdentifiers.report_identifiers;
+  const wrongReportIdentifiers = structuredClone(taskRequest);
+  wrongReportIdentifiers.report_identifiers.core_flow_ids = [
+    "flow_ffeeddccbbaa99887766554433221100_01",
+  ];
+  const substitutedReportIdentifiers = structuredClone(taskRequest);
+  substitutedReportIdentifiers.report_identifiers =
+    structuredClone(suite().cases[1].report_identifiers);
+  const capabilitiesWithClaim = [
+    ...inventoryRequest.allowed_capabilities,
+  ];
+  capabilitiesWithClaim.claimed_isolation = "verified";
+
+  const invalidRequests = [
+    {
+      error: /capabilities do not match/u,
+      value: {
+        ...inventoryRequest,
+        allowed_capabilities: ["perform-task-actions"],
+      },
+    },
+    {
+      error: /must not contain named properties/u,
+      value: {
+        ...inventoryRequest,
+        allowed_capabilities: capabilitiesWithClaim,
+      },
+    },
+    {
+      error: /inventory request must not disclose prior outputs/u,
+      value: {
+        ...inventoryRequest,
+        prior_outputs: {
+          ...inventoryRequest.prior_outputs,
+          interface_inventory: inventory(),
+        },
+      },
+    },
+    {
+      error: /modeling request must not disclose a later output/u,
+      value: {
+        ...modelRequest,
+        prior_outputs: {
+          ...modelRequest.prior_outputs,
+          expected_use_model: model(),
+        },
+      },
+    },
+    {
+      error: /fields are/u,
+      value: {
+        ...modelRequest,
+        report_identifiers: reportIdentifiers,
+      },
+    },
+    {
+      error: /fields are/u,
+      value: taskWithoutReportIdentifiers,
+    },
+    {
+      error: /must use the selected surface token/u,
+      value: wrongReportIdentifiers,
+    },
+    {
+      error: /do not match the selected controller identifiers/u,
+      value: substitutedReportIdentifiers,
+    },
+    {
+      error: /fields are/u,
+      value: {
+        ...inventoryRequest,
+        claimed_isolation: "verified",
+      },
+    },
+    {
+      error: /must remain non-qualifying/u,
+      value: {
+        ...inventoryRequest,
+        verification_status: "verified",
+      },
+    },
+    {
+      error: /binding fields are/u,
+      value: {
+        ...inventoryRequest,
+        binding: {
+          ...inventoryRequest.binding,
+          controller_commit: "a".repeat(40),
+        },
+      },
+    },
+    {
+      error: /does not match the selected controller binding/u,
+      value: {
+        ...inventoryRequest,
+        binding: {
+          ...inventoryRequest.binding,
+          run_id: "run_fedcba9876543210fedcba9876543210",
+        },
+      },
+    },
+  ];
+
+  invalidRequests.forEach(({ error, value }) => {
+    assert.throws(
+      () => validateBobHostPhaseRequest(value, transcript.binding),
+      error,
+    );
+  });
+});
+
+test("phase request authority permits modeled control reuse", async () => {
+  const host = adapter();
+  const transcript = await executeCase({
+    adapter: host,
+    dispatchId: "dispatch_0123456789abcdef0123456789abcdef",
+    preparation: preparation(),
+  });
+  const request = structuredClone(host.requests[2]);
+  request.prior_outputs.interface_inventory = {
+    surfaces: [
+      {
+        control_ids: ["control_search", "control_submit"],
+        id: "surface_primary",
+      },
+    ],
+  };
+  request.prior_outputs.expected_use_model = {
+    tasks: [
+      {
+        control_ids: ["control_search"],
+        id: "task_search",
+        parent_task_id: null,
+        surface_id: "surface_primary",
+      },
+      {
+        control_ids: ["control_search", "control_submit"],
+        id: "task_submit",
+        parent_task_id: "task_search",
+        surface_id: "surface_primary",
+      },
+    ],
+  };
+
+  assert.equal(
+    validateBobHostPhaseRequest(request, transcript.binding),
+    request,
+  );
 });
 
 test("invalid inventory prevents modeling and task dispatch", async () => {
