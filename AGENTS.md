@@ -18,8 +18,9 @@ distributed skill without changing it:
 
 - `scripts/evaluation/*.mjs` is maintainer-only evaluation infrastructure;
   within it, `scripts/evaluation/contracts.mjs` is the machine authority for
-  evaluation data contracts and `scripts/evaluation/scoring.mjs` owns the
-  explicitly non-qualifying preview math.
+  shared suite, case, lane, and closure contracts, while
+  `scripts/evaluation/scoring.mjs` owns the explicitly non-qualifying preview
+  math.
 - `tests/evaluation/README.md` is the human-readable authority for the
   evaluation trust boundary and delivery sequence.
 - `scripts/evaluation/bob-host-protocol.mjs` is the non-qualifying
@@ -40,6 +41,16 @@ distributed skill without changing it:
   controller-hashed structured lane result. It does not read or parse report
   content, create a complete normalized case, open the sealed oracle, or
   score a result.
+- `scripts/evaluation/browser-gateway.mjs` is the non-qualifying rendered-page
+  boundary and the machine authority for its gateway-local policy, tool, and
+  closure contracts. It exposes only phase-scoped observation and control-ID
+  tools, drives a measured Chrome executable through its fixed CDP pipe,
+  admits direct HTTP only to the declared numeric-loopback origin, enforces its
+  GET/path allowlist through selected-page request interception, and routes
+  other proxy-aware URL traffic to a deny-only loopback boundary. It retains
+  bounded snapshots, screenshots, action receipts, proxy summaries, and a
+  terminal hash-chained journal below `QA/evidence/`. Its temporary Chrome
+  profile is never evidence and is removed at close.
 - Bob suite cases declare globally unique, role-neutral report surface and
   core-flow IDs from independent opaque tokens that cannot be derived from the
   earlier case disclosure. They remain controller-only until task execution,
@@ -70,6 +81,13 @@ record proves filesystem, provider, network, tool, model-context,
 process-tree, or hostile same-user isolation, report semantic parity, or state
 authentication. Do not promote any record until a reviewed host and sandbox
 adapter proves every missing claim.
+
+The browser gateway proves only its narrow controller-owned browser actions
+and retained receipts. It is not a sandbox or a Bob host, and it does not
+attest model context, provider transport, same-user isolation, fixture
+opacity, non-proxy UDP or direct-socket isolation, lane correctness, or report
+semantics. Its closure must remain `unverified`, `not-evidence`, with
+`result: null`.
 
 The host executor's support-file list is mandatory even when empty. Every
 interpreter source, MCP server, schema, or static configuration consumed by a

@@ -4,7 +4,7 @@ This directory documents the maintainer meta-testing contracts for Issue #30.
 It is not an eighth QA lane, does not ship in the QA-Suite archives, and does
 not change the behavior of any distributed lane.
 
-The machine authority for the data contracts is
+The machine authority for shared suite, case, lane, and closure contracts is
 `scripts/evaluation/contracts.mjs`;
 `scripts/evaluation/scoring.mjs` owns the explicitly non-qualifying preview
 math. `scripts/evaluation/git-snapshot.mjs` and
@@ -13,11 +13,14 @@ single-case disclosure, lane-root preparation, and artifact closure mechanics.
 `scripts/evaluation/bob-host-protocol.mjs` owns the non-qualifying
 controller sequence for Bob host adapters.
 `scripts/evaluation/bob-report-adapter.mjs` owns the non-qualifying closed Bob
-report metadata binding. `scripts/evaluation/run-case.mjs` is the snapshot
-runner's strict CLI. This README explains the trust boundary and intended
-delivery sequence; it is not a second schema. The repository still exposes no
-qualifying evaluator, and no preparation, protocol, closure, or report-binding
-output can be treated as a passing evaluation.
+report metadata binding. `scripts/evaluation/browser-gateway.mjs` owns the
+non-qualifying rendered-page boundary and is the machine authority for its
+gateway-local policy, tool, and closure contracts.
+`scripts/evaluation/run-case.mjs` is the snapshot runner's strict CLI. This
+README explains the trust boundary and intended delivery sequence; it is not a
+second schema. The repository still exposes no qualifying evaluator, and no
+preparation, protocol, browser closure, or report-binding output can be
+treated as a passing evaluation.
 
 Pure scoring functions may produce a deterministic preview for contract tests.
 Every such preview must remain explicitly non-qualifying:
@@ -311,6 +314,55 @@ configuration it consumes in `support_files`. Identity and content checks
 detect ordinary drift before and after each phase, but cannot eliminate a
 hostile same-user race between those checks and a file read.
 
+### Non-qualifying browser gateway
+
+`scripts/evaluation/browser-gateway.mjs` exposes a small MCP server for the
+three Bob phases. Interface inventory and expected-use modeling receive only
+`observe_page` and `capture_screenshot`; task execution additionally receives
+`set_control` and `activate_control`. Tool arguments cannot supply a selector,
+URL, script, CDP method, executable, or filesystem path. Actions resolve a
+visible `data-control-id` immediately before input and retain one before
+snapshot, one after snapshot, and an action receipt.
+
+The controller supplies one canonical policy that binds the phase, request,
+numeric-loopback target and allowed paths, fresh evidence directory, viewport,
+Chrome path and SHA-256, and artifact, journal, tool, and transport limits. The
+gateway launches that measured Chrome with a fresh temporary profile and a
+NUL-framed remote-debugging pipe. For proxy-aware URL traffic, Chrome bypasses
+the proxy only for the exact declared HTTP origin; selected-page interception
+enforces the GET/path allowlist before those requests reach the fixture. Other
+proxy-aware URL traffic is routed to a deny-only loopback proxy, with QUIC
+disabled. The proxy never opens an upstream connection, and retains only
+bounded aggregate counts and a rolling digest because Chrome can issue
+unrelated background requests. The gateway creates one fresh browser context,
+denies downloads, synthesizes an empty favicon response, pauses and closes
+observed extra page/worker targets, detects WebSocket, WebTransport, and direct
+TCP attempts plus top-frame URL drift, and removes its temporary profile at
+close. MCP framing accepts the protocol's parameter-optional messages, bounds
+every message and response, and honors output backpressure. The profile is
+disposable process state; all retained evidence lives below the declared
+`QA/evidence/` path.
+
+Every successful tool call writes bounded artifacts before returning. The
+gateway closes a compact hash-chained JSONL journal and an exact
+`gateway-close.json` binding the policy, request, entrypoint, tool schemas,
+Chrome identity, browser stderr, and terminal violations. Files are created
+without overwrite; the journal is frozen read-only before the terminal closure
+is atomically published. The runner's controller program binding separately
+freezes the gateway and its imported evaluation contracts at the controller
+commit.
+
+This boundary proves neither browser truth nor Bob correctness. The deny proxy
+constrains proxy-aware URL traffic in the measured Chrome run; it is not
+OS-level network isolation and does not attest non-proxy UDP, Direct Sockets,
+a hostile Chrome, or hostile same-user processes. Node and the operating
+system remain outside its confinement; the journal is unkeyed; fixture opacity
+and report semantics remain unattested; and no model host is connected yet.
+Every closure therefore remains `verification_status: "unverified"`,
+`qualification: "not-evidence"`, and `result: null`. The opt-in live tests
+require `QA_SUITE_LIVE_BROWSER=1` and retain their receipts below
+`QA/evidence/`.
+
 ## Public suite
 
 Serialized inputs must pass `parseContractJson` before validation so duplicate
@@ -594,13 +646,14 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 
 ## Deferred Issue #30 delivery
 
-The following remain deliberately outside this fixture constituent:
+The following remain deliberately outside the current non-qualifying
+constituents:
 
 - the other lane corpora required for campaign acceptance;
-- a reviewed sandbox and provider adapter that builds on the direct-process
-  boundary and proves filesystem confinement, tool inventory, fresh model
-  context, process-tree completion, and network policy without conflating
-  provider transport with tool egress;
+- a reviewed sandbox and provider/Codex host that composes the direct-process
+  and browser boundaries, then proves filesystem confinement, exact model-tool
+  inventory, fresh model context, process-tree completion, and network policy
+  without conflating provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - composition of the partial Bob lane adaptation with the smoke gate into a
   complete normalized case;
