@@ -27,6 +27,7 @@ import {
   parseContractJson,
   sha256,
 } from "./contracts.mjs";
+import { parseCodex0145TurnJsonl } from "./codex-0145-events.mjs";
 
 const PHASES = new Set([
   "interface_inventory",
@@ -42,6 +43,7 @@ const FIXED_ENVIRONMENT = Object.freeze({
   TZ: "UTC",
 });
 const MAX_POLICY_BYTES = 64 * 1024;
+const MAX_CLOSURE_BYTES = 64 * 1024;
 const MAX_MCP_LINE_BYTES = 2 * 1024 * 1024;
 const MAX_MCP_OUTPUT_BYTES = 8 * 1024 * 1024;
 const MAX_MCP_MESSAGES = 512;
@@ -974,6 +976,16 @@ function exactArguments(value, expected, label) {
   return value;
 }
 
+function assertSetControlValue(value) {
+  if (
+    !["string", "boolean"].includes(typeof value) ||
+    (typeof value === "string" && value.length > 256)
+  ) {
+    throw new Error("set_control.value is invalid");
+  }
+  return value;
+}
+
 function assertControlId(value, label = "control_id") {
   if (
     typeof value !== "string" ||
@@ -983,6 +995,30 @@ function assertControlId(value, label = "control_id") {
     throw new Error(`${label} is invalid`);
   }
   return value;
+}
+
+function validateBrowserToolInvocation(policy, name, args) {
+  assertBoundedString(name, "browser tool name", 64, 1);
+  const available = new Set(
+    browserToolsForPhase(policy.phase).map((tool) => tool.name),
+  );
+  if (!available.has(name)) {
+    throw new Error(`browser tool is unavailable in ${policy.phase}`);
+  }
+  if (["capture_screenshot", "observe_page"].includes(name)) {
+    exactArguments(args, [], `${name} arguments`);
+  } else if (name === "activate_control") {
+    exactArguments(args, ["control_id"], "activate_control arguments");
+    assertControlId(args.control_id);
+  } else {
+    exactArguments(args, ["control_id", "value"], "set_control arguments");
+    assertControlId(args.control_id);
+    assertSetControlValue(args.value);
+  }
+  return {
+    arguments: structuredClone(args),
+    name,
+  };
 }
 
 async function wait(milliseconds) {
@@ -1016,28 +1052,28 @@ export class BrowserGateway {
       canonicalJson({ arguments: args, name }),
     );
     const call = async () => {
-      const available = new Set(this.listTools().map((tool) => tool.name));
-      if (!available.has(name)) {
-        throw new Error(`browser tool is unavailable in ${this.policy.phase}`);
-      }
+      const invocation = validateBrowserToolInvocation(
+        this.policy,
+        name,
+        args,
+      );
       if (name === "observe_page") {
-        exactArguments(args, [], "observe_page arguments");
         return { result: await this.observePage() };
       }
       if (name === "capture_screenshot") {
-        exactArguments(args, [], "capture_screenshot arguments");
         return await this.captureScreenshot();
       }
       if (name === "set_control") {
-        exactArguments(args, ["control_id", "value"], "set_control arguments");
-        return { result: await this.setControl(args.control_id, args.value) };
+        return {
+          result: await this.setControl(
+            invocation.arguments.control_id,
+            invocation.arguments.value,
+          ),
+        };
       }
-      exactArguments(
-        args,
-        ["control_id"],
-        "activate_control arguments",
-      );
-      return { result: await this.activateControl(args.control_id) };
+      return {
+        result: await this.activateControl(invocation.arguments.control_id),
+      };
     };
     try {
       const output = await call();
@@ -1299,12 +1335,7 @@ export class BrowserGateway {
 
   async setControl(controlId, value) {
     assertControlId(controlId);
-    if (
-      !["string", "boolean"].includes(typeof value) ||
-      (typeof value === "string" && value.length > 256)
-    ) {
-      throw new Error("set_control.value is invalid");
-    }
+    assertSetControlValue(value);
     const before = await this.#controlForAction(controlId);
     const internal = await this.#refreshControlForAction(before.internal);
     if (typeof value === "boolean") {
@@ -2798,6 +2829,436 @@ export function validateBrowserGatewayClosure(value) {
     throw new Error("browser gateway closure status contradicts violations");
   }
   return value;
+}
+
+function parseCanonicalGatewayJson(source, label, maximumBytes) {
+  if (
+    typeof source !== "string" ||
+    Buffer.byteLength(source, "utf8") > maximumBytes
+  ) {
+    throw new Error(`${label} source is invalid`);
+  }
+  const value = parseContractJson(source, label);
+  if (source !== canonicalJson(value)) {
+    throw new Error(`${label} must use canonical JSON`);
+  }
+  return value;
+}
+
+function validateBrowserStarted(payload, closure, policy) {
+  assertExactKeys(
+    payload,
+    ["browser", "target_url"],
+    "browser gateway start record",
+  );
+  const expectedBrowser = { ...closure.browser };
+  delete expectedBrowser.stderr_bytes;
+  delete expectedBrowser.stderr_sha256;
+  if (
+    payload.target_url !== policy.target_url ||
+    canonicalJson(payload.browser) !== canonicalJson(expectedBrowser)
+  ) {
+    throw new Error("browser gateway start record does not match closure");
+  }
+}
+
+function validateBrowserGatewayJournal({
+  closure,
+  journalSource,
+  policy,
+}) {
+  if (
+    typeof journalSource !== "string" ||
+    !journalSource.endsWith("\n") ||
+    Buffer.byteLength(journalSource, "utf8") !== closure.journal.bytes ||
+    closure.journal.bytes > policy.limits.max_journal_bytes
+  ) {
+    throw new Error("browser gateway journal framing does not match closure");
+  }
+  const lines = journalSource.slice(0, -1).split("\n");
+  assertDenseArray(lines, "browser gateway journal entries", {
+    maximum: policy.limits.max_journal_entries,
+    minimum: 4,
+  });
+  if (lines.length !== closure.journal.entries) {
+    throw new Error("browser gateway journal entry count does not match closure");
+  }
+  const terminalBytes = Buffer.byteLength(`${lines.at(-1)}\n`, "utf8");
+  if (
+    closure.journal.bytes - terminalBytes >
+    policy.limits.max_journal_bytes - MAX_JOURNAL_ENTRY_BYTES
+  ) {
+    throw new Error(
+      "browser gateway journal exceeds its reserved nonterminal capacity",
+    );
+  }
+
+  const entries = [];
+  let previous = "0".repeat(64);
+  for (let index = 0; index < lines.length; index += 1) {
+    if (
+      Buffer.byteLength(`${lines[index]}\n`, "utf8") >
+      MAX_JOURNAL_ENTRY_BYTES
+    ) {
+      throw new Error("browser gateway journal entry exceeds its byte limit");
+    }
+    const entry = parseContractJson(
+      lines[index],
+      `browser gateway journal entry ${index + 1}`,
+    );
+    if (canonicalJsonLine(entry) !== `${lines[index]}\n`) {
+      throw new Error("browser gateway journal entry is not canonical");
+    }
+    assertExactKeys(
+      entry,
+      [
+        "entry_sha256",
+        "event",
+        "payload",
+        "previous_sha256",
+        "schema_version",
+        "sequence",
+      ],
+      `browser gateway journal entry ${index + 1}`,
+    );
+    assertBoundedString(
+      entry.event,
+      `browser gateway journal entry ${index + 1}.event`,
+      64,
+      1,
+    );
+    assertObject(
+      entry.payload,
+      `browser gateway journal entry ${index + 1}.payload`,
+    );
+    assertDigest(
+      entry.entry_sha256,
+      `browser gateway journal entry ${index + 1}.entry_sha256`,
+    );
+    assertDigest(
+      entry.previous_sha256,
+      `browser gateway journal entry ${index + 1}.previous_sha256`,
+    );
+    const { entry_sha256, ...unsigned } = entry;
+    if (
+      entry.schema_version !== 1 ||
+      entry.sequence !== index + 1 ||
+      entry.previous_sha256 !== previous ||
+      entry_sha256 !== sha256(canonicalJson(unsigned))
+    ) {
+      throw new Error("browser gateway journal hash chain is invalid");
+    }
+    previous = entry_sha256;
+    entries.push(entry);
+  }
+
+  if (
+    entries[0].event !== "gateway_started" ||
+    entries.at(-1).event !== "gateway_closed" ||
+    entries.slice(1, -1).some(({ event }) =>
+      ["gateway_closed", "gateway_started"].includes(event)
+    ) ||
+    previous !== closure.journal.last_sha256
+  ) {
+    throw new Error("browser gateway journal lifecycle does not match closure");
+  }
+  assertExactKeys(
+    entries[0].payload,
+    ["policy_sha256", "source_sha256", "tools_sha256"],
+    "browser gateway journal start",
+  );
+  if (
+    entries[0].payload.policy_sha256 !== closure.policy_sha256 ||
+    entries[0].payload.source_sha256 !== closure.source_sha256 ||
+    entries[0].payload.tools_sha256 !== closure.tools_sha256
+  ) {
+    throw new Error("browser gateway journal start does not match closure");
+  }
+
+  const completed = [];
+  let browserStarted = 0;
+  let proxySummaries = 0;
+  let browserStartedSequence = 0;
+  let proxySequence = Number.MAX_SAFE_INTEGER;
+  for (const entry of entries.slice(1, -1)) {
+    if (["browser_console", "page_request"].includes(entry.event)) {
+      if (entry.sequence >= proxySequence) {
+        throw new Error(`browser gateway ${entry.event} is out of order`);
+      }
+    } else if (entry.event === "browser_started") {
+      browserStarted += 1;
+      browserStartedSequence = entry.sequence;
+      validateBrowserStarted(entry.payload, closure, policy);
+    } else if (entry.event === "tool_completed") {
+      assertExactKeys(
+        entry.payload,
+        ["request_sha256", "result_sha256", "tool"],
+        "browser gateway completed tool",
+      );
+      assertDigest(
+        entry.payload.request_sha256,
+        "browser gateway completed tool.request_sha256",
+      );
+      assertDigest(
+        entry.payload.result_sha256,
+        "browser gateway completed tool.result_sha256",
+      );
+      assertBoundedString(
+        entry.payload.tool,
+        "browser gateway completed tool.tool",
+        64,
+        1,
+      );
+      completed.push({
+        gateway_journal_sequence: entry.sequence,
+        ...structuredClone(entry.payload),
+      });
+    } else if (entry.event === "browser_proxy_summary") {
+      proxySummaries += 1;
+      proxySequence = entry.sequence;
+    } else if (entry.event === "tool_failed") {
+      throw new Error("browser gateway journal contains a failed tool call");
+    } else if (entry.event === "non_http_request") {
+      throw new Error("closed browser gateway journal contains blocked egress");
+    } else {
+      throw new Error(
+        `browser gateway journal event ${entry.event} is unsupported`,
+      );
+    }
+  }
+  if (completed.length > policy.limits.max_tool_calls) {
+    throw new Error("browser gateway journal exceeds its tool-call limit");
+  }
+  if (
+    browserStarted !== 1 ||
+    proxySummaries !== 1 ||
+    browserStartedSequence >= proxySequence ||
+    completed.some(({ gateway_journal_sequence }) =>
+      gateway_journal_sequence <= browserStartedSequence ||
+      gateway_journal_sequence >= proxySequence
+    )
+  ) {
+    throw new Error("browser gateway journal runtime order is invalid");
+  }
+
+  const terminal = entries.at(-1).payload;
+  assertExactKeys(
+    terminal,
+    ["pending_cdp_requests", "status", "violations"],
+    "browser gateway journal close",
+  );
+  if (
+    terminal.pending_cdp_requests !== 0 ||
+    terminal.status !== closure.status ||
+    canonicalJson(terminal.violations) !== canonicalJson(closure.violations)
+  ) {
+    throw new Error("browser gateway journal close does not match closure");
+  }
+  return completed;
+}
+
+function decodeCodexGatewayResult(call, policy) {
+  validateBrowserToolInvocation(policy, call.tool, call.arguments);
+  assertExactKeys(
+    call.result,
+    ["content", "structured_content"],
+    `Codex ${call.tool} gateway result`,
+  );
+  if (call.result.structured_content !== null) {
+    throw new Error(
+      `Codex ${call.tool} gateway result.structured_content must be null`,
+    );
+  }
+  const maximumIdResponse = {
+    id: "\0".repeat(128),
+    jsonrpc: "2.0",
+    result: {
+      content: call.result.content,
+      isError: false,
+    },
+  };
+  if (
+    Buffer.byteLength(`${JSON.stringify(maximumIdResponse)}\n`, "utf8") >
+    MAX_MCP_OUTPUT_BYTES
+  ) {
+    throw new Error(`Codex ${call.tool} gateway result exceeds its byte limit`);
+  }
+  const contentCount = call.tool === "capture_screenshot" ? 2 : 1;
+  assertDenseArray(
+    call.result.content,
+    `Codex ${call.tool} gateway result.content`,
+    {
+      maximum: contentCount,
+      minimum: contentCount,
+    },
+  );
+  const text = call.result.content[0];
+  assertExactKeys(
+    text,
+    ["text", "type"],
+    `Codex ${call.tool} gateway text result`,
+  );
+  if (text.type !== "text" || typeof text.text !== "string") {
+    throw new Error(`Codex ${call.tool} gateway text result is invalid`);
+  }
+  const result = parseContractJson(
+    text.text,
+    `Codex ${call.tool} gateway text result`,
+  );
+  assertObject(result, `Codex ${call.tool} gateway text result`);
+  if (text.text !== canonicalJson(result)) {
+    throw new Error(
+      `Codex ${call.tool} gateway text result must use canonical JSON`,
+    );
+  }
+
+  if (call.tool === "capture_screenshot") {
+    const image = call.result.content[1];
+    assertExactKeys(
+      image,
+      ["data", "mimeType", "type"],
+      "Codex capture_screenshot image result",
+    );
+    if (
+      image.type !== "image" ||
+      image.mimeType !== "image/png" ||
+      typeof image.data !== "string"
+    ) {
+      throw new Error("Codex capture_screenshot image result is invalid");
+    }
+    const bytes = Buffer.from(image.data, "base64");
+    if (
+      bytes.length === 0 ||
+      bytes.length > policy.limits.max_screenshot_bytes ||
+      bytes.toString("base64") !== image.data
+    ) {
+      throw new Error("Codex capture_screenshot image is invalid");
+    }
+    assertObject(result.artifact, "Codex capture_screenshot artifact");
+    if (
+      result.artifact.bytes !== bytes.length ||
+      result.artifact.sha256 !== sha256(bytes) ||
+      result.mime_type !== image.mimeType
+    ) {
+      throw new Error(
+        "Codex capture_screenshot image does not match its result",
+      );
+    }
+  }
+  return result;
+}
+
+export function bindCodexBrowserGatewayJournal({
+  closureSource,
+  codexSource,
+  expectedGatewaySourceSha256,
+  expectedMcpServer,
+  journalSource,
+  policySource,
+}) {
+  assertDigest(
+    expectedGatewaySourceSha256,
+    "expected browser gateway source SHA-256",
+  );
+  assertBoundedString(expectedMcpServer, "expected MCP server", 256, 1);
+  if (
+    expectedMcpServer.trim() !== expectedMcpServer ||
+    expectedMcpServer.includes("\0")
+  ) {
+    throw new Error("expected MCP server is invalid");
+  }
+
+  const policy = parseBrowserGatewayPolicy(policySource);
+  const closure = parseCanonicalGatewayJson(
+    closureSource,
+    "browser gateway closure",
+    MAX_CLOSURE_BYTES,
+  );
+  validateBrowserGatewayClosure(closure);
+  const expectedToolsSha256 = sha256(
+    canonicalJson(browserToolsForPhase(policy.phase)),
+  );
+  if (
+    closure.status !== "closed" ||
+    closure.request_sha256 !== policy.request_sha256 ||
+    closure.policy_sha256 !== sha256(canonicalJson(policy)) ||
+    closure.source_sha256 !== expectedGatewaySourceSha256 ||
+    closure.tools_sha256 !== expectedToolsSha256 ||
+    closure.browser.executable_sha256 !== policy.chrome.sha256
+  ) {
+    throw new Error("browser gateway closure is not bound to its authorities");
+  }
+  if (
+    closure.journal.path !==
+      `${policy.evidence_path}/gateway-journal.jsonl`
+  ) {
+    throw new Error("browser gateway journal path is not bound to policy");
+  }
+
+  const journalCalls = validateBrowserGatewayJournal({
+    closure,
+    journalSource,
+    policy,
+  });
+  const turn = parseCodex0145TurnJsonl(codexSource);
+  const codexCalls = turn.mcp_calls.map((call) => {
+    if (call.server !== expectedMcpServer) {
+      throw new Error("Codex MCP call used an unexpected server");
+    }
+    const result = decodeCodexGatewayResult(call, policy);
+    return {
+      codex_completed_sequence: call.completed_sequence,
+      codex_item_id: call.id,
+      codex_started_sequence: call.started_sequence,
+      request_sha256: sha256(canonicalJson({
+        arguments: call.arguments,
+        name: call.tool,
+      })),
+      result_sha256: sha256(canonicalJson(result)),
+      tool: call.tool,
+    };
+  });
+  if (codexCalls.length !== journalCalls.length) {
+    throw new Error("Codex calls do not exhaust the gateway journal");
+  }
+  const calls = codexCalls.map((call, index) => {
+    const journalCall = journalCalls[index];
+    if (
+      call.tool !== journalCall.tool ||
+      call.request_sha256 !== journalCall.request_sha256 ||
+      call.result_sha256 !== journalCall.result_sha256
+    ) {
+      throw new Error("Codex calls do not match the gateway journal");
+    }
+    return {
+      ...call,
+      gateway_journal_sequence: journalCall.gateway_journal_sequence,
+    };
+  });
+
+  const binding = {
+    calls,
+    codex_jsonl_sha256: turn.source_sha256,
+    gateway_closure_sha256: sha256(
+      Buffer.from(closureSource, "utf8"),
+    ),
+    gateway_journal_last_sha256: closure.journal.last_sha256,
+    gateway_policy_sha256: closure.policy_sha256,
+    gateway_source_sha256: closure.source_sha256,
+    gateway_tools_sha256: closure.tools_sha256,
+    mcp_server: expectedMcpServer,
+    phase: policy.phase,
+    request_sha256: policy.request_sha256,
+    thread_id: turn.thread_id,
+  };
+  return {
+    binding,
+    binding_sha256: sha256(canonicalJson(binding)),
+    qualification: "not-evidence",
+    result: null,
+    schema_version: 1,
+    verification_status: "unverified",
+  };
 }
 
 export async function runBrowserGateway(policySource) {
