@@ -277,21 +277,27 @@ unacceptable chronology evidence.
 
 `scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three
 one-shot direct children, one per phase. Its program path and expected
-SHA-256, fixed arguments, lane root, limits, and confidential values are
-controller-only inputs; no public fixture may select or alter them. Each
-launch uses the sealed lane root as its working directory, a newly constructed
-`LANG`/`LC_ALL`/`TZ` environment, `shell: false`, bounded stdin/stdout/stderr,
-and a controller-enforced deadline. The executor creates the dispatch identity;
-the child reads one complete canonical request to EOF, returns one canonical
-response bound to the phase and request digest, then exits.
+SHA-256, fixed arguments, bounded support-file declarations, lane root,
+limits, and confidential values are controller-only inputs; no public fixture
+may select or alter them. Each support file has an absolute non-symbolic path
+and expected SHA-256 and must be a bounded, single-link regular file with no
+group or world write permission. Owner-writable controller files are allowed.
+The list is dense, ordered, unique, capped at 32 files and 64 MiB
+total, and mandatory even when empty. Each launch uses the sealed lane root as
+its working directory, a newly constructed `LANG`/`LC_ALL`/`TZ` environment,
+`shell: false`, bounded stdin/stdout/stderr, and a controller-enforced
+deadline. The executor creates the dispatch identity; the child reads one
+complete canonical request to EOF, returns one canonical response bound to the
+phase and request digest, then exits.
 
 The controller records the fixed-policy digest, program/argument digests, and
-one receipt per successful direct child. It scans complete bounded stdout and
-stderr for the evaluation contract's opaque confidential tokens and rejects
-primary-executable or lane-root drift, malformed framing, cross-execution
-response reuse, timeout, oversized output, or nonzero exit. The resulting
-record is still `unverified`, `not-evidence`, and `result: null`, and the
-protocol's claims remain `not-attested`.
+aggregate support-file declaration digest, plus one receipt per successful
+direct child. It scans every support file and complete bounded stdout and
+stderr for the evaluation contract's opaque confidential tokens. It rejects
+primary-executable, support-file, or lane-root drift, malformed framing,
+cross-execution response reuse, timeout, oversized output, or nonzero exit.
+The resulting record is still `unverified`, `not-evidence`, and `result:
+null`, and the protocol's claims remain `not-attested`.
 
 This is process construction, not a sandbox. It does not confine a same-user
 process, authenticate controller state, wait for descendants, distinguish
@@ -299,9 +305,11 @@ provider transport from tool egress, restrict absolute tools, create a fresh
 remote model context, or prove that a rendered interface was exercised. A
 real host adapter must fail before dispatch unless its separately reviewed
 platform prerequisites can prove those properties.
-The executable SHA-256 covers only the primary executable. Fixed arguments are
-string-bound; any interpreter payload or configuration file named by an
-argument requires its own measurement in the later real host adapter.
+The executor does not infer which arguments name files. A real host adapter
+must declare every interpreter payload, MCP server, output schema, and static
+configuration it consumes in `support_files`. Identity and content checks
+detect ordinary drift before and after each phase, but cannot eliminate a
+hostile same-user race between those checks and a file read.
 
 ## Public suite
 

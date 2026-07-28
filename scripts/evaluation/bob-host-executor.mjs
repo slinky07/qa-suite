@@ -22,6 +22,9 @@ import {
 const SHA256 = /^[0-9a-f]{64}$/;
 const CONFIDENTIAL_VALUE = /^(?:fx_[0-9a-f]{32}|seal_[0-9a-f]{64})$/;
 const MAX_EXECUTABLE_BYTES = 256 * 1024 * 1024;
+const MAX_SUPPORT_FILE_BYTES = 16 * 1024 * 1024;
+const MAX_SUPPORT_FILES = 32;
+const MAX_SUPPORT_FILES_BYTES = 64 * 1024 * 1024;
 const FIXED_ENVIRONMENT = Object.freeze({
   LANG: "C",
   LC_ALL: "C",
@@ -133,7 +136,10 @@ function normalizedArguments(value) {
 function normalizedConfidentialValues(value = []) {
   const values = assertDenseArray(value, "confidentialValues", {
     maximum: 4096,
-  }).map((item, index) => {
+  });
+  const caseTokens = new Set();
+  const sealedTokens = new Set();
+  values.forEach((item, index) => {
     if (
       typeof item !== "string" ||
       !CONFIDENTIAL_VALUE.test(item)
@@ -142,13 +148,44 @@ function normalizedConfidentialValues(value = []) {
         `confidentialValues[${index}] must be an opaque evaluation token`,
       );
     }
-    return Buffer.from(item, "utf8");
+    (item.startsWith("fx_") ? caseTokens : sealedTokens).add(item);
   });
-  return [...new Map(values.map((item) => [item.toString("hex"), item])).values()];
+  return { caseTokens, sealedTokens };
+}
+
+function containsTokenAt(bytes, offset, byteLength, tokens) {
+  return (
+    offset + byteLength <= bytes.length &&
+    tokens.has(bytes.toString("ascii", offset, offset + byteLength))
+  );
 }
 
 function containsConfidentialValue(bytes, confidentialValues) {
-  return confidentialValues.some((value) => bytes.includes(value));
+  const { caseTokens, sealedTokens } = confidentialValues;
+  if (caseTokens.size === 0 && sealedTokens.size === 0) {
+    return false;
+  }
+  for (let offset = 0; offset + 3 <= bytes.length; offset += 1) {
+    if (
+      bytes[offset] === 0x66 &&
+      bytes[offset + 1] === 0x78 &&
+      bytes[offset + 2] === 0x5f &&
+      containsTokenAt(bytes, offset, 35, caseTokens)
+    ) {
+      return true;
+    }
+    if (
+      bytes[offset] === 0x73 &&
+      bytes[offset + 1] === 0x65 &&
+      bytes[offset + 2] === 0x61 &&
+      bytes[offset + 3] === 0x6c &&
+      bytes[offset + 4] === 0x5f &&
+      containsTokenAt(bytes, offset, 69, sealedTokens)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function fileIdentity(metadata) {
@@ -167,42 +204,128 @@ function sameIdentity(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 
-async function inspectProgram(program) {
-  assertExactKeys(
-    program,
-    ["arguments", "executable", "executable_sha256"],
-    "program",
-  );
-  if (!isAbsolute(program.executable)) {
-    throw new Error("program.executable must be absolute");
+async function inspectRegularProgramFile({
+  confidentialValues,
+  digestLabel,
+  expectedSha256,
+  label,
+  maximumBytes,
+  mismatchTarget,
+  path,
+  pathLabel,
+  requireExecutable,
+}) {
+  if (
+    typeof path !== "string" ||
+    path.includes("\0") ||
+    !isAbsolute(path)
+  ) {
+    throw new Error(`${pathLabel} must be absolute`);
   }
-  assertDigest(program.executable_sha256, "program.executable_sha256");
-  const executable = await realpath(program.executable);
-  if (executable !== program.executable) {
-    throw new Error("program.executable must not use a symbolic path");
+  if (
+    containsConfidentialValue(Buffer.from(path, "utf8"), confidentialValues)
+  ) {
+    throw new Error(`${label} path contains controller-confidential data`);
   }
-  const metadata = await lstat(executable);
+  assertDigest(expectedSha256, digestLabel);
+  const resolved = await realpath(path);
+  if (resolved !== path) {
+    throw new Error(`${pathLabel} must not use a symbolic path`);
+  }
+  const metadata = await lstat(resolved);
   if (
     !metadata.isFile() ||
     metadata.isSymbolicLink() ||
     metadata.nlink !== 1 ||
-    metadata.size > MAX_EXECUTABLE_BYTES ||
-    (metadata.mode & 0o111) === 0 ||
+    metadata.size > maximumBytes ||
+    (requireExecutable && (metadata.mode & 0o111) === 0) ||
     (metadata.mode & 0o022) !== 0
   ) {
     throw new Error(
-      "program.executable must be a bounded, standalone, executable, non-writable regular file",
+      `${pathLabel} must be a bounded, standalone, ${
+        requireExecutable ? "executable, " : ""
+      }regular file that is not group- or world-writable`,
     );
   }
-  const bytes = await readFile(executable);
-  if (sha256(bytes) !== program.executable_sha256) {
-    throw new Error("program.executable_sha256 does not match the executable");
+  const bytes = await readFile(resolved);
+  if (sha256(bytes) !== expectedSha256) {
+    throw new Error(`${digestLabel} does not match ${mismatchTarget}`);
+  }
+  if (containsConfidentialValue(bytes, confidentialValues)) {
+    throw new Error(`${label} contains controller-confidential data`);
   }
   return {
-    arguments: normalizedArguments(program.arguments),
-    executable,
-    executable_sha256: program.executable_sha256,
     identity: fileIdentity(metadata),
+    path: resolved,
+    sha256: expectedSha256,
+    size: metadata.size,
+  };
+}
+
+async function inspectSupportFiles(value, confidentialValues, executable) {
+  const declarations = assertDenseArray(value, "program.support_files", {
+    maximum: MAX_SUPPORT_FILES,
+  });
+  const supportFiles = [];
+  let totalBytes = 0;
+  for (let index = 0; index < declarations.length; index += 1) {
+    const declaration = declarations[index];
+    const label = `program.support_files[${index}]`;
+    assertExactKeys(declaration, ["path", "sha256"], label);
+    const supportFile = await inspectRegularProgramFile({
+      confidentialValues,
+      digestLabel: `${label}.sha256`,
+      expectedSha256: declaration.sha256,
+      label,
+      maximumBytes: MAX_SUPPORT_FILE_BYTES,
+      mismatchTarget: `${label}.path`,
+      path: declaration.path,
+      pathLabel: `${label}.path`,
+      requireExecutable: false,
+    });
+    if (
+      supportFile.path === executable ||
+      supportFiles.some(({ path }) => path === supportFile.path)
+    ) {
+      throw new Error("program file paths must be unique");
+    }
+    totalBytes += supportFile.size;
+    if (totalBytes > MAX_SUPPORT_FILES_BYTES) {
+      throw new Error("program.support_files exceeds its total byte limit");
+    }
+    supportFiles.push(supportFile);
+  }
+  return supportFiles;
+}
+
+async function inspectProgram(program, confidentialValues) {
+  assertExactKeys(
+    program,
+    ["arguments", "executable", "executable_sha256", "support_files"],
+    "program",
+  );
+  const executable = await inspectRegularProgramFile({
+    confidentialValues,
+    digestLabel: "program.executable_sha256",
+    expectedSha256: program.executable_sha256,
+    label: "program executable",
+    maximumBytes: MAX_EXECUTABLE_BYTES,
+    mismatchTarget: "the executable",
+    path: program.executable,
+    pathLabel: "program.executable",
+    requireExecutable: true,
+  });
+  const supportFiles = await inspectSupportFiles(
+    program.support_files,
+    confidentialValues,
+    executable.path,
+  );
+  return {
+    arguments: normalizedArguments(program.arguments),
+    executable: executable.path,
+    executable_sha256: program.executable_sha256,
+    identity: executable.identity,
+    support_files: supportFiles,
   };
 }
 
@@ -214,6 +337,20 @@ async function assertProgramUnchanged(program) {
     !sameIdentity(fileIdentity(metadata), program.identity)
   ) {
     throw new Error("host program changed during execution");
+  }
+  for (const supportFile of program.support_files) {
+    const resolvedSupportFile = await realpath(supportFile.path);
+    const supportMetadata = await lstat(resolvedSupportFile);
+    if (
+      resolvedSupportFile !== supportFile.path ||
+      !sameIdentity(fileIdentity(supportMetadata), supportFile.identity)
+    ) {
+      throw new Error("host program support file changed during execution");
+    }
+    const bytes = await readFile(resolvedSupportFile);
+    if (sha256(bytes) !== supportFile.sha256) {
+      throw new Error("host program support file changed during execution");
+    }
   }
 }
 
@@ -426,7 +563,11 @@ export function validateBobHostExecution(value) {
   assertDigest(value.policy_sha256, "Bob host execution.policy_sha256");
   assertExactKeys(
     value.program,
-    ["arguments_sha256", "executable_sha256"],
+    [
+      "arguments_sha256",
+      "executable_sha256",
+      "support_files_sha256",
+    ],
     "Bob host execution.program",
   );
   assertDigest(
@@ -436,6 +577,10 @@ export function validateBobHostExecution(value) {
   assertDigest(
     value.program.executable_sha256,
     "Bob host execution.program.executable_sha256",
+  );
+  assertDigest(
+    value.program.support_files_sha256,
+    "Bob host execution.program.support_files_sha256",
   );
   const transcript = validateBobHostTranscript(value.transcript);
   const requests = requestsFromBobHostTranscript(transcript);
@@ -511,10 +656,13 @@ export async function executePreparedBobHostProgram({
 }) {
   assertObject(preparation, "preparation");
   const selectedLimits = normalizedLimits(limits);
-  const selectedProgram = await inspectProgram(program);
-  const selectedLaneRoot = await inspectLaneRoot(laneRoot, preparation);
   const selectedConfidentialValues =
     normalizedConfidentialValues(confidentialValues);
+  const selectedProgram = await inspectProgram(
+    program,
+    selectedConfidentialValues,
+  );
+  const selectedLaneRoot = await inspectLaneRoot(laneRoot, preparation);
   const processReceipts = [];
   const adapter = {
     async runPhase(request) {
@@ -547,6 +695,14 @@ export async function executePreparedBobHostProgram({
     program: {
       arguments_sha256: sha256(canonicalJson(selectedProgram.arguments)),
       executable_sha256: selectedProgram.executable_sha256,
+      support_files_sha256: sha256(
+        canonicalJson(
+          selectedProgram.support_files.map((supportFile) => ({
+            path_sha256: sha256(Buffer.from(supportFile.path, "utf8")),
+            sha256: supportFile.sha256,
+          })),
+        ),
+      ),
     },
     qualification: "not-evidence",
     result: null,

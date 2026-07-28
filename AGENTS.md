@@ -30,9 +30,11 @@ distributed skill without changing it:
   launches an arbitrary executable.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
-  executable with an expected SHA-256 and fixed arguments, launches one fresh
-  shell-free child per phase with a constructed environment, and accepts one
-  bounded canonical response before exit.
+  executable with an expected SHA-256, fixed arguments, and a bounded list of
+  independently hashed, single-link support files that are not group- or
+  world-writable. It launches one fresh shell-free child per phase with a
+  constructed environment and accepts one bounded canonical response before
+  exit.
 - `scripts/evaluation/bob-report-adapter.mjs` binds exactly one canonical Bob
   report in a closed artifact inventory and joins that metadata to the
   controller-hashed structured lane result. It does not read or parse report
@@ -68,6 +70,12 @@ record proves filesystem, provider, network, tool, model-context,
 process-tree, or hostile same-user isolation, report semantic parity, or state
 authentication. Do not promote any record until a reviewed host and sandbox
 adapter proves every missing claim.
+
+The host executor's support-file list is mandatory even when empty. Every
+interpreter source, MCP server, schema, or static configuration consumed by a
+real host must be declared there. Owner-writable controller files are allowed;
+file hashing and identity checks detect ordinary drift but do not remove the
+executor's explicit same-user and time-of-check/time-of-use limitations.
 
 Closed-artifact consumers must read the controller-owned captured snapshot,
 never the mutable lane tree. Captured hashes and the unkeyed journal chain can

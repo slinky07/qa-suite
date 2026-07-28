@@ -237,6 +237,7 @@ async function harness(t) {
         arguments: ["--input-type=module", "--eval", source],
         executable: testExecutable,
         executable_sha256: testExecutableSha256,
+        support_files: [],
       };
     },
   };
@@ -309,6 +310,202 @@ test("rejects executable and lane-root drift before dispatch", async (t) => {
   await assert.rejects(
     () => execute(setup),
     /sealed root/u,
+  );
+});
+
+test("measures every declared support file used by the host program", async (t) => {
+  const setup = await harness(t);
+  const supportPath = join(
+    await realpath(join(setup.laneRoot, "..")),
+    "host-policy.json",
+  );
+  await writeFile(supportPath, '{"policy":"browser-only"}\n', { mode: 0o644 });
+  const supportSha256 = sha256(await readFile(supportPath));
+
+  const execution = await execute(setup, {
+    program: {
+      ...setup.program(),
+      support_files: [{ path: supportPath, sha256: supportSha256 }],
+    },
+  });
+
+  assert.equal(
+    execution.program.support_files_sha256,
+    sha256(
+      canonicalJson([
+        {
+          path_sha256: sha256(Buffer.from(supportPath, "utf8")),
+          sha256: supportSha256,
+        },
+      ]),
+    ),
+  );
+});
+
+test("scans the maximum confidential set in one bounded pass", {
+  timeout: 10_000,
+}, async (t) => {
+  const setup = await harness(t);
+  const supportPath = join(
+    await realpath(join(setup.laneRoot, "..")),
+    "host-near-matches.txt",
+  );
+  const nearMatches = Buffer.from(
+    `seal_${"f".repeat(63)}g`.repeat(15_000),
+    "utf8",
+  );
+  await writeFile(supportPath, nearMatches, { mode: 0o644 });
+  const confidentialValues = Array.from(
+    { length: 4096 },
+    (_, index) => `seal_${index.toString(16).padStart(64, "0")}`,
+  );
+
+  await execute(setup, {
+    confidentialValues,
+    program: {
+      ...setup.program(),
+      support_files: [{
+        path: supportPath,
+        sha256: sha256(nearMatches),
+      }],
+    },
+  });
+});
+
+test("rejects unsafe, duplicate, mismatched, and confidential support files", async (t) => {
+  const setup = await harness(t);
+  const parent = await realpath(join(setup.laneRoot, ".."));
+  const supportPath = join(parent, "host-policy.json");
+  await writeFile(supportPath, '{"policy":"browser-only"}\n', { mode: 0o444 });
+  const supportSha256 = sha256(await readFile(supportPath));
+  const declaration = { path: supportPath, sha256: supportSha256 };
+
+  const invalidPrograms = [
+    {
+      ...setup.program(),
+      support_files: [{ ...declaration, sha256: "0".repeat(64) }],
+    },
+    {
+      ...setup.program(),
+      support_files: [declaration, declaration],
+    },
+    {
+      ...setup.program(),
+      support_files: [
+        {
+          path: supportPath.slice(supportPath.lastIndexOf("/") + 1),
+          sha256: supportSha256,
+        },
+      ],
+    },
+  ];
+  for (const program of invalidPrograms) {
+    await assert.rejects(() => execute(setup, { program }));
+  }
+
+  const supportLink = join(parent, "host-policy-link.json");
+  await symlink(supportPath, supportLink);
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        program: {
+          ...setup.program(),
+          support_files: [{ path: supportLink, sha256: supportSha256 }],
+        },
+      }),
+    /must not use a symbolic path/u,
+  );
+
+  const sharedWritablePath = join(parent, "shared-writable-policy.json");
+  await writeFile(sharedWritablePath, "{}\n", { mode: 0o644 });
+  await chmod(sharedWritablePath, 0o664);
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        program: {
+          ...setup.program(),
+          support_files: [{
+            path: sharedWritablePath,
+            sha256: sha256(Buffer.from("{}\n", "utf8")),
+          }],
+        },
+      }),
+    /not group- or world-writable/u,
+  );
+
+  const confidentialValue = `seal_${"d".repeat(64)}`;
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        confidentialValues: [confidentialValue],
+        program: {
+          ...setup.program(),
+          support_files: [{
+            path: join(parent, confidentialValue),
+            sha256: "0".repeat(64),
+          }],
+        },
+      }),
+    (error) => {
+      assert.match(error.message, /controller-confidential data/u);
+      assert.doesNotMatch(error.message, new RegExp(confidentialValue, "u"));
+      return true;
+    },
+  );
+
+  const confidentialFile = join(parent, "host-secret.txt");
+  await writeFile(confidentialFile, `${confidentialValue}\n`, { mode: 0o444 });
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        confidentialValues: [confidentialValue],
+        program: {
+          ...setup.program(),
+          support_files: [{
+            path: confidentialFile,
+            sha256: sha256(Buffer.from(`${confidentialValue}\n`, "utf8")),
+          }],
+        },
+      }),
+    /contains controller-confidential data/u,
+  );
+});
+
+test("rejects support-file mutation during a phase", async (t) => {
+  const setup = await harness(t);
+  const supportPath = join(
+    await realpath(join(setup.laneRoot, "..")),
+    "mutable-host-policy.json",
+  );
+  await writeFile(supportPath, '{"policy":"initial"}\n', { mode: 0o444 });
+  const supportSha256 = sha256(await readFile(supportPath));
+  const quotedPath = JSON.stringify(supportPath);
+  const source = adapterSource(`
+const { chmod, writeFile } = await import("node:fs/promises");
+await chmod(${quotedPath}, 0o644);
+await writeFile(${quotedPath}, '{"policy":"changed"}\\n');
+process.stdout.write(${JSON.stringify(canonicalJson({
+    output: {
+      surfaces: [{
+        control_ids: ["control_search"],
+        id: "surface_primary",
+      }],
+    },
+    phase: "interface_inventory",
+    request_sha256: "__REQUEST_DIGEST__",
+    schema_version: 1,
+  }))}.replace("__REQUEST_DIGEST__", requestDigest));
+`);
+
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        program: {
+          ...setup.program(source),
+          support_files: [{ path: supportPath, sha256: supportSha256 }],
+        },
+      }),
+    /support file changed during execution/u,
   );
 });
 
