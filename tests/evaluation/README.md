@@ -338,10 +338,17 @@ unrelated background requests. The gateway creates one fresh browser context,
 denies downloads, synthesizes an empty favicon response, pauses and closes
 observed extra page/worker targets, detects WebSocket, WebTransport, and direct
 TCP attempts plus top-frame URL drift, and removes its temporary profile at
-close. MCP framing accepts the protocol's parameter-optional messages, bounds
-every message and response, and honors output backpressure. The profile is
-disposable process state; all retained evidence lives below the declared
-`QA/evidence/` path.
+close. While the owned Chrome leader is still live, close sends the detached
+process group `SIGTERM` and polls it until empty. If the group survives while
+the leader remains live, close sends `SIGKILL` and polls once more. It never
+signals a stale group ID after leader exit; either ambiguity or a surviving
+group makes the closure invalid. MCP framing accepts the protocol's
+parameter-optional messages, bounds every message and response, and honors
+output backpressure. The profile is removed only after the group is proven
+empty; an invalid ambiguous cleanup retains it for safe diagnosis. The profile
+is disposable process state; all retained evidence lives below the declared
+`QA/evidence/` path. Platforms without POSIX process-group signaling fail
+before Chrome launch.
 
 Every successful tool call writes bounded artifacts before returning. The
 gateway closes a compact hash-chained JSONL journal and an exact

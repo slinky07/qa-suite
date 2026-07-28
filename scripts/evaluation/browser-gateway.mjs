@@ -1655,36 +1655,95 @@ export class BrowserGateway {
   }
 }
 
-async function terminateProcessGroup(child) {
-  if (
-    !child ||
-    child.exitCode !== null ||
-    child.signalCode !== null
-  ) {
-    return;
-  }
-  const closed = once(child, "close");
+function signalProcessGroup(pid, signal) {
   try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    child.kill("SIGTERM");
+    process.kill(-pid, signal);
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
   }
-  const deadline = timeoutAfter(1500, "browser termination timed out");
-  try {
-    await Promise.race([closed, deadline.promise]);
-  } catch {
+}
+
+export function assertBrowserProcessGroupSupport(
+  platform = process.platform,
+) {
+  if (platform === "win32") {
+    throw new Error(
+      "browser process-group cleanup is unsupported on win32",
+    );
+  }
+}
+
+async function waitForEmptyProcessGroup(pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
     try {
-      process.kill(-child.pid, "SIGKILL");
-    } catch {
-      child.kill("SIGKILL");
+      process.kill(-pid, 0);
+    } catch (error) {
+      if (error?.code === "ESRCH") return true;
+      if (error?.code !== "EPERM") throw error;
     }
-    await Promise.race([
-      closed,
-      new Promise((resolveWait) => setTimeout(resolveWait, 500)),
-    ]);
-  } finally {
-    deadline.clear();
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    await new Promise((resolveWait) =>
+      setTimeout(resolveWait, Math.min(25, remaining))
+    );
   }
+}
+
+const PROCESS_GROUP_CONTROL = Object.freeze({
+  platform: process.platform,
+  signal: signalProcessGroup,
+  waitForEmpty: waitForEmptyProcessGroup,
+});
+
+export async function terminateProcessGroup(
+  child,
+  processGroup = PROCESS_GROUP_CONTROL,
+) {
+  if (!child) return true;
+  if (processGroup.platform !== undefined) {
+    assertBrowserProcessGroupSupport(processGroup.platform);
+  }
+  if (!Number.isSafeInteger(child.pid) || child.pid < 1) {
+    throw new Error("browser process group ID is invalid");
+  }
+  if (child.exitCode !== null || child.signalCode !== null) {
+    throw new Error("browser leader exited before process-group cleanup");
+  }
+  processGroup.signal(child.pid, "SIGTERM");
+  if (await processGroup.waitForEmpty(child.pid, 1500)) return true;
+  if (child.exitCode !== null || child.signalCode !== null) {
+    throw new Error(
+      "browser leader exited before process-group cleanup completed",
+    );
+  }
+  processGroup.signal(child.pid, "SIGKILL");
+  if (await processGroup.waitForEmpty(child.pid, 500)) return true;
+  throw new Error("browser process group did not become empty");
+}
+
+async function closeBrowserProcessGroup(child, gateway) {
+  try {
+    return await terminateProcessGroup(child);
+  } catch (error) {
+    gateway.violation(
+      "browser-process-cleanup",
+      boundedText(error.message, 256) ??
+        "browser process group did not become empty",
+    );
+    return false;
+  }
+}
+
+export async function removeBrowserProfileIfSafe({
+  processGroupEmpty,
+  profile,
+  removeProfile = rm,
+}) {
+  if (profile === null) return true;
+  if (!processGroupEmpty) return false;
+  await removeProfile(profile, { force: true, recursive: true });
+  return true;
 }
 
 function measuredBrowserIdentity({ args, chrome, stderr, version }) {
@@ -1920,8 +1979,16 @@ async function launchBrowser(policy, evidence, chrome) {
   };
   const closeFailedLaunch = async ({ cdp, child, error }) => {
     cdp?.close();
-    await terminateProcessGroup(child);
     let startupError = error;
+    let processGroupEmpty = false;
+    try {
+      processGroupEmpty = await terminateProcessGroup(child);
+    } catch (cleanupError) {
+      startupError = new Error(
+        `${startupError.message}; browser process cleanup failed: ` +
+        cleanupError.message,
+      );
+    }
     const proxyError = await closeProxy();
     if (proxyError !== null) {
       startupError = new Error(
@@ -1930,7 +1997,16 @@ async function launchBrowser(policy, evidence, chrome) {
     }
     if (profile !== null) {
       try {
-        await rm(profile, { force: true, recursive: true });
+        const profileRemoved = await removeBrowserProfileIfSafe({
+          processGroupEmpty,
+          profile,
+        });
+        if (!profileRemoved) {
+          startupError = new Error(
+            `${startupError.message}; browser profile retained because ` +
+            "process-group cleanup was not proven",
+          );
+        }
       } catch (cleanupError) {
         startupError = new Error(
           `${startupError.message}; profile cleanup failed: ` +
@@ -1943,6 +2019,7 @@ async function launchBrowser(policy, evidence, chrome) {
   };
   try {
     await assertMeasuredFileUnchanged(chrome, "Chrome executable");
+    assertBrowserProcessGroupSupport();
     profile = await mkdtemp(join(tmpdir(), "qa-suite-browser-"));
     await proxy.start();
   } catch (error) {
@@ -2308,14 +2385,9 @@ async function launchBrowser(policy, evidence, chrome) {
           gateway.violation("browser-close", "context disposal failed");
         }
         await gateway.settleEvents();
+        const processGroupEmpty =
+          await closeBrowserProcessGroup(child, gateway);
         cdp.close();
-        await terminateProcessGroup(child);
-        if (child.exitCode === null && child.signalCode === null) {
-          gateway.violation(
-            "browser-process-cleanup",
-            "browser process did not close",
-          );
-        }
         const proxyError = await closeProxy();
         if (proxyError !== null) {
           gateway.violation("browser-proxy", proxyError.message);
@@ -2326,7 +2398,16 @@ async function launchBrowser(policy, evidence, chrome) {
           gateway.violation("browser-executable", error.message);
         }
         try {
-          await rm(profile, { force: true, recursive: true });
+          const profileRemoved = await removeBrowserProfileIfSafe({
+            processGroupEmpty,
+            profile,
+          });
+          if (!profileRemoved) {
+            gateway.violation(
+              "browser-profile-cleanup",
+              "profile retained because process-group cleanup was not proven",
+            );
+          }
         } catch (error) {
           gateway.violation("browser-profile-cleanup", error.message);
         }
