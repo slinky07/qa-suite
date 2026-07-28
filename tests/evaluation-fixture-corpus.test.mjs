@@ -5,6 +5,7 @@ import {
   readFile,
   readdir,
 } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import {
   dirname,
   join,
@@ -50,7 +51,16 @@ const informationArchitectureCriteria = [
   "IA-05",
   "IA-06",
   "IA-07",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "H7",
   "H8",
+  "H9",
+  "H10",
 ];
 
 async function regularFileMetadata(path, label) {
@@ -362,17 +372,76 @@ async function stopFixture(child) {
   });
 }
 
+function requestStatus(url, path) {
+  const target = new URL(url);
+  return new Promise((resolveStatus, rejectStatus) => {
+    const request = httpRequest(
+      {
+        hostname: target.hostname,
+        method: "GET",
+        path,
+        port: target.port,
+      },
+      (response) => {
+        response.resume();
+        response.once("end", () => {
+          resolveStatus(response.statusCode);
+        });
+      },
+    );
+    request.once("error", rejectStatus);
+    request.end();
+  });
+}
+
 const suite = await readContract(suitePath, "Bob suite");
 const oracles = await readContract(oraclePath, "Bob oracle set");
+
+function fixturePairForSurface(surfaceId) {
+  const adversarial = oracles.find(
+    (oracle) =>
+      oracle.role === "adversarial" &&
+      oracle.assertions.expected_defects.some(
+        (defect) => defect.surface_id === surfaceId,
+      ),
+  );
+  assert.ok(adversarial, `missing adversarial fixture for ${surfaceId}`);
+
+  const control = oracles.find(
+    (oracle) =>
+      oracle.role === "control" &&
+      oracle.pair_id === adversarial.pair_id,
+  );
+  assert.ok(control, `missing control fixture for ${surfaceId}`);
+
+  const caseById = new Map(
+    suite.cases.map((suiteCase) => [suiteCase.id, suiteCase]),
+  );
+  const adversarialCase = caseById.get(adversarial.case_id);
+  const controlCase = caseById.get(control.case_id);
+  assert.ok(adversarialCase, `missing public case ${adversarial.case_id}`);
+  assert.ok(controlCase, `missing public case ${control.case_id}`);
+
+  return {
+    adversarial,
+    adversarialCase,
+    cases: [adversarialCase, controlCase],
+    control,
+    controlCase,
+  };
+}
 
 test("committed Bob fixture declarations match every selected byte", async () => {
   assert.equal(validateSuite(suite), suite);
   assert.equal(validateOracleSet(oracles, suite), oracles);
-  const controlOracle = oracles.find(({ role }) => role === "control");
-  assert.deepEqual(
-    controlOracle.assertions.control_budget.criteria_any_of,
-    informationArchitectureCriteria,
-  );
+  for (const controlOracle of oracles.filter(
+    ({ role }) => role === "control",
+  )) {
+    assert.deepEqual(
+      controlOracle.assertions.control_budget.criteria_any_of,
+      informationArchitectureCriteria,
+    );
+  }
 
   const sealTokens = new Set();
   for (const oracle of oracles) {
@@ -465,10 +534,11 @@ test("committed Bob fixture declarations match every selected byte", async () =>
   }
 });
 
-test("the pair has equal capabilities and one sealed layout variable", async () => {
+test("the Pocket Notes pair has one sealed layout variable", async () => {
+  const pair = fixturePairForSurface("surface_note_board");
   const sourceByCase = new Map();
   const contextByCase = new Map();
-  for (const suiteCase of suite.cases) {
+  for (const suiteCase of pair.cases) {
     const root = join(
       repositoryRoot,
       "tests/evaluation/fixtures",
@@ -493,7 +563,8 @@ test("the pair has equal capabilities and one sealed layout variable", async () 
     );
   }
 
-  const [firstCase, secondCase] = suite.cases;
+  const firstCase = pair.adversarialCase;
+  const secondCase = pair.controlCase;
   const firstRoot = join(
     repositoryRoot,
     "tests/evaluation/fixtures",
@@ -585,21 +656,19 @@ test("the pair has equal capabilities and one sealed layout variable", async () 
     assert.equal(source.includes('role="status"'), true);
   }
 
-  const oracleByRole = new Map(
-    oracles.map((oracle) => [oracle.role, oracle]),
-  );
   assert.equal(
-    layoutKind(sourceByCase.get(oracleByRole.get("adversarial").case_id)),
+    layoutKind(sourceByCase.get(pair.adversarial.case_id)),
     "interleaved",
   );
   assert.equal(
-    layoutKind(sourceByCase.get(oracleByRole.get("control").case_id)),
+    layoutKind(sourceByCase.get(pair.control.case_id)),
     "separated",
   );
 });
 
-test("both fixture modules execute the declared user flows", async () => {
-  for (const suiteCase of suite.cases) {
+test("the Pocket Notes modules execute their declared user flows", async () => {
+  const pair = fixturePairForSurface("surface_note_board");
+  for (const suiteCase of pair.cases) {
     const appPath = join(
       repositoryRoot,
       "tests/evaluation/fixtures",
@@ -657,7 +726,7 @@ test("both fixture modules execute the declared user flows", async () => {
   }
 });
 
-test("both standalone fixtures serve and implement the same core behavior", async () => {
+test("the Pocket Notes modules implement the same core behavior", async () => {
   const fixedTime = new Date("2026-07-27T12:00:00.000Z");
   const expectedNote = {
     created_at: fixedTime.toISOString(),
@@ -665,7 +734,8 @@ test("both standalone fixtures serve and implement the same core behavior", asyn
     title: "Release",
   };
 
-  for (const suiteCase of suite.cases) {
+  const pair = fixturePairForSurface("surface_note_board");
+  for (const suiteCase of pair.cases) {
     const publicRoot = join(
       repositoryRoot,
       "tests/evaluation/fixtures",
@@ -701,7 +771,23 @@ test("both standalone fixtures serve and implement the same core behavior", asyn
       () => app.createNote({ note: "", title: "" }, fixedTime),
       /title and note are required/u,
     );
+  }
+});
 
+test("every standalone Bob fixture serves only its declared assets", async () => {
+  const projectFinderCaseIds = new Set(
+    fixturePairForSurface("surface_filter_workspace").cases.map(
+      ({ id }) => id,
+    ),
+  );
+  for (const suiteCase of suite.cases) {
+    const publicRoot = join(
+      repositoryRoot,
+      "tests/evaluation/fixtures",
+      suiteCase.id,
+      "public",
+    );
+    const appPath = join(publicRoot, "app.mjs");
     const running = await startFixture(suiteCase.id);
     try {
       const response = await fetch(`${running.url}/`);
@@ -734,8 +820,40 @@ test("both standalone fixtures serve and implement the same core behavior", asyn
         ),
       );
 
+      const styles = await fetch(`${running.url}/styles.css`);
+      assert.equal(styles.status, 200);
+      assert.equal(
+        await styles.text(),
+        await readRegularFile(
+          join(publicRoot, "styles.css"),
+          `${suiteCase.id} styles`,
+          "utf8",
+        ),
+      );
+
       const missing = await fetch(`${running.url}/missing`);
       assert.equal(missing.status, 404);
+
+      if (projectFinderCaseIds.has(suiteCase.id)) {
+        assert.equal(
+          await requestStatus(running.url, "//fixture.invalid/app.mjs"),
+          404,
+        );
+        assert.equal(
+          await requestStatus(
+            running.url,
+            "http://fixture.invalid/app.mjs",
+          ),
+          404,
+        );
+        assert.equal(
+          await requestStatus(
+            running.url,
+            "/\\fixture.invalid/app.mjs",
+          ),
+          404,
+        );
+      }
     } finally {
       await stopFixture(running.child);
     }

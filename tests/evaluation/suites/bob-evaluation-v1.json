@@ -26,6 +26,30 @@
       "smoke_checks": [
         "check_note_creation"
       ]
+    },
+    {
+      "id": "fx_cc4b61fbde593f6e101984583e5e9f88",
+      "qa_context": "tests/evaluation/fixtures/fx_cc4b61fbde593f6e101984583e5e9f88/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_cc4b61fbde593f6e101984583e5e9f88/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_6666666666666666666666666666666666666666666666666666666666666666",
+        "seal_7777777777777777777777777777777777777777777777777777777777777777"
+      ],
+      "smoke_checks": [
+        "check_filter_workspace"
+      ]
+    },
+    {
+      "id": "fx_87a49bf089d33e76d6115d4aef954c01",
+      "qa_context": "tests/evaluation/fixtures/fx_87a49bf089d33e76d6115d4aef954c01/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_87a49bf089d33e76d6115d4aef954c01/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_8888888888888888888888888888888888888888888888888888888888888888",
+        "seal_9999999999999999999999999999999999999999999999999999999999999999"
+      ],
+      "smoke_checks": [
+        "check_filter_workspace"
+      ]
     }
   ]
 }

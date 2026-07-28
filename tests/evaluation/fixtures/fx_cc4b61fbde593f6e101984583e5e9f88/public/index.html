@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project Finder</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <p class="eyebrow">PROJECT FINDER</p>
+        <h1>Find the work you need</h1>
+        <p>Search this sample workspace by project name and status.</p>
+      </header>
+
+      <main class="workspace" data-surface-id="surface_filter_workspace">
+        <section id="filter-panel" class="panel filter-panel">
+          <form id="filter-form">
+            <div class="filter-grid">
+              <label for="project-query">
+                Project name
+                <input
+                  id="project-query"
+                  name="query"
+                  type="search"
+                  autocomplete="off"
+                  data-control-id="control_project_query"
+                >
+              </label>
+              <label for="project-status">
+                Status
+                <select
+                  id="project-status"
+                  name="status"
+                  data-control-id="control_project_status"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="active">Active</option>
+                  <option value="planning">Planning</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </label>
+            </div>
+            <button
+              id="apply-filters"
+              class="primary-action"
+              type="submit"
+              data-control-id="control_apply_filters"
+            >
+              Apply filters
+            </button>
+          </form>
+        </section>
+
+        <section class="panel results-panel" aria-labelledby="results-heading">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow">WORKSPACE</p>
+              <h2 id="results-heading">Projects</h2>
+            </div>
+            <p id="result-count" class="result-count"></p>
+          </div>
+
+          <div id="results-list" class="results-list"></div>
+          <div id="no-results" class="no-results" hidden>
+            <h3>No matching projects</h3>
+            <p>
+              This sample workspace has no projects matching the current
+              filters.
+            </p>
+          </div>
+
+          <details id="search-help" class="search-help">
+            <summary data-control-id="control_search_help">
+              Advanced search
+            </summary>
+            <p>
+              Combine a short project name with a status to narrow the list.
+            </p>
+
+            <div class="edit-filter-action">
+              <button
+                id="edit-filters"
+                class="secondary-action"
+                type="button"
+                data-control-id="control_edit_filters"
+              >
+                Edit filters
+              </button>
+            </div>
+
+          </details>
+        </section>
+        <p id="status" class="live-status" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>

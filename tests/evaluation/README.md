@@ -267,9 +267,10 @@ and tokens retain the contract's full required shape:
 ```
 
 Every public commitment is globally unique. The sealed oracle assigns each
-case's commitments to its canary and expected-defect or budget ID. Pair
-identity exists only in the sealed oracle, so comparing public cases cannot
-reveal which fixtures form a pair.
+case's commitments to its canary and expected-defect or budget ID. Only the
+sealed oracle maps a case to its role and sealed pair identifier. Similar
+public products may make pair membership inferable; this boundary hides role
+and controller tokens, not semantic similarity.
 
 Each referenced manifest lists only the exact neutral QA context and public
 regular files. Paths are ordered and unique; modes are `100644` or `100755`;
@@ -352,7 +353,16 @@ and validation:
           "IA-05",
           "IA-06",
           "IA-07",
-          "H8"
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "H7",
+          "H8",
+          "H9",
+          "H10"
         ],
         "max_total": null,
         "max_by_severity": {
@@ -369,8 +379,8 @@ and validation:
 ]
 ```
 
-The Bob control budget covers IA-01 through IA-07 and the sealed detector's H8
-alias, so an S1-S3 IA finding cannot evade false-positive scoring.
+Each Bob control budget covers IA-01 through IA-07 and H1 through H10 on its
+selected surface, so an S1-S3 IA finding cannot evade false-positive scoring.
 The control budget is independent of statistical precision. `null` means an
 unbounded count; it is not risk acceptance and does not remove a finding from
 the canonical verdict. For example, an allowed Bob S4 control finding can stay
@@ -380,25 +390,33 @@ precision arithmetic.
 
 ## Committed Bob corpus
 
-`tests/evaluation/suites/bob-evaluation-v1.json` now declares the first Bob
-pair with opaque identifiers. Its controller-only oracle is
+`tests/evaluation/suites/bob-evaluation-v1.json` now declares two Bob
+adversarial/control pairs with opaque identifiers. Their controller-only
+oracle is
 `tests/evaluation/oracles/bob-evaluation-v1.json`; that path is intentionally
-absent from the public suite and both fixture manifests.
+absent from the public suite and all four fixture manifests.
 
-Each selected fixture is a standalone Pocket Notes web app with the same
-visible controls, copy, styles, and successful note/preference behavior. One
-layout places display preferences between note details and the primary action;
-the other keeps the same preferences after the completed note-creation task.
-The sealed assertion permits only an S4 information-architecture finding and
-requires both user flows to pass. This isolates task-boundary detection without
-turning a usable fixture into a fabricated `No-Go`.
+The Pocket Notes pair has the same visible controls, copy, styles, and
+successful note/preference behavior. One layout places display preferences
+between note details and the primary action; the other keeps the same
+preferences after the completed note-creation task.
+
+The Project Finder pair has the same project data, search and status controls,
+copy, styles, and successful filtering and recovery behavior. One layout puts
+the exact `Edit filters` action inside a closed `Advanced search` disclosure;
+the other exposes that action directly in the results workspace. The sealed
+assertions permit only S4 information-architecture findings and require every
+declared user flow to pass. Both pairs therefore isolate a discoverability
+variable without turning a usable fixture into a fabricated `No-Go`.
 
 `tests/evaluation-fixture-corpus.test.mjs` validates the committed suite,
 oracle set, exact manifest inventory, raw file hashes and modes, token
-non-disclosure, equal capabilities, the one intended layout variable, pure
-application behavior, and loopback serving. These checks prove deterministic
-fixture bytes and behavior only. They do not attest semantic opacity, host
-isolation, a Bob baseline, or any qualifying evaluation result.
+non-disclosure, pair equivalence, pure application behavior, and loopback
+serving. `tests/evaluation-bob-search-fixture-pair.test.mjs` proves the Project
+Finder pair's sole placement variable and filtering/recovery flows. These
+checks prove deterministic fixture bytes and behavior only. They do not attest
+semantic opacity, host isolation, a Bob baseline, or any qualifying evaluation
+result.
 
 ## Smoke gating and incomplete coverage
 
@@ -476,8 +494,7 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 
 The following remain deliberately outside this fixture constituent:
 
-- additional opaque Bob pairs required for multi-pair acceptance and the
-  other lane corpora;
+- the other lane corpora required for campaign acceptance;
 - a reviewed host adapter that proves fresh invocation, filesystem
   confinement, command-environment control, tool inventory, and network
   policy without conflating provider transport with tool egress;
