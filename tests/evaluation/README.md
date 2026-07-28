@@ -276,6 +276,30 @@ that a real host obeyed the requests.
 Report sections, filenames, timestamps, and lane-authored event files remain
 unacceptable chronology evidence.
 
+### Pinned Codex transport parser
+
+`scripts/evaluation/codex-0145-events.mjs` parses the deliberately narrower
+successful Bob-host subset of one JSONL turn from Codex CLI 0.145.0. It
+requires the exact thread/turn lifecycle, exact five-field usage object,
+successful non-overlapping MCP start/completion pairs, optional completed
+reasoning, and one final completed agent message. The returned record
+preserves invocation order and decoded MCP argument/result values; it
+deliberately does not interpret browser-gateway semantics or the final Bob
+phase output.
+
+The wire contract is pinned to the upstream
+[0.145.0 event types](https://github.com/openai/codex/blob/rust-v0.145.0/codex-rs/exec/src/exec_events.rs)
+and
+[JSONL event mapper](https://github.com/openai/codex/blob/rust-v0.145.0/codex-rs/exec/src/event_processor_with_jsonl_output.rs).
+`tests/evaluation/fixtures/codex-0.145.0/success.jsonl` is a retained,
+sanitized capture from the matching CLI. A Codex upgrade requires deliberate
+source review and a fresh captured fixture.
+
+The parser is synchronous and has no process, credential, filesystem, network,
+or CLI entrypoint. Its record and unkeyed SHA-256 source digest are transport
+data, not evidence: this constituent does not authenticate the provider,
+model, MCP server, tool result, sandbox, or qualifying execution.
+
 ### Non-qualifying direct-process boundary
 
 `scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three
