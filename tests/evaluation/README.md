@@ -255,13 +255,19 @@ ordered calls:
 
 The protocol rejects unknown fields, non-inventoried controls, invalid task
 parents, incomplete task coverage, and task results outside the modeled
-order. Inline phase records carry no adapter-asserted artifact digest; the
-controller hashes each accepted output into the transcript. The transcript
-remains `unverified`, `not-evidence`, and `result: null`; every isolation and
-method-order claim remains `not-attested`. This proves the controller call
-sequence only. It does not prove that an unreviewed adapter withheld other
-tools, that the inventory or model is semantically correct, or that a real
-host obeyed the requests.
+order. Each task result names exactly one selected core flow and hashes that
+flow's ordered evidence-pointer set. Pass/Fail flows require exercised tasks;
+Observed-only and Not-tested flows require matching task dispositions. The
+adapter also asserts the finalized report SHA-256. The controller hashes the
+accepted output into the transcript; only `adaptClosedBobHostResult()` later
+compares the report assertion and evidence paths with the closed artifact
+inventory. These adapter assertions are not proof by themselves.
+
+The transcript remains `unverified`, `not-evidence`, and `result: null`; every
+isolation and method-order claim remains `not-attested`. This proves the
+controller call sequence only. It does not prove that an unreviewed adapter
+withheld other tools, that the inventory or model is semantically correct, or
+that a real host obeyed the requests.
 Report sections, filenames, timestamps, and lane-authored event files remain
 unacceptable chronology evidence.
 
@@ -319,8 +325,8 @@ and tokens retain the contract's full required shape:
         "seal_3333333333333333333333333333333333333333333333333333333333333333"
       ],
       "report_identifiers": {
-        "core_flow_ids": ["flow_0123456789abcdef0123456789abcdef_01"],
-        "surface_id": "surface_0123456789abcdef0123456789abcdef"
+        "core_flow_ids": ["flow_00112233445566778899aabbccddeeff_01"],
+        "surface_id": "surface_00112233445566778899aabbccddeeff"
       },
       "smoke_checks": ["check_primary"]
     },
@@ -333,8 +339,8 @@ and tokens retain the contract's full required shape:
         "seal_5555555555555555555555555555555555555555555555555555555555555555"
       ],
       "report_identifiers": {
-        "core_flow_ids": ["flow_fedcba9876543210fedcba9876543210_01"],
-        "surface_id": "surface_fedcba9876543210fedcba9876543210"
+        "core_flow_ids": ["flow_ffeeddccbbaa99887766554433221100_01"],
+        "surface_id": "surface_ffeeddccbbaa99887766554433221100"
       },
       "smoke_checks": ["check_primary"]
     }
@@ -351,7 +357,9 @@ and controller tokens, not semantic similarity.
 Bob `report_identifiers` are strict, role-neutral, and globally unique per
 case, so they cannot act as a public pair join. They stay outside fixture
 bytes, lane disclosure, interface inventory, and expected-use modeling; only
-task execution receives the selected case's IDs. The declaration does not
+task execution receives the selected case's IDs. Each case uses an independent
+opaque report token rather than its disclosed case token, so the identifiers
+cannot be derived during the first two phases. The declaration does not
 enumerate controls, observations, expected findings, criteria, severity,
 priority, or outcomes. It therefore preserves Bob's obligation to inventory
 the interface and form its own expected-use hierarchy.

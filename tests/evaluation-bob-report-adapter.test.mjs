@@ -21,8 +21,8 @@ const report = Object.freeze({
   size: 123,
 });
 const reportIdentifiers = Object.freeze({
-  core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
-  surface_id: "surface_0123456789abcdef0123456789abcdef",
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
 });
 
 function closedBobRun({
@@ -92,9 +92,9 @@ function suite() {
           `tests/evaluation/fixtures/${otherCaseId}/qa-context.md`,
         report_identifiers: {
           core_flow_ids: [
-            "flow_fedcba9876543210fedcba9876543210_01",
+            "flow_ffeeddccbbaa99887766554433221100_01",
           ],
-          surface_id: "surface_fedcba9876543210fedcba9876543210",
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
         },
         smoke_checks: ["check_primary"],
       },
@@ -142,22 +142,33 @@ function laneResult(overrides = {}) {
 }
 
 async function hostTranscript(taskOverrides = {}) {
-  const taskOutput = {
-    report_output: {
-      lane_result: laneResult(),
-      report: {
-        path: report.path,
-        sha256: report.sha256,
-      },
+  const baseReportOutput = {
+    lane_result: laneResult(),
+    report: {
+      path: report.path,
+      sha256: report.sha256,
     },
-    results: [
-      {
-        control_ids: ["control_primary"],
-        disposition: "exercised",
-        evidence_sha256: "e".repeat(64),
-        task_id: "task_primary",
-      },
-    ],
+  };
+  const reportOutput = {
+    ...baseReportOutput,
+    ...taskOverrides.report_output,
+  };
+  const taskOutput = {
+    ...taskOverrides,
+    report_output: reportOutput,
+    results:
+      taskOverrides.results ??
+      [
+        {
+          control_ids: ["control_primary"],
+          disposition: "exercised",
+          evidence_sha256: sha256(
+            canonicalJson(reportOutput.lane_result.flows[0].evidence),
+          ),
+          flow_id: reportIdentifiers.core_flow_ids[0],
+          task_id: "task_primary",
+        },
+      ],
   };
   const outputs = [
     {
@@ -178,14 +189,7 @@ async function hostTranscript(taskOverrides = {}) {
         },
       ],
     },
-    {
-      ...taskOutput,
-      ...taskOverrides,
-      report_output: {
-        ...taskOutput.report_output,
-        ...taskOverrides.report_output,
-      },
-    },
+    taskOutput,
   ];
   let index = 0;
   return executePreparedBobCase({

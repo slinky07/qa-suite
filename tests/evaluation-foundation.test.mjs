@@ -35,12 +35,12 @@ const tokens = {
 };
 const bobReportIdentifiers = {
   adversarial: {
-    core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
-    surface_id: "surface_0123456789abcdef0123456789abcdef",
+    core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+    surface_id: "surface_00112233445566778899aabbccddeeff",
   },
   control: {
-    core_flow_ids: ["flow_fedcba9876543210fedcba9876543210_01"],
-    surface_id: "surface_fedcba9876543210fedcba9876543210",
+    core_flow_ids: ["flow_ffeeddccbbaa99887766554433221100_01"],
+    surface_id: "surface_ffeeddccbbaa99887766554433221100",
   },
 };
 
@@ -395,6 +395,30 @@ test("Bob machine lane results use only the selected report identifiers", () => 
       ),
     /finding and observation IDs must contain unique/u,
   );
+
+  const namedArray = specialistResult();
+  namedArray.not_tested.controller_note = "unhashed";
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        namedArray,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /must not contain named properties/u,
+  );
+
+  const sparseEvidence = specialistResult();
+  sparseEvidence.flows[0].evidence = new Array(1);
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        sparseEvidence,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /must be dense/u,
+  );
 });
 
 test("suite contract is strict and uses neutral opaque paths", () => {
@@ -455,7 +479,7 @@ test("suite contract is strict and uses neutral opaque paths", () => {
     "surface_adversarial";
   assert.throws(
     () => validateSuite(roleNamedSurface),
-    /surface_id must be opaque and case-bound/u,
+    /surface_id must use an independent opaque token/u,
   );
 
   const roleNamedFlow = clone(suite);
@@ -464,7 +488,17 @@ test("suite contract is strict and uses neutral opaque paths", () => {
   ];
   assert.throws(
     () => validateSuite(roleNamedFlow),
-    /core_flow_ids must be opaque and case-bound/u,
+    /core_flow_ids must use the selected surface token/u,
+  );
+
+  const caseDerived = clone(suite);
+  caseDerived.cases[0].report_identifiers = {
+    core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
+    surface_id: "surface_0123456789abcdef0123456789abcdef",
+  };
+  assert.throws(
+    () => validateSuite(caseDerived),
+    /surface_id must use an independent opaque token/u,
   );
 
   const nonBobSuite = suiteFixture("security-qa");
@@ -588,11 +622,11 @@ test("oracle set requires one adversarial and one control with sealed commitment
   assert.equal(validateOracleSet(reversed, freshSuite), reversed);
 
   const repeatedIdentifierSuite = clone(freshSuite);
-  repeatedIdentifierSuite.cases[1].report_identifiers.surface_id =
-    repeatedIdentifierSuite.cases[0].report_identifiers.surface_id;
+  repeatedIdentifierSuite.cases[1].report_identifiers =
+    clone(repeatedIdentifierSuite.cases[0].report_identifiers);
   assert.throws(
     () => validateSuite(repeatedIdentifierSuite),
-    /surface_id must be opaque and case-bound/u,
+    /suite Bob report surface IDs must contain unique/u,
   );
 
   const unknownSurface = adversarialOracle();

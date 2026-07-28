@@ -39,9 +39,11 @@ distributed skill without changing it:
   content, create a complete normalized case, open the sealed oracle, or
   score a result.
 - Bob suite cases declare globally unique, role-neutral report surface and
-  core-flow IDs. They remain controller-only until task execution, whose
-  structured output must use exactly the selected IDs and bind the canonical
-  report path and SHA-256 without prose inference.
+  core-flow IDs from independent opaque tokens that cannot be derived from the
+  earlier case disclosure. They remain controller-only until task execution,
+  whose structured output must use exactly the selected IDs and bind every
+  modeled task to its core flow, evidence pointers, and canonical report
+  path/SHA-256 without prose inference.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:

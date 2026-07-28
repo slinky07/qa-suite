@@ -321,6 +321,17 @@ export function validateTaskExecution(
     ["report_output", "results"],
     "task execution",
   );
+  const reportOutput = validateReportOutput(
+    value.report_output,
+    reportIdentifiers,
+    caseId,
+  );
+  const flowById = new Map(
+    reportOutput.lane_result.flows.map((flow) => [flow.id, flow]),
+  );
+  const resultsByFlow = new Map(
+    reportOutput.lane_result.flows.map((flow) => [flow.id, []]),
+  );
   assertBoundedArray(value.results, "task execution.results", {
     minimum: 1,
     maximum: 256,
@@ -333,7 +344,13 @@ export function validateTaskExecution(
     const task = model.tasks[index];
     assertExactKeys(
       result,
-      ["control_ids", "disposition", "evidence_sha256", "task_id"],
+      [
+        "control_ids",
+        "disposition",
+        "evidence_sha256",
+        "flow_id",
+        "task_id",
+      ],
       label,
     );
     if (result.task_id !== task.id) {
@@ -350,6 +367,10 @@ export function validateTaskExecution(
     ) {
       throw new Error(`${label}.disposition is invalid`);
     }
+    if (!flowById.has(result.flow_id)) {
+      throw new Error(`${label}.flow_id is not a selected core flow`);
+    }
+    resultsByFlow.get(result.flow_id).push(result);
     assertBoundedArray(result.control_ids, `${label}.control_ids`, {
       minimum: task.control_ids.length,
       maximum: task.control_ids.length,
@@ -372,11 +393,52 @@ export function validateTaskExecution(
       throw new Error(`${label} must account for every modeled control`);
     }
   });
-  validateReportOutput(
-    value.report_output,
-    reportIdentifiers,
-    caseId,
-  );
+  for (const flow of reportOutput.lane_result.flows) {
+    const boundResults = resultsByFlow.get(flow.id);
+    if (boundResults.length === 0) {
+      throw new Error(
+        `task execution flow ${flow.id} must bind at least one modeled task`,
+      );
+    }
+    const evidenceSha256 = sha256(canonicalJson(flow.evidence));
+    if (
+      boundResults.some(
+        (result) => result.evidence_sha256 !== evidenceSha256,
+      )
+    ) {
+      throw new Error(
+        `task execution flow ${flow.id} evidence digest does not match`,
+      );
+    }
+    const dispositions = boundResults.map(({ disposition }) => disposition);
+    if (
+      ["Pass", "Fail"].includes(flow.state) &&
+      dispositions.some((disposition) => disposition !== "exercised")
+    ) {
+      throw new Error(
+        `task execution flow ${flow.id} ${flow.state} requires exercised tasks`,
+      );
+    }
+    if (
+      flow.state === "Observed only" &&
+      (
+        dispositions.includes("not-tested") ||
+        !dispositions.includes("observed-only")
+      )
+    ) {
+      throw new Error(
+        `task execution flow ${flow.id} Observed only requires observed-only tasks`,
+      );
+    }
+    if (
+      flow.state === "Not tested" &&
+      dispositions.some((disposition) => disposition !== "not-tested")
+    ) {
+      throw new Error(
+        `task execution flow ${flow.id} Not tested requires not-tested tasks`,
+      );
+    }
+  }
   return value;
 }
 

@@ -826,17 +826,25 @@ export function validateBobReportIdentifiers(
   assertUnique(value.core_flow_ids, `${label}.core_flow_ids`);
   assertSorted(value.core_flow_ids, `${label}.core_flow_ids`);
   const caseToken = caseId.slice("fx_".length);
-  if (value.surface_id !== `surface_${caseToken}`) {
-    throw new Error(`${label}.surface_id must be opaque and case-bound`);
+  const reportToken = value.surface_id.slice("surface_".length);
+  if (
+    !/^[0-9a-f]{32}$/u.test(reportToken) ||
+    reportToken === caseToken
+  ) {
+    throw new Error(
+      `${label}.surface_id must use an independent opaque token`,
+    );
   }
   const expectedFlows = value.core_flow_ids.map(
     (_, index) =>
-      `flow_${caseToken}_${String(index + 1).padStart(2, "0")}`,
+      `flow_${reportToken}_${String(index + 1).padStart(2, "0")}`,
   );
   if (
     JSON.stringify(value.core_flow_ids) !== JSON.stringify(expectedFlows)
   ) {
-    throw new Error(`${label}.core_flow_ids must be opaque and case-bound`);
+    throw new Error(
+      `${label}.core_flow_ids must use the selected surface token`,
+    );
   }
   return value;
 }
@@ -927,6 +935,21 @@ export function validateSuite(value) {
     value.cases.flatMap(({ oracle_commitments }) => oracle_commitments),
     "suite oracle commitments",
   );
+  if (value.lane === "bob-qa") {
+    assertUnique(
+      value.cases.map(
+        ({ report_identifiers: identifiers }) => identifiers.surface_id,
+      ),
+      "suite Bob report surface IDs",
+    );
+    assertUnique(
+      value.cases.flatMap(
+        ({ report_identifiers: identifiers }) =>
+          identifiers.core_flow_ids,
+      ),
+      "suite Bob report flow IDs",
+    );
+  }
   return value;
 }
 
@@ -995,7 +1018,7 @@ function validateEvidencePointer(value, label) {
 }
 
 function validateEvidencePointers(values, label, { minimum = 0 } = {}) {
-  assertArray(values, label, { minimum, maximum: 256 });
+  assertDenseArray(values, label, { minimum, maximum: 256 });
   values.forEach((value, index) =>
     validateEvidencePointer(value, `${label}[${index}]`),
   );
@@ -1462,7 +1485,7 @@ function validateFinding(value, label) {
   );
   assertString(value.id, `${label}.id`, FINDING_ID);
   assertString(value.surface_id, `${label}.surface_id`, SURFACE_ID);
-  assertArray(value.criteria, `${label}.criteria`, { minimum: 1 });
+  assertDenseArray(value.criteria, `${label}.criteria`, { minimum: 1 });
   value.criteria.forEach((criterion, index) =>
     assertString(criterion, `${label}.criteria[${index}]`),
   );
@@ -1513,7 +1536,7 @@ function validateFlow(value, label) {
       `${label} cannot claim effectiveness for an Observed only flow`,
     );
   }
-  assertArray(value.finding_ids, `${label}.finding_ids`);
+  assertDenseArray(value.finding_ids, `${label}.finding_ids`);
   value.finding_ids.forEach((id, index) =>
     assertString(id, `${label}.finding_ids[${index}]`, FINDING_ID),
   );
@@ -1697,7 +1720,7 @@ function validateLaneResult(value, lane, requiredSmokeChecks, label) {
     ],
     label,
   );
-  assertArray(value.findings, `${label}.findings`);
+  assertDenseArray(value.findings, `${label}.findings`);
   value.findings.forEach((finding, index) =>
     validateFinding(finding, `${label}.findings[${index}]`),
   );
@@ -1705,7 +1728,7 @@ function validateLaneResult(value, lane, requiredSmokeChecks, label) {
     value.findings.map(({ id }) => id),
     `${label} finding IDs`,
   );
-  assertArray(value.observations, `${label}.observations`);
+  assertDenseArray(value.observations, `${label}.observations`);
   value.observations.forEach((observation, index) =>
     validateObservationNote(
       observation,
@@ -1716,7 +1739,7 @@ function validateLaneResult(value, lane, requiredSmokeChecks, label) {
     value.observations.map(({ id }) => id),
     `${label} observation IDs`,
   );
-  assertArray(value.flows, `${label}.flows`);
+  assertDenseArray(value.flows, `${label}.flows`);
   value.flows.forEach((flow, index) =>
     validateFlow(flow, `${label}.flows[${index}]`),
   );
@@ -1728,12 +1751,12 @@ function validateLaneResult(value, lane, requiredSmokeChecks, label) {
       throw new Error(`${label} flow references unknown finding ${unknown}`);
     }
   }
-  assertArray(value.not_tested, `${label}.not_tested`);
+  assertDenseArray(value.not_tested, `${label}.not_tested`);
   value.not_tested.forEach((entry, index) =>
     assertString(entry, `${label}.not_tested[${index}]`),
   );
   assertUnique(value.not_tested, `${label}.not_tested`);
-  assertArray(value.checklist, `${label}.checklist`);
+  assertDenseArray(value.checklist, `${label}.checklist`);
   value.checklist.forEach((item, index) =>
     validateChecklistItem(item, `${label}.checklist[${index}]`),
   );

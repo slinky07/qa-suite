@@ -8,6 +8,10 @@ import {
   validateInterfaceInventory,
   validateTaskExecution,
 } from "../scripts/evaluation/bob-host-protocol.mjs";
+import {
+  canonicalJson,
+  sha256,
+} from "../scripts/evaluation/contracts.mjs";
 
 const digest = (character) => character.repeat(64);
 const CASE_ID = "fx_0123456789abcdef0123456789abcdef";
@@ -15,9 +19,16 @@ const OTHER_CASE_ID = "fx_fedcba9876543210fedcba9876543210";
 const REPORT_PATH =
   "QA/2026-07-28-0415-bob-qa-primary-surface.md";
 const reportIdentifiers = {
-  core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
-  surface_id: "surface_0123456789abcdef0123456789abcdef",
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
 };
+const flowEvidence = [
+  {
+    kind: "report-reference",
+    path: REPORT_PATH,
+  },
+];
+const flowEvidenceSha256 = sha256(canonicalJson(flowEvidence));
 
 function preparation(overrides = {}) {
   return {
@@ -57,9 +68,9 @@ function suite() {
         [`seal_${"3".repeat(64)}`, `seal_${"4".repeat(64)}`],
         {
           core_flow_ids: [
-            "flow_fedcba9876543210fedcba9876543210_01",
+            "flow_ffeeddccbbaa99887766554433221100_01",
           ],
-          surface_id: "surface_fedcba9876543210fedcba9876543210",
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
         },
       ),
     ],
@@ -116,12 +127,7 @@ function taskExecution(overrides = {}) {
           {
             core: true,
             effectiveness: true,
-            evidence: [
-              {
-                kind: "report-reference",
-                path: REPORT_PATH,
-              },
-            ],
+            evidence: flowEvidence,
             finding_ids: [],
             id: reportIdentifiers.core_flow_ids[0],
             state: "Pass",
@@ -149,13 +155,15 @@ function taskExecution(overrides = {}) {
       {
         control_ids: ["control_search", "control_submit"],
         disposition: "exercised",
-        evidence_sha256: digest("4"),
+        evidence_sha256: flowEvidenceSha256,
+        flow_id: reportIdentifiers.core_flow_ids[0],
         task_id: "task_find_item",
       },
       {
         control_ids: ["control_preferences"],
-        disposition: "observed-only",
-        evidence_sha256: digest("5"),
+        disposition: "exercised",
+        evidence_sha256: flowEvidenceSha256,
+        flow_id: reportIdentifiers.core_flow_ids[0],
         task_id: "task_review_preferences",
       },
     ],
@@ -315,6 +323,48 @@ test("task execution must follow the modeled hierarchy", async () => {
     /violates the modeled hierarchy/u,
   );
   assert.equal(host.requests.length, 3);
+});
+
+test("task execution binds task disposition and evidence to its core flow", () => {
+  const notExercised = taskExecution();
+  notExercised.results[0].disposition = "not-tested";
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        notExercised,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /Pass requires exercised tasks/u,
+  );
+
+  const wrongFlow = taskExecution();
+  wrongFlow.results[0].flow_id =
+    "flow_ffeeddccbbaa99887766554433221100_01";
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        wrongFlow,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /flow_id is not a selected core flow/u,
+  );
+
+  const wrongEvidence = taskExecution();
+  wrongEvidence.results[0].evidence_sha256 = digest("4");
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        wrongEvidence,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /evidence digest does not match/u,
+  );
 });
 
 test("structured phase contracts reject unknown fields and invalid references", () => {
@@ -478,8 +528,8 @@ test("event-chain or phase-output tampering invalidates the transcript", async (
   );
 
   const changedOutput = structuredClone(transcript);
-  changedOutput.outputs.task_execution.results[0].disposition =
-    "observed-only";
+  changedOutput.outputs.task_execution.report_output.report.path =
+    "QA/2026-07-28-0416-bob-qa-primary-surface.md";
   assert.throws(
     () => validateBobHostTranscript(changedOutput),
     /output is unbound/u,
@@ -504,7 +554,7 @@ test("event-chain or phase-output tampering invalidates the transcript", async (
         : "c".repeat(40);
     assert.throws(
       () => validateBobHostTranscript(relabeled),
-      /breaks the controller sequence|must be opaque and case-bound/u,
+      /breaks the controller sequence/u,
     );
   }
 

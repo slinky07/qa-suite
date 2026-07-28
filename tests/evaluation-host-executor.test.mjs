@@ -28,8 +28,8 @@ import {
 const RUN_ID = "run_0123456789abcdef0123456789abcdef";
 const CASE_ID = "fx_0123456789abcdef0123456789abcdef";
 const reportIdentifiers = {
-  core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
-  surface_id: "surface_0123456789abcdef0123456789abcdef",
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
 };
 const programParent = await realpath(
   await mkdtemp(join(tmpdir(), "qa-suite-host-program-")),
@@ -95,9 +95,9 @@ function suite() {
           `tests/evaluation/fixtures/${otherCaseId}/qa-context.md`,
         report_identifiers: {
           core_flow_ids: [
-            "flow_fedcba9876543210fedcba9876543210_01",
+            "flow_ffeeddccbbaa99887766554433221100_01",
           ],
-          surface_id: "surface_fedcba9876543210fedcba9876543210",
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
         },
         smoke_checks: ["check_primary"],
       },
@@ -156,6 +156,10 @@ if (request.phase === "interface_inventory") {
     }],
   };
 } else {
+  const flowEvidence = [{
+    kind: "report-reference",
+    path: "QA/2026-07-28-0415-bob-qa-primary-surface.md",
+  }];
   output = {
     report_output: {
       lane_result: {
@@ -165,10 +169,7 @@ if (request.phase === "interface_inventory") {
         flows: [{
           core: true,
           effectiveness: true,
-          evidence: [{
-            kind: "report-reference",
-            path: "QA/2026-07-28-0415-bob-qa-primary-surface.md",
-          }],
+          evidence: flowEvidence,
           finding_ids: [],
           id: request.report_identifiers.core_flow_ids[0],
           state: "Pass",
@@ -189,7 +190,8 @@ if (request.phase === "interface_inventory") {
     results: [{
       control_ids: ["control_search", "control_submit"],
       disposition: "exercised",
-      evidence_sha256: "4".repeat(64),
+      evidence_sha256: digest(canonical(flowEvidence)),
+      flow_id: request.report_identifiers.core_flow_ids[0],
       task_id: "task_find_item",
     }],
   };
