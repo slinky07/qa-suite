@@ -55,7 +55,8 @@ The evaluation uses two controller inputs with different disclosure rules:
 
 - The **public suite** contains routing-safe case metadata. It can identify the
   lane, neutral QA context, public fixture manifest, opaque case IDs, and
-  unique per-case oracle commitments. It contains no role, pair identity,
+  unique per-case oracle commitments. Bob cases also declare one neutral
+  surface ID and their core-flow IDs. It contains no role, pair identity,
   expected defect, expected classification, or control budget.
 - The **sealed oracle** assigns the opaque tokens to adversarial/control roles,
   pair identity, expected defects, classification bands, flow expectations,
@@ -124,6 +125,8 @@ whole suite is a lane prompt. The runner writes only
 `evaluation-case.json`, a strict neutral single-case disclosure. Oracle
 commitments, smoke assertions, other cases, the suite, the fixture manifest,
 controller paths, and controller state remain outside the lane root.
+Bob report identifiers remain with the controller; neither the disclosure nor
+the selected fixture bytes expose them.
 The runner rejects exact controller-confidential tokens and non-selected case
 IDs, but it cannot prove that a selected public fixture contains no semantic
 hint about its role or expected defect. That is why `fixture_opacity` remains
@@ -218,9 +221,11 @@ an untrusted same-user process is not authenticated merely because it passes
 the schema.
 
 A later semantic adapter must read only the controller-owned captured
-`artifacts/` tree, recheck the closed journal and file metadata, and obtain
-public neutral surface, flow, and observation identifiers without report-prose
-or sealed-oracle inference. Until those contracts exist, the binding cannot be
+`artifacts/` tree and recheck the closed journal and file metadata. The public
+surface and core-flow IDs now exist, but current Bob Markdown does not carry
+them structurally and observations have no stable IDs. The adapter must obtain
+those record bindings without report-prose, row-order, or sealed-oracle
+inference. Until that report-output seam exists, the binding cannot be
 promoted into `validateNormalizedCase()`.
 
 ## Bob method-order gate
@@ -307,6 +312,10 @@ and tokens retain the contract's full required shape:
         "seal_1111111111111111111111111111111111111111111111111111111111111111",
         "seal_3333333333333333333333333333333333333333333333333333333333333333"
       ],
+      "report_identifiers": {
+        "core_flow_ids": ["flow_0123456789abcdef0123456789abcdef_01"],
+        "surface_id": "surface_0123456789abcdef0123456789abcdef"
+      },
       "smoke_checks": ["check_primary"]
     },
     {
@@ -317,6 +326,10 @@ and tokens retain the contract's full required shape:
         "seal_4444444444444444444444444444444444444444444444444444444444444444",
         "seal_5555555555555555555555555555555555555555555555555555555555555555"
       ],
+      "report_identifiers": {
+        "core_flow_ids": ["flow_fedcba9876543210fedcba9876543210_01"],
+        "surface_id": "surface_fedcba9876543210fedcba9876543210"
+      },
       "smoke_checks": ["check_primary"]
     }
   ]
@@ -328,6 +341,14 @@ case's commitments to its canary and expected-defect or budget ID. Only the
 sealed oracle maps a case to its role and sealed pair identifier. Similar
 public products may make pair membership inferable; this boundary hides role
 and controller tokens, not semantic similarity.
+
+Bob `report_identifiers` are strict, role-neutral, and globally unique per
+case, so they cannot act as a public pair join. They stay outside fixture bytes
+and lane disclosure until a later structural report-output seam can consume
+only the selected case's IDs. The declaration does not enumerate controls,
+observations, expected findings, criteria, severity, priority, or outcomes.
+It therefore preserves Bob's obligation to inventory the interface and form
+its own expected-use hierarchy.
 
 Each referenced manifest lists only the exact neutral QA context and public
 regular files. Paths are ordered and unique; modes are `100644` or `100755`;

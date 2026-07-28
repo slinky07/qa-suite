@@ -136,6 +136,12 @@ function assertUnique(values, label) {
   }
 }
 
+function assertSorted(values, label) {
+  if (JSON.stringify(values) !== JSON.stringify([...values].sort())) {
+    throw new Error(`${label} must be sorted`);
+  }
+}
+
 function assertEnum(value, values, label) {
   if (!values.has(value)) {
     throw new Error(`${label} has unsupported value ${String(value)}`);
@@ -627,16 +633,63 @@ function validateOracleCommitments(tokens, label) {
   assertUnique(tokens, label);
 }
 
+function validateReportIdentifier(value, label, pattern) {
+  assertString(value, label, pattern);
+  if (Buffer.byteLength(value, "utf8") > 128) {
+    throw new Error(`${label} must contain at most 128 bytes`);
+  }
+}
+
+function validateReportIdentifiers(value, caseId, label) {
+  assertExactKeys(value, ["core_flow_ids", "surface_id"], label);
+  validateReportIdentifier(
+    value.surface_id,
+    `${label}.surface_id`,
+    SURFACE_ID,
+  );
+  assertDenseArray(value.core_flow_ids, `${label}.core_flow_ids`, {
+    minimum: 1,
+    maximum: 64,
+  });
+  value.core_flow_ids.forEach((id, index) =>
+    validateReportIdentifier(
+      id,
+      `${label}.core_flow_ids[${index}]`,
+      FLOW_ID,
+    ),
+  );
+  assertUnique(value.core_flow_ids, `${label}.core_flow_ids`);
+  assertSorted(value.core_flow_ids, `${label}.core_flow_ids`);
+  const caseToken = caseId.slice("fx_".length);
+  if (value.surface_id !== `surface_${caseToken}`) {
+    throw new Error(`${label}.surface_id must be opaque and case-bound`);
+  }
+  const expectedFlows = value.core_flow_ids.map(
+    (_, index) =>
+      `flow_${caseToken}_${String(index + 1).padStart(2, "0")}`,
+  );
+  if (
+    JSON.stringify(value.core_flow_ids) !== JSON.stringify(expectedFlows)
+  ) {
+    throw new Error(`${label}.core_flow_ids must be opaque and case-bound`);
+  }
+  return value;
+}
+
 function validateSuiteCase(value, label) {
+  const expectedKeys = [
+    "fixture_manifest",
+    "id",
+    "oracle_commitments",
+    "qa_context",
+    "smoke_checks",
+  ];
+  if (Object.hasOwn(value, "report_identifiers")) {
+    expectedKeys.push("report_identifiers");
+  }
   assertExactKeys(
     value,
-    [
-      "fixture_manifest",
-      "id",
-      "oracle_commitments",
-      "qa_context",
-      "smoke_checks",
-    ],
+    expectedKeys,
     label,
   );
   assertString(value.id, `${label}.id`, CASE_ID);
@@ -664,6 +717,13 @@ function validateSuiteCase(value, label) {
     assertString(id, `${label}.smoke_checks[${index}]`, CHECK_ID),
   );
   assertUnique(value.smoke_checks, `${label}.smoke_checks`);
+  if (Object.hasOwn(value, "report_identifiers")) {
+    validateReportIdentifiers(
+      value.report_identifiers,
+      value.id,
+      `${label}.report_identifiers`,
+    );
+  }
   return value;
 }
 
@@ -676,6 +736,19 @@ export function validateSuite(value) {
   value.cases.forEach((entry, index) =>
     validateSuiteCase(entry, `suite.cases[${index}]`),
   );
+  for (const [index, entry] of value.cases.entries()) {
+    const hasReportIdentifiers = Object.hasOwn(entry, "report_identifiers");
+    if (value.lane === "bob-qa" && !hasReportIdentifiers) {
+      throw new Error(
+        `suite.cases[${index}].report_identifiers is required for bob-qa`,
+      );
+    }
+    if (value.lane !== "bob-qa" && hasReportIdentifiers) {
+      throw new Error(
+        `suite.cases[${index}].report_identifiers is only supported for bob-qa`,
+      );
+    }
+  }
   assertUnique(value.cases.map(({ id }) => id), "suite case IDs");
   assertUnique(
     value.cases.map(({ qa_context }) => qa_context),
@@ -977,6 +1050,8 @@ function expectedControlVerdicts(lane) {
 }
 
 export function validateOracle(value, suite, suiteCase, label = "oracle") {
+  suite = parseContractJson(canonicalJson(suite), "suite");
+  suiteCase = parseContractJson(canonicalJson(suiteCase), "suite case");
   validateSuite(suite);
   validateSuiteCase(suiteCase, "suite case");
   const canonicalCase = suite.cases.find(({ id }) => id === suiteCase.id);
@@ -1027,6 +1102,19 @@ export function validateOracle(value, suite, suiteCase, label = "oracle") {
     value.assertions.flows.map(({ id }) => id),
     `${label}.assertions flow IDs`,
   );
+  if (suite.lane === "bob-qa") {
+    const declaredFlowIds = suiteCase.report_identifiers.core_flow_ids;
+    const oracleFlowIds = value.assertions.flows
+      .map(({ id }) => id)
+      .sort();
+    if (
+      JSON.stringify(oracleFlowIds) !== JSON.stringify(declaredFlowIds)
+    ) {
+      throw new Error(
+        `${label}.assertions flow IDs must equal the public core flow IDs`,
+      );
+    }
+  }
   assertArray(
     value.assertions.expected_defects,
     `${label}.assertions.expected_defects`,
@@ -1042,6 +1130,16 @@ export function validateOracle(value, suite, suiteCase, label = "oracle") {
       `${label}.assertions.expected_defects[${index}]`,
     ),
   );
+  if (
+    suite.lane === "bob-qa" &&
+    value.role === "adversarial" &&
+    value.assertions.expected_defects[0].surface_id !==
+      suiteCase.report_identifiers.surface_id
+  ) {
+    throw new Error(
+      `${label} expected-defect surface must equal the public surface ID`,
+    );
+  }
   if (
     suite.lane === "smoke-qa" &&
     value.role === "adversarial"
@@ -1074,6 +1172,18 @@ export function validateOracle(value, suite, suiteCase, label = "oracle") {
       suite.lane,
       `${label}.assertions.control_budget`,
     );
+    if (
+      suite.lane === "bob-qa" &&
+      (
+        value.assertions.control_budget.surface_ids.length !== 1 ||
+        value.assertions.control_budget.surface_ids[0] !==
+          suiteCase.report_identifiers.surface_id
+      )
+    ) {
+      throw new Error(
+        `${label} control-budget surface must equal the public surface ID`,
+      );
+    }
     expectedVerdicts = expectedControlVerdicts(suite.lane);
   }
   assertArray(

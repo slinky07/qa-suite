@@ -193,10 +193,7 @@ function projectFinderPair() {
   const adversarial = oracles.find(
     (oracle) =>
       oracle.role === "adversarial" &&
-      oracle.assertions.expected_defects.some(
-        ({ surface_id }) =>
-          surface_id === "surface_filter_workspace",
-      ),
+      oracle.case_id === "fx_cc4b61fbde593f6e101984583e5e9f88",
   );
   assert.ok(adversarial);
   const control = oracles.find(

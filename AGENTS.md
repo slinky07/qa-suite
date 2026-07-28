@@ -35,6 +35,9 @@ distributed skill without changing it:
   metadata binding for exactly one canonical Bob report in a closed artifact
   inventory. It does not read or parse report content, normalize a case, open
   the sealed oracle, or score a result.
+- Bob suite cases declare globally unique, role-neutral report surface and
+  core-flow IDs. They remain controller-only until a reviewed structural
+  report-output seam can consume the selected case without prose inference.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:

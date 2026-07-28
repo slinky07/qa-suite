@@ -12,7 +12,7 @@
       "expected_defects": [
         {
           "id": "seal_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-          "surface_id": "surface_note_board",
+          "surface_id": "surface_39e78c1246b2cf2952277010d5f5cedc",
           "criteria_any_of": [
             "IA-01",
             "IA-06",
@@ -32,7 +32,7 @@
       ],
       "flows": [
         {
-          "id": "flow_add_note",
+          "id": "flow_39e78c1246b2cf2952277010d5f5cedc_01",
           "allowed_states": [
             "Pass"
           ],
@@ -44,7 +44,7 @@
           ]
         },
         {
-          "id": "flow_change_display",
+          "id": "flow_39e78c1246b2cf2952277010d5f5cedc_02",
           "allowed_states": [
             "Pass"
           ],
@@ -73,7 +73,7 @@
       "expected_defects": [],
       "flows": [
         {
-          "id": "flow_add_note",
+          "id": "flow_ea9eb160a44e5e7f7acd520b92825800_01",
           "allowed_states": [
             "Pass"
           ],
@@ -85,7 +85,7 @@
           ]
         },
         {
-          "id": "flow_change_display",
+          "id": "flow_ea9eb160a44e5e7f7acd520b92825800_02",
           "allowed_states": [
             "Pass"
           ],
@@ -100,7 +100,7 @@
       "control_budget": {
         "id": "seal_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "surface_ids": [
-          "surface_note_board"
+          "surface_ea9eb160a44e5e7f7acd520b92825800"
         ],
         "criteria_any_of": [
           "IA-01",
@@ -145,7 +145,7 @@
       "expected_defects": [
         {
           "id": "seal_7777777777777777777777777777777777777777777777777777777777777777",
-          "surface_id": "surface_filter_workspace",
+          "surface_id": "surface_cc4b61fbde593f6e101984583e5e9f88",
           "criteria_any_of": [
             "IA-07",
             "H9",
@@ -165,7 +165,7 @@
       ],
       "flows": [
         {
-          "id": "flow_filter_projects",
+          "id": "flow_cc4b61fbde593f6e101984583e5e9f88_01",
           "allowed_states": [
             "Pass"
           ],
@@ -177,7 +177,7 @@
           ]
         },
         {
-          "id": "flow_restore_projects",
+          "id": "flow_cc4b61fbde593f6e101984583e5e9f88_02",
           "allowed_states": [
             "Pass"
           ],
@@ -206,7 +206,7 @@
       "expected_defects": [],
       "flows": [
         {
-          "id": "flow_filter_projects",
+          "id": "flow_87a49bf089d33e76d6115d4aef954c01_01",
           "allowed_states": [
             "Pass"
           ],
@@ -218,7 +218,7 @@
           ]
         },
         {
-          "id": "flow_restore_projects",
+          "id": "flow_87a49bf089d33e76d6115d4aef954c01_02",
           "allowed_states": [
             "Pass"
           ],
@@ -233,7 +233,7 @@
       "control_budget": {
         "id": "seal_9999999999999999999999999999999999999999999999999999999999999999",
         "surface_ids": [
-          "surface_filter_workspace"
+          "surface_87a49bf089d33e76d6115d4aef954c01"
         ],
         "criteria_any_of": [
           "IA-01",
