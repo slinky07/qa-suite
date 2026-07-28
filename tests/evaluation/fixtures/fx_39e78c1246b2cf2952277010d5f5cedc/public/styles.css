@@ -1,0 +1,238 @@
+:root {
+  color: #17213d;
+  background: #edf1f7;
+  font-family:
+    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 20rem;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgb(75 79 196 / 10%), transparent 45%),
+    #edf1f7;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #f2b84b;
+  outline-offset: 3px;
+}
+
+.shell {
+  width: min(100% - 2rem, 46rem);
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+
+.masthead {
+  position: relative;
+  padding: 1.25rem 1.25rem 1.25rem 2.25rem;
+  overflow: hidden;
+  color: #ffffff;
+  background: #343798;
+  border-radius: 1rem 1rem 0.35rem 0.35rem;
+  box-shadow: 0 1rem 2.5rem rgb(23 33 61 / 16%);
+}
+
+.masthead::before {
+  position: absolute;
+  inset: 0 auto 0 0.75rem;
+  width: 0.5rem;
+  content: "";
+  background:
+    radial-gradient(circle, #f2b84b 0 0.18rem, transparent 0.2rem)
+    center 0.45rem / 0.5rem 1rem repeat-y;
+}
+
+.eyebrow {
+  margin: 0 0 0.45rem;
+  color: #d9f0e7;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.35rem;
+  font-family: "Avenir Next", "Trebuchet MS", ui-sans-serif, sans-serif;
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.masthead p:last-child {
+  max-width: 34rem;
+  margin-bottom: 0;
+  color: #eef0ff;
+}
+
+.workspace {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  min-width: 0;
+  margin: 0;
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #cbd2e1;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.4rem 1.25rem rgb(23 33 61 / 7%);
+}
+
+legend,
+h2 {
+  padding: 0 0.25rem;
+  font-family: "Avenir Next", "Trebuchet MS", ui-sans-serif, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.8rem;
+  color: #17213d;
+  background: #fbfcff;
+  border: 1px solid #8d97ab;
+  border-radius: 0.5rem;
+}
+
+textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.choice {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: 0.45rem;
+}
+
+.choice input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: #4b4fc4;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.primary-action {
+  min-height: 2.75rem;
+  padding: 0.7rem 1.1rem;
+  color: #ffffff;
+  font-weight: 800;
+  background: #4b4fc4;
+  border: 2px solid #343798;
+  border-radius: 0.6rem;
+}
+
+.primary-action:hover {
+  background: #343798;
+}
+
+.notes-panel {
+  min-height: 8rem;
+}
+
+#empty-state {
+  margin-bottom: 0;
+  color: #5b6478;
+}
+
+#notes-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.note-card {
+  padding: 1rem;
+  background: #f6f8ff;
+  border-left: 0.35rem solid #4b4fc4;
+  border-radius: 0.35rem;
+}
+
+.note-card h3,
+.note-card p {
+  margin-bottom: 0.45rem;
+}
+
+.note-card time {
+  color: #5b6478;
+  font-size: 0.85rem;
+}
+
+#notes-list.compact-cards .note-card {
+  padding-block: 0.55rem;
+}
+
+#status {
+  min-height: 1.5rem;
+  margin: 0;
+  color: #285f55;
+  font-weight: 700;
+}
+
+[hidden] {
+  display: none;
+}
+
+@media (max-width: 34rem) {
+  .shell {
+    width: min(100% - 1rem, 46rem);
+    padding-top: 0.5rem;
+  }
+
+  .panel {
+    padding: 1rem;
+  }
+}

@@ -344,7 +344,16 @@ and validation:
       "control_budget": {
         "id": "seal_5555555555555555555555555555555555555555555555555555555555555555",
         "surface_ids": ["surface_configuration"],
-        "criteria_any_of": ["IA-01", "IA-06", "H8"],
+        "criteria_any_of": [
+          "IA-01",
+          "IA-02",
+          "IA-03",
+          "IA-04",
+          "IA-05",
+          "IA-06",
+          "IA-07",
+          "H8"
+        ],
         "max_total": null,
         "max_by_severity": {
           "S1": 0,
@@ -360,12 +369,36 @@ and validation:
 ]
 ```
 
+The Bob control budget covers IA-01 through IA-07 and the sealed detector's H8
+alias, so an S1-S3 IA finding cannot evade false-positive scoring.
 The control budget is independent of statistical precision. `null` means an
 unbounded count; it is not risk acceptance and does not remove a finding from
 the canonical verdict. For example, an allowed Bob S4 control finding can stay
 within budget while still reducing finding precision. Severity-free
 observations are recorded separately and never enter verdict, detection, or
 precision arithmetic.
+
+## Committed Bob corpus
+
+`tests/evaluation/suites/bob-evaluation-v1.json` now declares the first Bob
+pair with opaque identifiers. Its controller-only oracle is
+`tests/evaluation/oracles/bob-evaluation-v1.json`; that path is intentionally
+absent from the public suite and both fixture manifests.
+
+Each selected fixture is a standalone Pocket Notes web app with the same
+visible controls, copy, styles, and successful note/preference behavior. One
+layout places display preferences between note details and the primary action;
+the other keeps the same preferences after the completed note-creation task.
+The sealed assertion permits only an S4 information-architecture finding and
+requires both user flows to pass. This isolates task-boundary detection without
+turning a usable fixture into a fabricated `No-Go`.
+
+`tests/evaluation-fixture-corpus.test.mjs` validates the committed suite,
+oracle set, exact manifest inventory, raw file hashes and modes, token
+non-disclosure, equal capabilities, the one intended layout variable, pure
+application behavior, and loopback serving. These checks prove deterministic
+fixture bytes and behavior only. They do not attest semantic opacity, host
+isolation, a Bob baseline, or any qualifying evaluation result.
 
 ## Smoke gating and incomplete coverage
 
@@ -441,9 +474,10 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 
 ## Deferred Issue #30 delivery
 
-The following remain deliberately outside this protocol constituent:
+The following remain deliberately outside this fixture constituent:
 
-- real adversarial/control fixture applications and their public inventories;
+- additional opaque Bob pairs required for multi-pair acceptance and the
+  other lane corpora;
 - a reviewed host adapter that proves fresh invocation, filesystem
   confinement, command-environment control, tool inventory, and network
   policy without conflating provider transport with tool egress;
@@ -452,13 +486,13 @@ The following remain deliberately outside this protocol constituent:
   ID without using oracle prose;
 - host-bound, authenticated evidence that a real Bob execution obeyed the
   controller's inventory/model-before-task protocol;
-- opening the sealed oracle and scanning all closed bytes against its complete
-  token set;
+- runner-controlled oracle opening and scanning of every closed output byte
+  against its complete confidential token set;
 - baseline runs and retained baseline evidence;
 - remediation, before/after comparison, and retained remediation evidence; and
 - CI scheduling for recurring or release-gated evaluation.
 
 Those capabilities must land through later Issue #30 branches and PRs. Until
-they do, contracts, previews, preparations, protocol transcripts, and closures
-are maintainer verification aids, not QA findings, release certification,
-issue proposals, or proof that a lane passes its evaluation.
+they do, contracts, fixtures, previews, preparations, protocol transcripts,
+and closures are maintainer verification aids, not QA findings, release
+certification, issue proposals, or proof that a lane passes its evaluation.

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_ea9eb160a44e5e7f7acd520b92825800",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/public/app.mjs",
+      "mode": "100644",
+      "sha256": "653e29d0fc0065b3e7fc81ddd4b0b3d609c215ce9204a8dc350c950f1ffd7cd6"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/public/index.html",
+      "mode": "100644",
+      "sha256": "6aa8e4444e5e6eebf613007dda8dd471e8273c9939b58904712b00597ccb9b37"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/public/server.mjs",
+      "mode": "100644",
+      "sha256": "64e2085c53ed07ac9486cd62c84e1fab3b5f4e0ba06686d617b462c3e3e7359e"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/public/styles.css",
+      "mode": "100644",
+      "sha256": "17f1085d1850f7a5ab79cd6f20027a26b594dc91be3fd4bd7d3c78af4eaeb731"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/qa-context.md",
+      "mode": "100644",
+      "sha256": "d45c1de0240c57db48985d403307538b87233bca027adf147289e87138f51f2a"
+    }
+  ]
+}

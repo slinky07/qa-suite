@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pocket Notes</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <p class="eyebrow">POCKET NOTES</p>
+        <h1>Create a note</h1>
+        <p>Capture one thought and keep your note board easy to scan.</p>
+      </header>
+
+      <main class="workspace" data-surface-id="surface_note_board">
+        <form id="note-form">
+          <fieldset class="panel">
+            <legend>Note details</legend>
+            <label class="field" for="note-title">
+              Title
+              <input
+                id="note-title"
+                name="title"
+                type="text"
+                autocomplete="off"
+                required
+                data-control-id="control_note_title"
+              >
+            </label>
+            <label class="field" for="note-text">
+              Note
+              <textarea
+                id="note-text"
+                name="note"
+                required
+                data-control-id="control_note_text"
+              ></textarea>
+            </label>
+          </fieldset>
+
+          <div class="actions">
+            <button
+              id="add-note"
+              class="primary-action"
+              type="submit"
+              data-control-id="control_add_note"
+            >
+              Add note
+            </button>
+          </div>
+        </form>
+
+        <fieldset class="panel">
+          <legend>Display preferences</legend>
+          <label class="choice" for="compact-cards">
+            <input
+              id="compact-cards"
+              name="compact_cards"
+              type="checkbox"
+              data-control-id="control_compact_cards"
+            >
+            Compact cards
+          </label>
+          <label class="choice" for="show-timestamps">
+            <input
+              id="show-timestamps"
+              name="show_timestamps"
+              type="checkbox"
+              data-control-id="control_show_timestamps"
+            >
+            Show timestamps
+          </label>
+        </fieldset>
+
+        <section class="panel notes-panel" aria-labelledby="notes-heading">
+          <h2 id="notes-heading">Notes</h2>
+          <p id="empty-state">Nothing here yet. Add your first note above.</p>
+          <div id="notes-list"></div>
+        </section>
+        <p id="status" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>
