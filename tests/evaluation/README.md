@@ -11,11 +11,13 @@ math. `scripts/evaluation/git-snapshot.mjs` and
 `scripts/evaluation/runner.mjs` own the non-qualifying Git snapshot,
 single-case disclosure, lane-root preparation, and artifact closure mechanics.
 `scripts/evaluation/bob-host-protocol.mjs` owns the non-qualifying
-controller sequence for Bob host adapters. `scripts/evaluation/run-case.mjs`
-is the snapshot runner's strict CLI. This README explains the trust boundary
-and intended delivery sequence; it is not a second schema. The repository
-still exposes no qualifying evaluator, and no preparation, protocol, or
-closure output can be treated as a passing evaluation.
+controller sequence for Bob host adapters.
+`scripts/evaluation/bob-report-adapter.mjs` owns the non-qualifying closed Bob
+report metadata binding. `scripts/evaluation/run-case.mjs` is the snapshot
+runner's strict CLI. This README explains the trust boundary and intended
+delivery sequence; it is not a second schema. The repository still exposes no
+qualifying evaluator, and no preparation, protocol, closure, or report-binding
+output can be treated as a passing evaluation.
 
 Pure scoring functions may produce a deterministic preview for contract tests.
 Every such preview must remain explicitly non-qualifying:
@@ -195,6 +197,31 @@ node scripts/evaluation/run-case.mjs close \
 The two parent directories must be separate, non-nested directories outside
 the controller repository. Preparation does not authorize a person or
 automation to dispatch an agent into the lane root.
+
+## Closed Bob report binding
+
+`bindClosedBobReport()` accepts the exact closure metadata returned by
+`closeCaseRun()` and selects exactly one artifact named
+`QA/YYYY-MM-DD-HHMM-bob-qa-<short-scope>.md`. It validates the current closed
+envelope, its fixed non-qualification claims, the complete ordered artifact
+metadata, and the artifact-tree digest. Its output binds the run, case,
+controller and subject commits, workspace and artifact trees, closure digest,
+and selected report metadata without retaining an absolute snapshot path.
+
+This seam does not read the captured report bytes. It does not parse a verdict,
+findings, observations, surfaces, or flows; produce a normalized case; open the
+sealed oracle; score; or attest method order. The binding therefore remains
+`verification_status: "unverified"`, `qualification: "not-evidence"`, and
+`result: null`, with report content and structure explicitly unconsumed.
+Callers must pass the returned closure directly; a metadata object supplied by
+an untrusted same-user process is not authenticated merely because it passes
+the schema.
+
+A later semantic adapter must read only the controller-owned captured
+`artifacts/` tree, recheck the closed journal and file metadata, and obtain
+public neutral surface, flow, and observation identifiers without report-prose
+or sealed-oracle inference. Until those contracts exist, the binding cannot be
+promoted into `validateNormalizedCase()`.
 
 ## Bob method-order gate
 

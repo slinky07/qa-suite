@@ -12,6 +12,8 @@ const SURFACE_ID = /^surface_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const FLOW_ID = /^flow_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const CHECK_ID = /^check_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const FINDING_ID = /^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$/;
+const BOB_REPORT_PATH =
+  /^QA\/([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])-([01][0-9]|2[0-3])([0-5][0-9])-bob-qa-([^/]+)\.md$/u;
 
 export const LANES = new Set([
   "api-qa",
@@ -58,6 +60,17 @@ const COMPLETION_STATES = new Set([
   "gated-by-smoke",
   "lane-blocked",
 ]);
+const CLOSED_CASE_CLAIMS = Object.freeze({
+  adapter_status: "not-run",
+  artifact_inventory: "closed",
+  context_isolation: "not-attested",
+  execution_isolation: "not-attested",
+  fixture_opacity: "not-attested",
+  input_integrity: "verified",
+  method_order: "unverified_by_report",
+  network_isolation: "not-attested",
+  state_authentication: "not-attested",
+});
 
 function assertObject(value, label) {
   if (
@@ -105,6 +118,18 @@ function assertArray(value, label, { minimum = 0, maximum } = {}) {
   }
 }
 
+function assertDenseArray(value, label, options) {
+  assertArray(value, label, options);
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw new Error(`${label} must be dense`);
+    }
+  }
+  if (Object.keys(value).length !== value.length) {
+    throw new Error(`${label} must not contain named properties`);
+  }
+}
+
 function assertUnique(values, label) {
   if (new Set(values).size !== values.length) {
     throw new Error(`${label} must contain unique values`);
@@ -114,6 +139,12 @@ function assertUnique(values, label) {
 function assertEnum(value, values, label) {
   if (!values.has(value)) {
     throw new Error(`${label} has unsupported value ${String(value)}`);
+  }
+}
+
+function assertNonNegativeSafeInteger(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative safe integer`);
   }
 }
 
@@ -149,6 +180,55 @@ export function parseContractJson(source, label = "evaluation input") {
   return parseJsonStrict(source, label);
 }
 
+export function isCanonicalBobReportPath(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const match = BOB_REPORT_PATH.exec(value);
+  if (match === null) {
+    return false;
+  }
+  try {
+    assertSafeRepositoryPath(value, "Bob report path");
+  } catch {
+    return false;
+  }
+  const timestamp = `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}`;
+  const parsed = new Date(`${timestamp}:00.000Z`);
+  return (
+    match[1] !== "0000" &&
+    !Number.isNaN(parsed.valueOf()) &&
+    parsed.toISOString().slice(0, 16) === timestamp
+  );
+}
+
+export function assertSafeRepositoryPath(value, label = "path") {
+  assertString(value, label);
+  if (
+    Buffer.byteLength(value, "utf8") > 4_096 ||
+    isAbsolute(value) ||
+    value.includes("\\") ||
+    value.includes(":") ||
+    /[\0-\x1f\x7f]/u.test(value)
+  ) {
+    throw new Error(`${label} must be a normalized repository-relative path`);
+  }
+  const segments = value.split("/");
+  if (
+    segments.some(
+      (segment) =>
+        Buffer.byteLength(segment, "utf8") > 255 ||
+        segment === "" ||
+        segment === "." ||
+        segment === ".." ||
+        segment === ".git",
+    )
+  ) {
+    throw new Error(`${label} must be a normalized repository-relative path`);
+  }
+  return value;
+}
+
 function assertSafeRelativePath(value, label) {
   assertString(value, label);
   const segments = value.split("/");
@@ -165,6 +245,271 @@ function assertSafeRelativePath(value, label) {
     )
   ) {
     throw new Error(`${label} must be a normalized visible relative path`);
+  }
+  return value;
+}
+
+function validateClosedArtifact(value, index, label) {
+  const artifactLabel = `${label}.artifacts[${index}]`;
+  assertExactKeys(
+    value,
+    ["mode", "path", "sha256", "size"],
+    artifactLabel,
+  );
+  assertSafeRepositoryPath(value.path, `${artifactLabel}.path`);
+  if (value.mode !== "0400") {
+    throw new Error(`${artifactLabel}.mode must equal 0400`);
+  }
+  assertString(value.sha256, `${artifactLabel}.sha256`, SHA256);
+  assertNonNegativeSafeInteger(value.size, `${artifactLabel}.size`);
+  return value;
+}
+
+function compareArtifactPaths(left, right) {
+  return Buffer.compare(
+    Buffer.from(left.path, "utf8"),
+    Buffer.from(right.path, "utf8"),
+  );
+}
+
+export function validateClosedCaseRun(value, label = "closed case run") {
+  assertExactKeys(
+    value,
+    [
+      "artifacts",
+      "artifact_snapshot_root",
+      "artifact_tree_sha256",
+      "case_id",
+      "claims",
+      "confidentiality",
+      "controller_commit",
+      "lane",
+      "node_version",
+      "qualification",
+      "result",
+      "run_id",
+      "schema_version",
+      "subject_commit",
+      "suite_id",
+      "verification_status",
+      "workspace_tree_sha256",
+    ],
+    label,
+  );
+  assertVersion(value.schema_version, label);
+  if (
+    value.verification_status !== "unverified" ||
+    value.qualification !== "not-evidence" ||
+    value.result !== null
+  ) {
+    throw new Error(`${label} must remain non-qualifying`);
+  }
+  if (value.confidentiality !== "controller-only") {
+    throw new Error(`${label}.confidentiality must equal controller-only`);
+  }
+  if (value.artifact_snapshot_root !== "artifacts") {
+    throw new Error(`${label}.artifact_snapshot_root must equal artifacts`);
+  }
+  assertString(value.case_id, `${label}.case_id`, CASE_ID);
+  assertString(
+    value.controller_commit,
+    `${label}.controller_commit`,
+    FULL_COMMIT,
+  );
+  assertEnum(value.lane, LANES, `${label}.lane`);
+  assertString(value.node_version, `${label}.node_version`);
+  assertString(value.run_id, `${label}.run_id`, RUN_ID);
+  assertString(value.subject_commit, `${label}.subject_commit`, FULL_COMMIT);
+  assertString(value.suite_id, `${label}.suite_id`, SUITE_ID);
+  assertString(
+    value.artifact_tree_sha256,
+    `${label}.artifact_tree_sha256`,
+    SHA256,
+  );
+  assertString(
+    value.workspace_tree_sha256,
+    `${label}.workspace_tree_sha256`,
+    SHA256,
+  );
+  assertExactKeys(value.claims, Object.keys(CLOSED_CASE_CLAIMS), `${label}.claims`);
+  for (const [name, expected] of Object.entries(CLOSED_CASE_CLAIMS)) {
+    if (value.claims[name] !== expected) {
+      throw new Error(`${label}.claims.${name} must equal ${expected}`);
+    }
+  }
+  assertDenseArray(value.artifacts, `${label}.artifacts`, { maximum: 512 });
+  value.artifacts.forEach((artifact, index) =>
+    validateClosedArtifact(artifact, index, label),
+  );
+  const paths = value.artifacts.map(({ path }) => path);
+  assertUnique(paths, `${label}.artifact paths`);
+  if (
+    canonicalJson(value.artifacts) !==
+    canonicalJson([...value.artifacts].sort(compareArtifactPaths))
+  ) {
+    throw new Error(`${label}.artifacts must be ordered by path`);
+  }
+  if (
+    value.artifact_tree_sha256 !== sha256(canonicalJson(value.artifacts))
+  ) {
+    throw new Error(`${label}.artifact_tree_sha256 does not match`);
+  }
+  return value;
+}
+
+function validateClosedBobReportMetadata(value, label) {
+  assertExactKeys(value, ["mode", "path", "sha256", "size"], label);
+  assertSafeRepositoryPath(value.path, `${label}.path`);
+  if (!isCanonicalBobReportPath(value.path)) {
+    throw new Error(`${label}.path is not a canonical Bob report path`);
+  }
+  if (value.mode !== "0400") {
+    throw new Error(`${label}.mode must equal 0400`);
+  }
+  assertString(value.sha256, `${label}.sha256`, SHA256);
+  assertNonNegativeSafeInteger(value.size, `${label}.size`);
+  return value;
+}
+
+export function validateClosedBobReportBinding(value) {
+  assertExactKeys(
+    value,
+    [
+      "binding",
+      "binding_sha256",
+      "claims",
+      "confidentiality",
+      "observation",
+      "qualification",
+      "result",
+      "schema_version",
+      "verification_status",
+    ],
+    "closed Bob report binding",
+  );
+  assertVersion(value.schema_version, "closed Bob report binding");
+  if (
+    value.verification_status !== "unverified" ||
+    value.qualification !== "not-evidence" ||
+    value.result !== null
+  ) {
+    throw new Error("closed Bob report binding must remain non-qualifying");
+  }
+  if (value.confidentiality !== "controller-only") {
+    throw new Error(
+      "closed Bob report binding.confidentiality must equal controller-only",
+    );
+  }
+  if (value.observation !== "closed-bob-report-bound") {
+    throw new Error(
+      "closed Bob report binding.observation must equal closed-bob-report-bound",
+    );
+  }
+  assertExactKeys(
+    value.binding,
+    [
+      "artifact_snapshot_root",
+      "artifact_tree_sha256",
+      "case_id",
+      "closure_sha256",
+      "controller_commit",
+      "lane",
+      "report",
+      "run_id",
+      "subject_commit",
+      "suite_id",
+      "workspace_tree_sha256",
+    ],
+    "closed Bob report binding.binding",
+  );
+  if (value.binding.artifact_snapshot_root !== "artifacts") {
+    throw new Error(
+      "closed Bob report binding.binding.artifact_snapshot_root must equal artifacts",
+    );
+  }
+  assertString(
+    value.binding.artifact_tree_sha256,
+    "closed Bob report binding.binding.artifact_tree_sha256",
+    SHA256,
+  );
+  assertString(
+    value.binding.case_id,
+    "closed Bob report binding.binding.case_id",
+    CASE_ID,
+  );
+  assertString(
+    value.binding.closure_sha256,
+    "closed Bob report binding.binding.closure_sha256",
+    SHA256,
+  );
+  assertString(
+    value.binding.controller_commit,
+    "closed Bob report binding.binding.controller_commit",
+    FULL_COMMIT,
+  );
+  if (value.binding.lane !== "bob-qa") {
+    throw new Error(
+      "closed Bob report binding.binding.lane must equal bob-qa",
+    );
+  }
+  validateClosedBobReportMetadata(
+    value.binding.report,
+    "closed Bob report binding.binding.report",
+  );
+  assertString(
+    value.binding.run_id,
+    "closed Bob report binding.binding.run_id",
+    RUN_ID,
+  );
+  assertString(
+    value.binding.subject_commit,
+    "closed Bob report binding.binding.subject_commit",
+    FULL_COMMIT,
+  );
+  assertString(
+    value.binding.suite_id,
+    "closed Bob report binding.binding.suite_id",
+    SUITE_ID,
+  );
+  assertString(
+    value.binding.workspace_tree_sha256,
+    "closed Bob report binding.binding.workspace_tree_sha256",
+    SHA256,
+  );
+  assertString(
+    value.binding_sha256,
+    "closed Bob report binding.binding_sha256",
+    SHA256,
+  );
+  if (value.binding_sha256 !== sha256(canonicalJson(value.binding))) {
+    throw new Error(
+      "closed Bob report binding.binding_sha256 does not match",
+    );
+  }
+  assertExactKeys(
+    value.claims,
+    [
+      "artifact_inventory",
+      "report_content",
+      "report_semantics",
+      "report_structure",
+      "state_authentication",
+    ],
+    "closed Bob report binding.claims",
+  );
+  const expectedClaims = {
+    artifact_inventory: "closed",
+    report_content: "not-read",
+    report_semantics: "not-attested",
+    report_structure: "not-parsed",
+    state_authentication: "not-attested",
+  };
+  for (const [name, expected] of Object.entries(expectedClaims)) {
+    if (value.claims[name] !== expected) {
+      throw new Error(
+        `closed Bob report binding.claims.${name} must equal ${expected}`,
+      );
+    }
   }
   return value;
 }

@@ -31,6 +31,10 @@ distributed skill without changing it:
   executable with an expected SHA-256 and fixed arguments, launches one fresh
   shell-free child per phase with a constructed environment, and accepts one
   bounded canonical response before exit.
+- `scripts/evaluation/bob-report-adapter.mjs` creates a non-qualifying
+  metadata binding for exactly one canonical Bob report in a closed artifact
+  inventory. It does not read or parse report content, normalize a case, open
+  the sealed oracle, or score a result.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:

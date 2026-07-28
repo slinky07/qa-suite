@@ -24,6 +24,7 @@ import {
   canonicalJson,
   validateCaseDisclosure,
 } from "../scripts/evaluation/contracts.mjs";
+import { bindClosedBobReport } from "../scripts/evaluation/bob-report-adapter.mjs";
 import { materializeEntries } from "../scripts/evaluation/git-snapshot.mjs";
 import {
   parseArguments,
@@ -43,6 +44,7 @@ const controllerProgramPaths = [
   "qa-suite/scripts/finding-ledger.mjs",
   "scripts/evaluation/bob-host-executor.mjs",
   "scripts/evaluation/bob-host-protocol.mjs",
+  "scripts/evaluation/bob-report-adapter.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
@@ -649,6 +651,31 @@ test("closed consumers use the captured snapshot, not mutable lane bytes", async
     (await stat(capturedArtifact)).mode & 0o777,
     0o400,
   );
+});
+
+test("closed Bob report metadata enters the non-qualifying binding seam", async (t) => {
+  const harness = await createHarness(t);
+  const prepared = await prepare(harness);
+  const reportPath =
+    "QA/2026-07-28-0415-bob-qa-primary-surface.md";
+  await write(
+    join(prepared.lane_root, ...reportPath.split("/")),
+    "Go\n\nOpaque historical report shape.\n",
+  );
+
+  const closed = await closeCaseRun({ statePath: prepared.state_path });
+  const binding = bindClosedBobReport({ closure: closed.closure });
+
+  assert.equal(binding.binding.report.path, reportPath);
+  assert.equal(
+    binding.binding.report.sha256,
+    digest("Go\n\nOpaque historical report shape.\n"),
+  );
+  assert.equal(binding.claims.report_content, "not-read");
+  assert.equal(binding.claims.report_structure, "not-parsed");
+  assert.equal(binding.verification_status, "unverified");
+  assert.equal(binding.qualification, "not-evidence");
+  assert.equal(binding.result, null);
 });
 
 test("close rejects immutable input mutation", async (t) => {

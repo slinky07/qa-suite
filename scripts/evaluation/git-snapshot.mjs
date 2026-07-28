@@ -9,7 +9,13 @@ import {
 } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
-import { canonicalJson, sha256 } from "./contracts.mjs";
+import {
+  assertSafeRepositoryPath,
+  canonicalJson,
+  sha256,
+} from "./contracts.mjs";
+
+export { assertSafeRepositoryPath };
 
 const execFileAsync = promisify(execFile);
 const COMMIT = /^[0-9a-f]{40}$/;
@@ -29,33 +35,6 @@ function assertString(value, label) {
   ) {
     throw new Error(`${label} must be a non-empty string`);
   }
-}
-
-export function assertSafeRepositoryPath(value, label = "path") {
-  assertString(value, label);
-  if (
-    Buffer.byteLength(value, "utf8") > 4_096 ||
-    isAbsolute(value) ||
-    value.includes("\\") ||
-    value.includes(":") ||
-    /[\0-\x1f\x7f]/u.test(value)
-  ) {
-    throw new Error(`${label} must be a normalized repository-relative path`);
-  }
-  const segments = value.split("/");
-  if (
-    segments.some(
-      (segment) =>
-        Buffer.byteLength(segment, "utf8") > 255 ||
-        segment === "" ||
-        segment === "." ||
-        segment === ".." ||
-        segment === ".git",
-    )
-  ) {
-    throw new Error(`${label} must be a normalized repository-relative path`);
-  }
-  return value;
 }
 
 function gitEnvironment() {
