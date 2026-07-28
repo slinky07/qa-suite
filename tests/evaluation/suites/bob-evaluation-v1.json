@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "bob-evaluation-v1",
+  "lane": "bob-qa",
+  "cases": [
+    {
+      "id": "fx_39e78c1246b2cf2952277010d5f5cedc",
+      "qa_context": "tests/evaluation/fixtures/fx_39e78c1246b2cf2952277010d5f5cedc/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_39e78c1246b2cf2952277010d5f5cedc/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "seal_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "smoke_checks": [
+        "check_note_creation"
+      ]
+    },
+    {
+      "id": "fx_ea9eb160a44e5e7f7acd520b92825800",
+      "qa_context": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_ea9eb160a44e5e7f7acd520b92825800/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "seal_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      ],
+      "smoke_checks": [
+        "check_note_creation"
+      ]
+    }
+  ]
+}
