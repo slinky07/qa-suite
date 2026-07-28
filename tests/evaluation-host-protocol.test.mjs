@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   executePreparedBobCase,
+  requestsFromBobHostTranscript,
   validateBobHostTranscript,
   validateExpectedUseModel,
   validateInterfaceInventory,
@@ -144,6 +145,7 @@ test("controller withholds task capabilities until inventory and modeling comple
     transcript.protocol_observation,
     "inventory-model-tasks-sequenced",
   );
+  assert.deepEqual(requestsFromBobHostTranscript(transcript), host.requests);
   assert.equal(validateBobHostTranscript(transcript), transcript);
 });
 

@@ -26,6 +26,11 @@ distributed skill without changing it:
   controller seam for Bob's interface-inventory, expected-use-model, then
   task-execution order. It accepts only an injected host adapter and never
   launches an arbitrary executable.
+- `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
+  process boundary for that seam. It accepts only a controller-owned absolute
+  executable with an expected SHA-256 and fixed arguments, launches one fresh
+  shell-free child per phase with a constructed environment, and accepts one
+  bounded canonical response before exit.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:
@@ -43,14 +48,17 @@ filesystem, environment, or network isolation; does not run a lane adapter;
 does not attest semantic fixture opacity; and does not prove that a real host
 obeyed Bob's controller sequence. A completed Bob protocol transcript proves
 only that an injected adapter returned structurally valid outputs in the
-required order. Do not promote a runner or protocol record until a reviewed
-host adapter proves every missing claim.
+required order. A completed host execution additionally records direct-child
+launch, bounded I/O, exit, and request/response binding. Neither record proves
+filesystem, provider, network, tool, model-context, process-tree, or hostile
+same-user isolation. Do not promote either record until a reviewed host and
+sandbox adapter proves every missing claim.
 
 Closed-artifact consumers must read the controller-owned captured snapshot,
 never the mutable lane tree. Captured hashes and the unkeyed journal chain can
 detect partial or accidental mutation, but read-only modes do not resist a
-hostile same-user process; that protection belongs to the later qualifying
-host executor.
+hostile same-user process; that protection belongs to a later qualifying
+sandbox and provider adapter.
 
 ## Change workflow
 

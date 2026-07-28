@@ -227,6 +227,36 @@ host obeyed the requests.
 Report sections, filenames, timestamps, and lane-authored event files remain
 unacceptable chronology evidence.
 
+### Non-qualifying direct-process boundary
+
+`scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three
+one-shot direct children, one per phase. Its program path and expected
+SHA-256, fixed arguments, lane root, limits, and confidential values are
+controller-only inputs; no public fixture may select or alter them. Each
+launch uses the sealed lane root as its working directory, a newly constructed
+`LANG`/`LC_ALL`/`TZ` environment, `shell: false`, bounded stdin/stdout/stderr,
+and a controller-enforced deadline. The executor creates the dispatch identity;
+the child reads one complete canonical request to EOF, returns one canonical
+response bound to the phase and request digest, then exits.
+
+The controller records the fixed-policy digest, program/argument digests, and
+one receipt per successful direct child. It scans complete bounded stdout and
+stderr for the evaluation contract's opaque confidential tokens and rejects
+primary-executable or lane-root drift, malformed framing, cross-execution
+response reuse, timeout, oversized output, or nonzero exit. The resulting
+record is still `unverified`, `not-evidence`, and `result: null`, and the
+protocol's claims remain `not-attested`.
+
+This is process construction, not a sandbox. It does not confine a same-user
+process, authenticate controller state, wait for descendants, distinguish
+provider transport from tool egress, restrict absolute tools, create a fresh
+remote model context, or prove that a rendered interface was exercised. A
+real host adapter must fail before dispatch unless its separately reviewed
+platform prerequisites can prove those properties.
+The executable SHA-256 covers only the primary executable. Fixed arguments are
+string-bound; any interpreter payload or configuration file named by an
+argument requires its own measurement in the later real host adapter.
+
 ## Public suite
 
 Serialized inputs must pass `parseContractJson` before validation so duplicate
@@ -495,9 +525,10 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 The following remain deliberately outside this fixture constituent:
 
 - the other lane corpora required for campaign acceptance;
-- a reviewed host adapter that proves fresh invocation, filesystem
-  confinement, command-environment control, tool inventory, and network
-  policy without conflating provider transport with tool egress;
+- a reviewed sandbox and provider adapter that builds on the direct-process
+  boundary and proves filesystem confinement, tool inventory, fresh model
+  context, process-tree completion, and network policy without conflating
+  provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - lane-specific adapters that parse canonical report tables by stable finding
   ID without using oracle prose;

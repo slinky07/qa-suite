@@ -466,6 +466,22 @@ export function validateBobHostTranscript(value) {
   return value;
 }
 
+export function requestsFromBobHostTranscript(value) {
+  const transcript = validateBobHostTranscript(value);
+  return PHASES.map((phase) =>
+    phaseRequest(transcript.binding, phase, {
+      expected_use_model:
+        phase === "task_execution"
+          ? transcript.outputs.expected_use_model
+          : null,
+      interface_inventory:
+        phase === "interface_inventory"
+          ? null
+          : transcript.outputs.interface_inventory,
+    }),
+  );
+}
+
 export async function executePreparedBobCase({
   adapter,
   dispatchId,
