@@ -10,12 +10,15 @@ import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import {
+  assertBrowserProcessGroupSupport,
   BrowserGateway,
   CdpPipeClient,
   EvidenceStore,
   browserToolsForPhase,
   parseBrowserGatewayPolicy,
+  removeBrowserProfileIfSafe,
   serveBrowserGatewayMcp,
+  terminateProcessGroup,
   validateBrowserGatewayClosure,
   validateBrowserGatewayPolicy,
 } from "../scripts/evaluation/browser-gateway.mjs";
@@ -423,6 +426,209 @@ test("CDP pipe correlates partial and out-of-order NUL frames", async () => {
   assert.deepEqual(await second, { frameId: "frame-1" });
   assert.deepEqual(await first, { product: "Chrome" });
   client.close();
+});
+
+test("browser cleanup never signals a stale process-group ID", async () => {
+  const calls = [];
+  const processGroup = {
+    signal(pid, signal) {
+      calls.push({ pid, signal });
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push({ pid, timeoutMs });
+      return true;
+    },
+  };
+
+  await assert.rejects(
+    () =>
+      terminateProcessGroup({
+        exitCode: 0,
+        pid: 101,
+        signalCode: null,
+      }, processGroup),
+    /leader exited/u,
+  );
+
+  assert.deepEqual(calls, []);
+});
+
+test("browser cleanup fails closed on unsupported process groups", async () => {
+  assert.throws(
+    () => assertBrowserProcessGroupSupport("win32"),
+    /unsupported on win32/u,
+  );
+
+  await assert.rejects(
+    () =>
+      terminateProcessGroup({
+        exitCode: null,
+        pid: 106,
+        signalCode: null,
+      }, {
+        platform: "win32",
+        signal() {
+          assert.fail("unsupported process group was signaled");
+        },
+        async waitForEmpty() {
+          assert.fail("unsupported process group was probed");
+        },
+      }),
+    /unsupported on win32/u,
+  );
+});
+
+test("browser cleanup proves its live process group empty after SIGTERM", async () => {
+  const calls = [];
+  const processGroup = {
+    signal(pid, signal) {
+      calls.push({ pid, signal });
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push({ pid, timeoutMs });
+      return true;
+    },
+  };
+
+  await terminateProcessGroup({
+    exitCode: null,
+    pid: 102,
+    signalCode: null,
+  }, processGroup);
+
+  assert.deepEqual(calls, [
+    { pid: 102, signal: "SIGTERM" },
+    { pid: 102, timeoutMs: 1500 },
+  ]);
+});
+
+test("browser cleanup never escalates after the leader exits", async () => {
+  const calls = [];
+  const child = {
+    exitCode: null,
+    pid: 103,
+    signalCode: null,
+  };
+  const processGroup = {
+    signal(pid, signal) {
+      calls.push({ pid, signal });
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push({ pid, timeoutMs });
+      child.exitCode = 0;
+      return false;
+    },
+  };
+
+  await assert.rejects(
+    () => terminateProcessGroup(child, processGroup),
+    /leader exited/u,
+  );
+
+  assert.deepEqual(calls, [
+    { pid: 103, signal: "SIGTERM" },
+    { pid: 103, timeoutMs: 1500 },
+  ]);
+});
+
+test("browser cleanup escalates while the owned leader remains live", async () => {
+  const calls = [];
+  const emptyResults = [false, true];
+  const processGroup = {
+    signal(pid, signal) {
+      calls.push({ pid, signal });
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push({ pid, timeoutMs });
+      return emptyResults.shift();
+    },
+  };
+
+  await terminateProcessGroup({
+    exitCode: null,
+    pid: 104,
+    signalCode: null,
+  }, processGroup);
+
+  assert.deepEqual(calls, [
+    { pid: 104, signal: "SIGTERM" },
+    { pid: 104, timeoutMs: 1500 },
+    { pid: 104, signal: "SIGKILL" },
+    { pid: 104, timeoutMs: 500 },
+  ]);
+});
+
+test("browser cleanup fails when the owned group remains present", async () => {
+  const calls = [];
+  const processGroup = {
+    signal(pid, signal) {
+      calls.push({ pid, signal });
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push({ pid, timeoutMs });
+      return false;
+    },
+  };
+
+  await assert.rejects(
+    () =>
+      terminateProcessGroup({
+        exitCode: null,
+        pid: 105,
+        signalCode: null,
+      }, processGroup),
+    /process group did not become empty/u,
+  );
+
+  assert.deepEqual(calls, [
+    { pid: 105, signal: "SIGTERM" },
+    { pid: 105, timeoutMs: 1500 },
+    { pid: 105, signal: "SIGKILL" },
+    { pid: 105, timeoutMs: 500 },
+  ]);
+});
+
+test("browser profile removal requires a proven-empty process group", async () => {
+  const calls = [];
+  const profileRemoved = await removeBrowserProfileIfSafe({
+    processGroupEmpty: false,
+    profile: "/tmp/qa-suite-browser-test",
+    removeProfile(path, options) {
+      calls.push({ options, path });
+    },
+  });
+
+  assert.equal(profileRemoved, false);
+  assert.deepEqual(calls, []);
+});
+
+test("browser profile removal follows a proven-empty process group", async () => {
+  const calls = [];
+  const profileRemoved = await removeBrowserProfileIfSafe({
+    processGroupEmpty: true,
+    profile: "/tmp/qa-suite-browser-test",
+    removeProfile(path, options) {
+      calls.push({ options, path });
+    },
+  });
+
+  assert.equal(profileRemoved, true);
+  assert.deepEqual(calls, [{
+    options: { force: true, recursive: true },
+    path: "/tmp/qa-suite-browser-test",
+  }]);
+});
+
+test("all browser closure paths gate profile removal", async () => {
+  const source = await readFile(
+    new URL("../scripts/evaluation/browser-gateway.mjs", import.meta.url),
+    "utf8",
+  );
+  const gatedRemovalCalls =
+    source.match(/await removeBrowserProfileIfSafe\(\{/gu) ?? [];
+
+  assert.equal(gatedRemovalCalls.length, 2);
+  assert.doesNotMatch(source, /await rm\(profile,/u);
 });
 
 test("CDP pipe routes flattened events and fails on unknown responses", async () => {

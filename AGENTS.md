@@ -50,7 +50,10 @@ distributed skill without changing it:
   other proxy-aware URL traffic to a deny-only loopback boundary. It retains
   bounded snapshots, screenshots, action receipts, proxy summaries, and a
   terminal hash-chained journal below `QA/evidence/`. Its temporary Chrome
-  profile is never evidence and is removed at close.
+  profile is never evidence. A normal closure requires the detached Chrome
+  process group to be empty before removing the profile. Ambiguous or failed
+  process cleanup retains the profile and makes the closure invalid. Platforms
+  without POSIX process-group signaling fail before Chrome launch.
 - Bob suite cases declare globally unique, role-neutral report surface and
   core-flow IDs from independent opaque tokens that cannot be derived from the
   earlier case disclosure. They remain controller-only until task execution,
