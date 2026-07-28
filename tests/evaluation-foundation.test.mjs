@@ -419,6 +419,23 @@ test("Bob machine lane results use only the selected report identifiers", () => 
       ),
     /must be dense/u,
   );
+
+  const whollyUntested = specialistResult();
+  whollyUntested.flows[0] = {
+    ...whollyUntested.flows[0],
+    effectiveness: null,
+    evidence: [],
+    state: "Not tested",
+  };
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        whollyUntested,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /Go-family verdict requires at least one selected core flow/u,
+  );
 });
 
 test("suite contract is strict and uses neutral opaque paths", () => {

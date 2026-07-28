@@ -258,10 +258,12 @@ parents, incomplete task coverage, and task results outside the modeled
 order. Each task result names exactly one selected core flow and hashes that
 flow's ordered evidence-pointer set. Pass/Fail flows require exercised tasks;
 Observed-only and Not-tested flows require matching task dispositions. The
-adapter also asserts the finalized report SHA-256. The controller hashes the
-accepted output into the transcript; only `adaptClosedBobHostResult()` later
-compares the report assertion and evidence paths with the closed artifact
-inventory. These adapter assertions are not proof by themselves.
+protocol also rejects a Go-family result when every selected core flow is Not
+tested. The adapter asserts the finalized report SHA-256. The controller
+hashes the accepted output into the transcript; only
+`adaptClosedBobHostResult()` later compares the report assertion and evidence
+paths with the closed artifact inventory. These adapter assertions are not
+proof by themselves.
 
 The transcript remains `unverified`, `not-evidence`, and `result: null`; every
 isolation and method-order claim remains `not-attested`. This proves the

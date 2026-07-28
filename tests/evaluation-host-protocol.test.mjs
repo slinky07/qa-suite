@@ -367,6 +367,92 @@ test("task execution binds task disposition and evidence to its core flow", () =
   );
 });
 
+test("task execution maps reordered flows and preserves coverage semantics", () => {
+  const multipleIdentifiers = {
+    core_flow_ids: [
+      "flow_00112233445566778899aabbccddeeff_01",
+      "flow_00112233445566778899aabbccddeeff_02",
+    ],
+    surface_id: reportIdentifiers.surface_id,
+  };
+  const secondaryEvidence = [
+    {
+      kind: "screenshot",
+      path: "QA/evidence/preferences.png",
+    },
+  ];
+  const output = taskExecution();
+  output.report_output.lane_result.flows = [
+    {
+      core: true,
+      effectiveness: null,
+      evidence: secondaryEvidence,
+      finding_ids: [],
+      id: multipleIdentifiers.core_flow_ids[1],
+      state: "Observed only",
+    },
+    output.report_output.lane_result.flows[0],
+  ];
+  output.results[1] = {
+    ...output.results[1],
+    disposition: "observed-only",
+    evidence_sha256: sha256(canonicalJson(secondaryEvidence)),
+    flow_id: multipleIdentifiers.core_flow_ids[1],
+  };
+  assert.equal(
+    validateTaskExecution(
+      output,
+      model(),
+      multipleIdentifiers,
+      CASE_ID,
+    ),
+    output,
+  );
+
+  const partiallyUntested = structuredClone(output);
+  partiallyUntested.report_output.lane_result.flows[1] = {
+    ...partiallyUntested.report_output.lane_result.flows[1],
+    effectiveness: null,
+    evidence: [],
+    state: "Not tested",
+  };
+  partiallyUntested.results[0] = {
+    ...partiallyUntested.results[0],
+    disposition: "not-tested",
+    evidence_sha256: sha256(canonicalJson([])),
+  };
+  assert.equal(
+    validateTaskExecution(
+      partiallyUntested,
+      model(),
+      multipleIdentifiers,
+      CASE_ID,
+    ),
+    partiallyUntested,
+  );
+
+  const blockedAfterAttempt = taskExecution();
+  blockedAfterAttempt.report_output.lane_result.flows[0] = {
+    ...blockedAfterAttempt.report_output.lane_result.flows[0],
+    effectiveness: null,
+    state: "Blocked",
+  };
+  blockedAfterAttempt.report_output.lane_result.verdict = {
+    ...blockedAfterAttempt.report_output.lane_result.verdict,
+    blocker: "browser became unavailable after task actions",
+    state: "Blocked",
+  };
+  assert.equal(
+    validateTaskExecution(
+      blockedAfterAttempt,
+      model(),
+      reportIdentifiers,
+      CASE_ID,
+    ),
+    blockedAfterAttempt,
+  );
+});
+
 test("structured phase contracts reject unknown fields and invalid references", () => {
   assert.throws(
     () =>

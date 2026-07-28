@@ -1824,6 +1824,14 @@ export function validateBobLaneResult(
   if (value.flows.some(({ core }) => core !== true)) {
     throw new Error(`${label} selected flows must have core equal true`);
   }
+  if (
+    ["Go", "Go with findings"].includes(value.verdict.state) &&
+    value.flows.every(({ state }) => state === "Not tested")
+  ) {
+    throw new Error(
+      `${label} Go-family verdict requires at least one selected core flow beyond Not tested`,
+    );
+  }
   return value;
 }
 
