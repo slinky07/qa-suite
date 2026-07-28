@@ -398,12 +398,14 @@ const suite = await readContract(suitePath, "Bob suite");
 const oracles = await readContract(oraclePath, "Bob oracle set");
 
 function fixturePairForSurface(surfaceId) {
+  const adversarialCaseIds = {
+    surface_filter_workspace: "fx_cc4b61fbde593f6e101984583e5e9f88",
+    surface_note_board: "fx_39e78c1246b2cf2952277010d5f5cedc",
+  };
   const adversarial = oracles.find(
     (oracle) =>
       oracle.role === "adversarial" &&
-      oracle.assertions.expected_defects.some(
-        (defect) => defect.surface_id === surfaceId,
-      ),
+      oracle.case_id === adversarialCaseIds[surfaceId],
   );
   assert.ok(adversarial, `missing adversarial fixture for ${surfaceId}`);
 
@@ -463,6 +465,19 @@ test("committed Bob fixture declarations match every selected byte", async () =>
       validateFixtureManifest(manifest, suiteCase),
       manifest,
     );
+    const serializedIdentifiers = JSON.stringify(
+      suiteCase.report_identifiers,
+    );
+    for (const forbidden of [
+      /adversarial/iu,
+      /control/iu,
+      /expected/iu,
+      /severity/iu,
+      /priority/iu,
+      /ia_0[1-7]/iu,
+    ]) {
+      assert.equal(forbidden.test(serializedIdentifiers), false);
+    }
 
     const publicRoot = join(
       repositoryRoot,
@@ -504,6 +519,14 @@ test("committed Bob fixture declarations match every selected byte", async () =>
 
     for (const token of sealTokens) {
       assert.equal(selectedBytes.includes(token), false);
+    }
+    for (const reportIdentifier of suite.cases.flatMap(
+      ({ report_identifiers: identifiers }) => [
+        identifiers.surface_id,
+        ...identifiers.core_flow_ids,
+      ],
+    )) {
+      assert.equal(selectedBytes.includes(reportIdentifier), false);
     }
     for (const otherCase of suite.cases) {
       if (otherCase.id !== suiteCase.id) {

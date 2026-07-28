@@ -32,6 +32,16 @@ const tokens = {
   controlCanary: seal("4"),
   budget: seal("5"),
 };
+const bobReportIdentifiers = {
+  adversarial: {
+    core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
+    surface_id: "surface_0123456789abcdef0123456789abcdef",
+  },
+  control: {
+    core_flow_ids: ["flow_fedcba9876543210fedcba9876543210_01"],
+    surface_id: "surface_fedcba9876543210fedcba9876543210",
+  },
+};
 
 function clone(value) {
   return structuredClone(value);
@@ -42,6 +52,10 @@ function caseRoot(caseId) {
 }
 
 function suiteFixture(lane = "bob-qa") {
+  const reportIdentifiers = (role) =>
+    lane === "bob-qa"
+      ? { report_identifiers: clone(bobReportIdentifiers[role]) }
+      : {};
   return {
     cases: [
       {
@@ -53,6 +67,7 @@ function suiteFixture(lane = "bob-qa") {
           tokens.expected,
         ],
         qa_context: `${caseRoot(caseIds.adversarial)}/qa-context.md`,
+        ...reportIdentifiers("adversarial"),
         smoke_checks: ["check_primary"],
       },
       {
@@ -64,6 +79,7 @@ function suiteFixture(lane = "bob-qa") {
           tokens.budget,
         ],
         qa_context: `${caseRoot(caseIds.control)}/qa-context.md`,
+        ...reportIdentifiers("control"),
         smoke_checks: ["check_primary"],
       },
     ],
@@ -92,6 +108,15 @@ function fixtureManifest(suiteCase) {
   };
 }
 
+function flowAssertion(role) {
+  return {
+    allowed_effectiveness: [true],
+    allowed_states: ["Pass"],
+    id: bobReportIdentifiers[role].core_flow_ids[0],
+    required_evidence_kinds: ["screenshot"],
+  };
+}
+
 function adversarialOracle(lane = "bob-qa") {
   const smoke = lane === "smoke-qa";
   return {
@@ -111,10 +136,11 @@ function adversarialOracle(lane = "bob-qa") {
               criteria_any_of: ["H8", "IA-01"],
               id: tokens.expected,
               required_evidence_kinds: ["screenshot"],
-              surface_id: "surface_configuration",
+              surface_id:
+                bobReportIdentifiers.adversarial.surface_id,
             },
       ],
-      flows: [],
+      flows: smoke ? [] : [flowAssertion("adversarial")],
     },
     canary_token: tokens.adversarialCanary,
     case_id: caseIds.adversarial,
@@ -142,10 +168,12 @@ function controlOracle(lane = "bob-qa") {
             },
         max_total: smoke ? 0 : null,
         observations: "record-only",
-        surface_ids: smoke ? [] : ["surface_configuration"],
+        surface_ids: smoke
+          ? []
+          : [bobReportIdentifiers.control.surface_id],
       },
       expected_defects: [],
-      flows: [],
+      flows: smoke ? [] : [flowAssertion("control")],
     },
     canary_token: tokens.controlCanary,
     case_id: caseIds.control,
@@ -167,7 +195,7 @@ function finding(overrides = {}) {
     id: "BOB-01",
     priority: "P2",
     severity: "S4",
-    surface_id: "surface_configuration",
+    surface_id: bobReportIdentifiers.adversarial.surface_id,
     ...overrides,
   };
 }
@@ -184,15 +212,26 @@ function counts(findings) {
 function specialistResult({
   blocker = null,
   findings = [],
-  flows = [],
+  flows,
   observations = [],
+  reportRole = "adversarial",
   state = findings.length > 0 ? "Go with findings" : "Go",
 } = {}) {
+  const selectedFlows = flows ?? [
+    {
+      core: true,
+      effectiveness: true,
+      evidence: evidence(),
+      finding_ids: [],
+      id: bobReportIdentifiers[reportRole].core_flow_ids[0],
+      state: "Pass",
+    },
+  ];
   return {
     blocking_evidence: [],
     checklist: [],
     findings,
-    flows,
+    flows: selectedFlows,
     not_tested: [],
     observations,
     verdict: {
@@ -261,6 +300,7 @@ function normalizedCase(
         : specialistResult({
             findings:
               findings ?? (adversarial ? [finding()] : []),
+            reportRole: adversarial ? "adversarial" : "control",
           })
       : laneResult;
   return {
@@ -291,16 +331,88 @@ function previewFixture(lane = "bob-qa") {
 test("suite contract is strict and uses neutral opaque paths", () => {
   const suite = suiteFixture();
   assert.equal(validateSuite(suite), suite);
+  assert.deepEqual(
+    suite.cases[0].report_identifiers,
+    bobReportIdentifiers.adversarial,
+  );
 
   const unknown = clone(suite);
   unknown.unexpected = true;
   assert.throws(() => validateSuite(unknown), /fields are/);
+
+  const missingIdentifiers = clone(suite);
+  delete missingIdentifiers.cases[0].report_identifiers;
+  assert.throws(
+    () => validateSuite(missingIdentifiers),
+    /report_identifiers is required/u,
+  );
+
+  const extraIdentifierField = clone(suite);
+  extraIdentifierField.cases[0].report_identifiers.role = "control";
+  assert.throws(
+    () => validateSuite(extraIdentifierField),
+    /fields are/u,
+  );
+
+  const duplicateFlow = clone(suite);
+  duplicateFlow.cases[0].report_identifiers.core_flow_ids.push(
+    duplicateFlow.cases[0].report_identifiers.core_flow_ids[0],
+  );
+  assert.throws(
+    () => validateSuite(duplicateFlow),
+    /core_flow_ids must contain unique/u,
+  );
+
+  const unsortedFlows = clone(suite);
+  unsortedFlows.cases[0].report_identifiers.core_flow_ids = [
+    "flow_secondary",
+    "flow_primary",
+  ];
+  assert.throws(
+    () => validateSuite(unsortedFlows),
+    /core_flow_ids must be sorted/u,
+  );
+
+  const malformedSurface = clone(suite);
+  malformedSurface.cases[0].report_identifiers.surface_id =
+    "surface_../control";
+  assert.throws(
+    () => validateSuite(malformedSurface),
+    /surface_id has an invalid value/u,
+  );
+
+  const roleNamedSurface = clone(suite);
+  roleNamedSurface.cases[0].report_identifiers.surface_id =
+    "surface_adversarial";
+  assert.throws(
+    () => validateSuite(roleNamedSurface),
+    /surface_id must be opaque and case-bound/u,
+  );
+
+  const roleNamedFlow = clone(suite);
+  roleNamedFlow.cases[0].report_identifiers.core_flow_ids = [
+    "flow_control",
+  ];
+  assert.throws(
+    () => validateSuite(roleNamedFlow),
+    /core_flow_ids must be opaque and case-bound/u,
+  );
+
+  const nonBobSuite = suiteFixture("security-qa");
+  nonBobSuite.cases[0].report_identifiers =
+    clone(bobReportIdentifiers.adversarial);
+  assert.throws(
+    () => validateSuite(nonBobSuite),
+    /only supported for bob-qa/u,
+  );
 
   const duplicate = clone(suite);
   duplicate.cases[1].id = duplicate.cases[0].id;
   duplicate.cases[1].qa_context = duplicate.cases[0].qa_context;
   duplicate.cases[1].fixture_manifest =
     duplicate.cases[0].fixture_manifest;
+  duplicate.cases[1].report_identifiers =
+    clone(duplicate.cases[0].report_identifiers);
   assert.throws(() => validateSuite(duplicate), /case IDs.*unique/);
 
   const roleLeaking = clone(suite);
@@ -375,6 +487,10 @@ test("oracle set requires one adversarial and one control with sealed commitment
   duplicateRole[1].role = "adversarial";
   duplicateRole[1].assertions = clone(duplicateRole[0].assertions);
   duplicateRole[1].assertions.expected_defects[0].id = tokens.budget;
+  duplicateRole[1].assertions.expected_defects[0].surface_id =
+    bobReportIdentifiers.control.surface_id;
+  duplicateRole[1].assertions.flows[0].id =
+    bobReportIdentifiers.control.core_flow_ids[0];
   assert.throws(
     () => validateOracleSet(duplicateRole, suite),
     (error) => {
@@ -397,6 +513,58 @@ test("oracle set requires one adversarial and one control with sealed commitment
     () => validateOracleSet(reusedToken, suite),
     /suite oracle commitments.*unique/,
   );
+
+  const reversed = [...oracles].reverse();
+  const freshSuite = suiteFixture();
+  assert.equal(validateOracleSet(reversed, freshSuite), reversed);
+
+  const repeatedIdentifierSuite = clone(freshSuite);
+  repeatedIdentifierSuite.cases[1].report_identifiers.surface_id =
+    repeatedIdentifierSuite.cases[0].report_identifiers.surface_id;
+  assert.throws(
+    () => validateSuite(repeatedIdentifierSuite),
+    /surface_id must be opaque and case-bound/u,
+  );
+
+  const unknownSurface = adversarialOracle();
+  unknownSurface.assertions.expected_defects[0].surface_id =
+    "surface_other";
+  assert.throws(
+    () => validateOracle(unknownSurface, freshSuite, freshSuite.cases[0]),
+    /surface must equal the public surface ID/u,
+  );
+
+  const unknownFlow = adversarialOracle();
+  unknownFlow.assertions.flows[0].id = "flow_other";
+  assert.throws(
+    () => validateOracle(unknownFlow, freshSuite, freshSuite.cases[0]),
+    /flow IDs must equal the public core flow IDs/u,
+  );
+
+  const accessorCase = clone(freshSuite.cases[0]);
+  const validIdentifiers = clone(accessorCase.report_identifiers);
+  let identifierReads = 0;
+  Object.defineProperty(accessorCase, "report_identifiers", {
+    enumerable: true,
+    get() {
+      identifierReads += 1;
+      return identifierReads === 1
+        ? validIdentifiers
+        : {
+            core_flow_ids: ["flow_control"],
+            surface_id: "surface_adversarial",
+          };
+    },
+  });
+  assert.equal(
+    validateOracle(
+      adversarialOracle(),
+      freshSuite,
+      accessorCase,
+    ).case_id,
+    caseIds.adversarial,
+  );
+  assert.equal(identifierReads, 1);
 });
 
 test("oracle verdict bands are derived from role, lane, and Severity", () => {
@@ -504,7 +672,13 @@ test("detection requires classification and evidence on the same finding", () =>
 test("S4 control positive lowers precision without exceeding its budget", () => {
   const fixture = previewFixture();
   fixture.normalizedCases[1].lane_result = specialistResult({
-    findings: [finding({ id: "BOB-CONTROL-01" })],
+    findings: [
+      finding({
+        id: "BOB-CONTROL-01",
+        surface_id: bobReportIdentifiers.control.surface_id,
+      }),
+    ],
+    reportRole: "control",
   });
 
   const result = previewSuite(fixture);
@@ -525,8 +699,10 @@ test("S3 control positive exceeds the configured budget", () => {
       finding({
         id: "BOB-CONTROL-01",
         severity: "S3",
+        surface_id: bobReportIdentifiers.control.surface_id,
       }),
     ],
+    reportRole: "control",
   });
 
   const result = previewSuite(fixture);
@@ -548,6 +724,7 @@ test("control budget scope does not narrow canonical verdict scope", () => {
         surface_id: "surface_other",
       }),
     ],
+    reportRole: "control",
   });
 
   const result = previewSuite(fixture);
@@ -941,7 +1118,7 @@ test("flow assertions require their configured evidence kinds", () => {
     {
       allowed_effectiveness: [true],
       allowed_states: ["Pass"],
-      id: "flow_primary",
+      id: bobReportIdentifiers.adversarial.core_flow_ids[0],
       required_evidence_kinds: ["screenshot"],
     },
   ];
@@ -951,7 +1128,7 @@ test("flow assertions require their configured evidence kinds", () => {
       effectiveness: true,
       evidence: evidence("log", "flow.log"),
       finding_ids: [],
-      id: "flow_primary",
+      id: bobReportIdentifiers.adversarial.core_flow_ids[0],
       state: "Pass",
     },
   ];
