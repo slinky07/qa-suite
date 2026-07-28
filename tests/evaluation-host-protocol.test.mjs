@@ -8,12 +8,31 @@ import {
   validateInterfaceInventory,
   validateTaskExecution,
 } from "../scripts/evaluation/bob-host-protocol.mjs";
+import {
+  canonicalJson,
+  sha256,
+} from "../scripts/evaluation/contracts.mjs";
 
 const digest = (character) => character.repeat(64);
+const CASE_ID = "fx_0123456789abcdef0123456789abcdef";
+const OTHER_CASE_ID = "fx_fedcba9876543210fedcba9876543210";
+const REPORT_PATH =
+  "QA/2026-07-28-0415-bob-qa-primary-surface.md";
+const reportIdentifiers = {
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
+};
+const flowEvidence = [
+  {
+    kind: "report-reference",
+    path: REPORT_PATH,
+  },
+];
+const flowEvidenceSha256 = sha256(canonicalJson(flowEvidence));
 
 function preparation(overrides = {}) {
   return {
-    case_id: "fx_0123456789abcdef0123456789abcdef",
+    case_id: CASE_ID,
     controller_commit: "a".repeat(40),
     lane: "bob-qa",
     qualification: "not-evidence",
@@ -21,8 +40,43 @@ function preparation(overrides = {}) {
     run_id: "run_0123456789abcdef0123456789abcdef",
     schema_version: 1,
     subject_commit: "b".repeat(40),
+    suite_id: "bob-evaluation-v1",
     verification_status: "unverified",
     ...overrides,
+  };
+}
+
+function suite() {
+  const suiteCase = (caseId, commitments, identifiers) => ({
+    fixture_manifest:
+      `tests/evaluation/fixtures/${caseId}/fixture-manifest.json`,
+    id: caseId,
+    oracle_commitments: commitments,
+    qa_context: `tests/evaluation/fixtures/${caseId}/qa-context.md`,
+    report_identifiers: identifiers,
+    smoke_checks: ["check_primary"],
+  });
+  return {
+    cases: [
+      suiteCase(
+        CASE_ID,
+        [`seal_${"1".repeat(64)}`, `seal_${"2".repeat(64)}`],
+        reportIdentifiers,
+      ),
+      suiteCase(
+        OTHER_CASE_ID,
+        [`seal_${"3".repeat(64)}`, `seal_${"4".repeat(64)}`],
+        {
+          core_flow_ids: [
+            "flow_ffeeddccbbaa99887766554433221100_01",
+          ],
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
+        },
+      ),
+    ],
+    id: "bob-evaluation-v1",
+    lane: "bob-qa",
+    schema_version: 1,
   };
 }
 
@@ -64,22 +118,64 @@ function model(overrides = {}) {
 
 function taskExecution(overrides = {}) {
   return {
+    report_output: {
+      lane_result: {
+        blocking_evidence: [],
+        checklist: [],
+        findings: [],
+        flows: [
+          {
+            core: true,
+            effectiveness: true,
+            evidence: flowEvidence,
+            finding_ids: [],
+            id: reportIdentifiers.core_flow_ids[0],
+            state: "Pass",
+          },
+        ],
+        not_tested: [],
+        observations: [],
+        verdict: {
+          blocker: null,
+          severity_counts: {
+            S1: 0,
+            S2: 0,
+            S3: 0,
+            S4: 0,
+          },
+          state: "Go",
+        },
+      },
+      report: {
+        path: REPORT_PATH,
+        sha256: digest("a"),
+      },
+    },
     results: [
       {
         control_ids: ["control_search", "control_submit"],
         disposition: "exercised",
-        evidence_sha256: digest("4"),
+        evidence_sha256: flowEvidenceSha256,
+        flow_id: reportIdentifiers.core_flow_ids[0],
         task_id: "task_find_item",
       },
       {
         control_ids: ["control_preferences"],
-        disposition: "observed-only",
-        evidence_sha256: digest("5"),
+        disposition: "exercised",
+        evidence_sha256: flowEvidenceSha256,
+        flow_id: reportIdentifiers.core_flow_ids[0],
         task_id: "task_review_preferences",
       },
     ],
     ...overrides,
   };
+}
+
+function executeCase(options) {
+  return executePreparedBobCase({
+    suite: suite(),
+    ...options,
+  });
 }
 
 function adapter(outputs = [
@@ -99,7 +195,7 @@ function adapter(outputs = [
 
 test("controller withholds task capabilities until inventory and modeling complete", async () => {
   const host = adapter();
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: host,
     dispatchId: "dispatch_0123456789abcdef0123456789abcdef",
     preparation: preparation(),
@@ -133,6 +229,12 @@ test("controller withholds task capabilities until inventory and modeling comple
     host.requests[2].prior_outputs.expected_use_model,
     model(),
   );
+  assert.equal("report_identifiers" in host.requests[0], false);
+  assert.equal("report_identifiers" in host.requests[1], false);
+  assert.deepEqual(
+    host.requests[2].report_identifiers,
+    reportIdentifiers,
+  );
   assert.equal("controller_commit" in host.requests[0].binding, false);
   assert.equal("suite_id" in host.requests[0], false);
   assert.equal("oracle" in host.requests[0], false);
@@ -163,7 +265,7 @@ test("invalid inventory prevents modeling and task dispatch", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
@@ -191,7 +293,7 @@ test("invalid expected-use model prevents task capabilities", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
@@ -214,13 +316,141 @@ test("task execution must follow the modeled hierarchy", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
     /violates the modeled hierarchy/u,
   );
   assert.equal(host.requests.length, 3);
+});
+
+test("task execution binds task disposition and evidence to its core flow", () => {
+  const notExercised = taskExecution();
+  notExercised.results[0].disposition = "not-tested";
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        notExercised,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /Pass requires exercised tasks/u,
+  );
+
+  const wrongFlow = taskExecution();
+  wrongFlow.results[0].flow_id =
+    "flow_ffeeddccbbaa99887766554433221100_01";
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        wrongFlow,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /flow_id is not a selected core flow/u,
+  );
+
+  const wrongEvidence = taskExecution();
+  wrongEvidence.results[0].evidence_sha256 = digest("4");
+  assert.throws(
+    () =>
+      validateTaskExecution(
+        wrongEvidence,
+        model(),
+        reportIdentifiers,
+        CASE_ID,
+      ),
+    /evidence digest does not match/u,
+  );
+});
+
+test("task execution maps reordered flows and preserves coverage semantics", () => {
+  const multipleIdentifiers = {
+    core_flow_ids: [
+      "flow_00112233445566778899aabbccddeeff_01",
+      "flow_00112233445566778899aabbccddeeff_02",
+    ],
+    surface_id: reportIdentifiers.surface_id,
+  };
+  const secondaryEvidence = [
+    {
+      kind: "screenshot",
+      path: "QA/evidence/preferences.png",
+    },
+  ];
+  const output = taskExecution();
+  output.report_output.lane_result.flows = [
+    {
+      core: true,
+      effectiveness: null,
+      evidence: secondaryEvidence,
+      finding_ids: [],
+      id: multipleIdentifiers.core_flow_ids[1],
+      state: "Observed only",
+    },
+    output.report_output.lane_result.flows[0],
+  ];
+  output.results[1] = {
+    ...output.results[1],
+    disposition: "observed-only",
+    evidence_sha256: sha256(canonicalJson(secondaryEvidence)),
+    flow_id: multipleIdentifiers.core_flow_ids[1],
+  };
+  assert.equal(
+    validateTaskExecution(
+      output,
+      model(),
+      multipleIdentifiers,
+      CASE_ID,
+    ),
+    output,
+  );
+
+  const partiallyUntested = structuredClone(output);
+  partiallyUntested.report_output.lane_result.flows[1] = {
+    ...partiallyUntested.report_output.lane_result.flows[1],
+    effectiveness: null,
+    evidence: [],
+    state: "Not tested",
+  };
+  partiallyUntested.results[0] = {
+    ...partiallyUntested.results[0],
+    disposition: "not-tested",
+    evidence_sha256: sha256(canonicalJson([])),
+  };
+  assert.equal(
+    validateTaskExecution(
+      partiallyUntested,
+      model(),
+      multipleIdentifiers,
+      CASE_ID,
+    ),
+    partiallyUntested,
+  );
+
+  const blockedAfterAttempt = taskExecution();
+  blockedAfterAttempt.report_output.lane_result.flows[0] = {
+    ...blockedAfterAttempt.report_output.lane_result.flows[0],
+    effectiveness: null,
+    state: "Blocked",
+  };
+  blockedAfterAttempt.report_output.lane_result.verdict = {
+    ...blockedAfterAttempt.report_output.lane_result.verdict,
+    blocker: "browser became unavailable after task actions",
+    state: "Blocked",
+  };
+  assert.equal(
+    validateTaskExecution(
+      blockedAfterAttempt,
+      model(),
+      reportIdentifiers,
+      CASE_ID,
+    ),
+    blockedAfterAttempt,
+  );
 });
 
 test("structured phase contracts reject unknown fields and invalid references", () => {
@@ -264,6 +494,8 @@ test("structured phase contracts reject unknown fields and invalid references", 
           results: [taskExecution().results[0]],
         }),
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /cover every modeled task/u,
   );
@@ -280,6 +512,8 @@ test("structured phase contracts reject unknown fields and invalid references", 
           ],
         }),
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /account for every modeled control|must contain 2-2 items/u,
   );
@@ -296,7 +530,7 @@ test("only non-qualifying Bob preparations can enter the protocol", async () => 
   ]) {
     await assert.rejects(
       () =>
-        executePreparedBobCase({
+        executeCase({
           adapter: host,
           preparation: invalid,
         }),
@@ -323,9 +557,12 @@ test("sparse phase arrays cannot satisfy required coverage", () => {
     () =>
       validateTaskExecution(
         {
+          report_output: taskExecution().report_output,
           results: sparseResults,
         },
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /dense array/u,
   );
@@ -349,7 +586,7 @@ test("adapter-owned objects are cloned before later phases receive them", async 
     },
   };
 
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: mutatingAdapter,
     preparation: preparation(),
   });
@@ -364,7 +601,7 @@ test("adapter-owned objects are cloned before later phases receive them", async 
 });
 
 test("event-chain or phase-output tampering invalidates the transcript", async () => {
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: adapter(),
     preparation: preparation(),
   });
@@ -377,8 +614,8 @@ test("event-chain or phase-output tampering invalidates the transcript", async (
   );
 
   const changedOutput = structuredClone(transcript);
-  changedOutput.outputs.task_execution.results[0].disposition =
-    "observed-only";
+  changedOutput.outputs.task_execution.report_output.report.path =
+    "QA/2026-07-28-0416-bob-qa-primary-surface.md";
   assert.throws(
     () => validateBobHostTranscript(changedOutput),
     /output is unbound/u,

@@ -26,6 +26,11 @@ import {
 } from "../scripts/evaluation/bob-host-executor.mjs";
 
 const RUN_ID = "run_0123456789abcdef0123456789abcdef";
+const CASE_ID = "fx_0123456789abcdef0123456789abcdef";
+const reportIdentifiers = {
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
+};
 const programParent = await realpath(
   await mkdtemp(join(tmpdir(), "qa-suite-host-program-")),
 );
@@ -49,7 +54,7 @@ after(async () => {
 
 function preparation() {
   return {
-    case_id: "fx_0123456789abcdef0123456789abcdef",
+    case_id: CASE_ID,
     controller_commit: "a".repeat(40),
     lane: "bob-qa",
     qualification: "not-evidence",
@@ -57,7 +62,49 @@ function preparation() {
     run_id: RUN_ID,
     schema_version: 1,
     subject_commit: "b".repeat(40),
+    suite_id: "bob-evaluation-v1",
     verification_status: "unverified",
+  };
+}
+
+function suite() {
+  const otherCaseId = "fx_fedcba9876543210fedcba9876543210";
+  return {
+    cases: [
+      {
+        fixture_manifest:
+          `tests/evaluation/fixtures/${CASE_ID}/fixture-manifest.json`,
+        id: CASE_ID,
+        oracle_commitments: [
+          `seal_${"1".repeat(64)}`,
+          `seal_${"2".repeat(64)}`,
+        ],
+        qa_context: `tests/evaluation/fixtures/${CASE_ID}/qa-context.md`,
+        report_identifiers: reportIdentifiers,
+        smoke_checks: ["check_primary"],
+      },
+      {
+        fixture_manifest:
+          `tests/evaluation/fixtures/${otherCaseId}/fixture-manifest.json`,
+        id: otherCaseId,
+        oracle_commitments: [
+          `seal_${"3".repeat(64)}`,
+          `seal_${"4".repeat(64)}`,
+        ],
+        qa_context:
+          `tests/evaluation/fixtures/${otherCaseId}/qa-context.md`,
+        report_identifiers: {
+          core_flow_ids: [
+            "flow_ffeeddccbbaa99887766554433221100_01",
+          ],
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
+        },
+        smoke_checks: ["check_primary"],
+      },
+    ],
+    id: "bob-evaluation-v1",
+    lane: "bob-qa",
+    schema_version: 1,
   };
 }
 
@@ -109,11 +156,42 @@ if (request.phase === "interface_inventory") {
     }],
   };
 } else {
+  const flowEvidence = [{
+    kind: "report-reference",
+    path: "QA/2026-07-28-0415-bob-qa-primary-surface.md",
+  }];
   output = {
+    report_output: {
+      lane_result: {
+        blocking_evidence: [],
+        checklist: [],
+        findings: [],
+        flows: [{
+          core: true,
+          effectiveness: true,
+          evidence: flowEvidence,
+          finding_ids: [],
+          id: request.report_identifiers.core_flow_ids[0],
+          state: "Pass",
+        }],
+        not_tested: [],
+        observations: [],
+        verdict: {
+          blocker: null,
+          severity_counts: { S1: 0, S2: 0, S3: 0, S4: 0 },
+          state: "Go",
+        },
+      },
+      report: {
+        path: "QA/2026-07-28-0415-bob-qa-primary-surface.md",
+        sha256: "a".repeat(64),
+      },
+    },
     results: [{
       control_ids: ["control_search", "control_submit"],
       disposition: "exercised",
-      evidence_sha256: "4".repeat(64),
+      evidence_sha256: digest(canonical(flowEvidence)),
+      flow_id: request.report_identifiers.core_flow_ids[0],
       task_id: "task_find_item",
     }],
   };
@@ -169,6 +247,7 @@ async function execute(harnessValue, overrides = {}) {
     laneRoot: harnessValue.laneRoot,
     preparation: preparation(),
     program: harnessValue.program(),
+    suite: suite(),
     ...overrides,
   });
 }

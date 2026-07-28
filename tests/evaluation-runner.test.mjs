@@ -272,9 +272,9 @@ async function createHarness(
         qa_context: selected.contextPath,
         report_identifiers: {
           core_flow_ids: [
-            "flow_0123456789abcdef0123456789abcdef_01",
+            "flow_00112233445566778899aabbccddeeff_01",
           ],
-          surface_id: "surface_0123456789abcdef0123456789abcdef",
+          surface_id: "surface_00112233445566778899aabbccddeeff",
         },
         smoke_checks: ["check_primary"],
       },
@@ -288,9 +288,9 @@ async function createHarness(
         qa_context: other.contextPath,
         report_identifiers: {
           core_flow_ids: [
-            "flow_fedcba9876543210fedcba9876543210_01",
+            "flow_ffeeddccbbaa99887766554433221100_01",
           ],
-          surface_id: "surface_fedcba9876543210fedcba9876543210",
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
         },
         smoke_checks: ["check_primary"],
       },
@@ -493,10 +493,10 @@ test("prepare freezes independent commits into a neutral single-case root", asyn
   for (const value of [
     ...Object.values(commitments),
     caseIds.other,
-    "flow_0123456789abcdef0123456789abcdef_01",
+    "flow_00112233445566778899aabbccddeeff_01",
     harness.repository,
     "report_identifiers",
-    "surface_0123456789abcdef0123456789abcdef",
+    "surface_00112233445566778899aabbccddeeff",
     suitePath,
   ]) {
     assert.equal(disclosureSource.includes(value), false);

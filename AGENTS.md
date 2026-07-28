@@ -24,20 +24,26 @@ distributed skill without changing it:
   evaluation trust boundary and delivery sequence.
 - `scripts/evaluation/bob-host-protocol.mjs` is the non-qualifying
   controller seam for Bob's interface-inventory, expected-use-model, then
-  task-execution order. It accepts only an injected host adapter and never
+  task-execution order. The controller snapshots the selected suite case's
+  report IDs, withholds them from the first two phases, and supplies them only
+  to task execution. It accepts only an injected host adapter and never
   launches an arbitrary executable.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256 and fixed arguments, launches one fresh
   shell-free child per phase with a constructed environment, and accepts one
   bounded canonical response before exit.
-- `scripts/evaluation/bob-report-adapter.mjs` creates a non-qualifying
-  metadata binding for exactly one canonical Bob report in a closed artifact
-  inventory. It does not read or parse report content, normalize a case, open
-  the sealed oracle, or score a result.
+- `scripts/evaluation/bob-report-adapter.mjs` binds exactly one canonical Bob
+  report in a closed artifact inventory and joins that metadata to the
+  controller-hashed structured lane result. It does not read or parse report
+  content, create a complete normalized case, open the sealed oracle, or
+  score a result.
 - Bob suite cases declare globally unique, role-neutral report surface and
-  core-flow IDs. They remain controller-only until a reviewed structural
-  report-output seam can consume the selected case without prose inference.
+  core-flow IDs from independent opaque tokens that cannot be derived from the
+  earlier case disclosure. They remain controller-only until task execution,
+  whose structured output must use exactly the selected IDs and bind every
+  modeled task to its core flow, evidence pointers, and canonical report
+  path/SHA-256 without prose inference.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:
@@ -50,16 +56,18 @@ behavior. Evaluation infrastructure must not redefine a contract owned by
 contain only `qa-suite/`, so the maintainer-only paths are deliberately
 excluded from `qa-suite.skill` and `qa-suite-source.zip`.
 
-A closed input or artifact inventory does not attest model-context,
-filesystem, environment, or network isolation; does not run a lane adapter;
-does not attest semantic fixture opacity; and does not prove that a real host
-obeyed Bob's controller sequence. A completed Bob protocol transcript proves
-only that an injected adapter returned structurally valid outputs in the
-required order. A completed host execution additionally records direct-child
-launch, bounded I/O, exit, and request/response binding. Neither record proves
-filesystem, provider, network, tool, model-context, process-tree, or hostile
-same-user isolation. Do not promote either record until a reviewed host and
-sandbox adapter proves every missing claim.
+A closed input, artifact inventory, or structured lane-result adaptation does
+not attest model-context,
+filesystem, environment, or network isolation; does not attest a qualifying
+lane execution or semantic fixture opacity; and does not prove that a real
+host obeyed Bob's controller sequence. A completed Bob protocol transcript
+proves only that an injected adapter returned structurally valid outputs in
+the required order. A completed host execution additionally records
+direct-child launch, bounded I/O, exit, and request/response binding. Neither
+record proves filesystem, provider, network, tool, model-context,
+process-tree, or hostile same-user isolation, report semantic parity, or state
+authentication. Do not promote any record until a reviewed host and sandbox
+adapter proves every missing claim.
 
 Closed-artifact consumers must read the controller-owned captured snapshot,
 never the mutable lane tree. Captured hashes and the unkeyed journal chain can

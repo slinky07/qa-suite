@@ -507,6 +507,7 @@ export async function executePreparedBobHostProgram({
   limits = {},
   preparation,
   program,
+  suite,
 }) {
   assertObject(preparation, "preparation");
   const selectedLimits = normalizedLimits(limits);
@@ -531,6 +532,7 @@ export async function executePreparedBobHostProgram({
   const transcript = await executePreparedBobCase({
     adapter,
     preparation,
+    suite,
   });
   const policy = {
     child_environment: FIXED_ENVIRONMENT,

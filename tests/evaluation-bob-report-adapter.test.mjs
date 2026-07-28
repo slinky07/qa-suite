@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bindClosedBobReport } from "../scripts/evaluation/bob-report-adapter.mjs";
+import {
+  adaptClosedBobHostResult,
+  bindClosedBobReport,
+} from "../scripts/evaluation/bob-report-adapter.mjs";
+import {
+  executePreparedBobCase,
+} from "../scripts/evaluation/bob-host-protocol.mjs";
 import {
   canonicalJson,
   sha256,
+  validateClosedBobReportAdaptation,
   validateClosedBobReportBinding,
 } from "../scripts/evaluation/contracts.mjs";
 
@@ -12,6 +19,10 @@ const report = Object.freeze({
   path: "QA/2026-07-28-0415-bob-qa-primary-surface.md",
   sha256: "a".repeat(64),
   size: 123,
+});
+const reportIdentifiers = Object.freeze({
+  core_flow_ids: ["flow_00112233445566778899aabbccddeeff_01"],
+  surface_id: "surface_00112233445566778899aabbccddeeff",
 });
 
 function closedBobRun({
@@ -50,6 +61,160 @@ function closedBobRun({
     workspace_tree_sha256: "d".repeat(64),
     ...overrides,
   };
+}
+
+function suite() {
+  const otherCaseId = "fx_fedcba9876543210fedcba9876543210";
+  return {
+    cases: [
+      {
+        fixture_manifest:
+          "tests/evaluation/fixtures/fx_0123456789abcdef0123456789abcdef/fixture-manifest.json",
+        id: "fx_0123456789abcdef0123456789abcdef",
+        oracle_commitments: [
+          `seal_${"1".repeat(64)}`,
+          `seal_${"2".repeat(64)}`,
+        ],
+        qa_context:
+          "tests/evaluation/fixtures/fx_0123456789abcdef0123456789abcdef/qa-context.md",
+        report_identifiers: reportIdentifiers,
+        smoke_checks: ["check_primary"],
+      },
+      {
+        fixture_manifest:
+          `tests/evaluation/fixtures/${otherCaseId}/fixture-manifest.json`,
+        id: otherCaseId,
+        oracle_commitments: [
+          `seal_${"3".repeat(64)}`,
+          `seal_${"4".repeat(64)}`,
+        ],
+        qa_context:
+          `tests/evaluation/fixtures/${otherCaseId}/qa-context.md`,
+        report_identifiers: {
+          core_flow_ids: [
+            "flow_ffeeddccbbaa99887766554433221100_01",
+          ],
+          surface_id: "surface_ffeeddccbbaa99887766554433221100",
+        },
+        smoke_checks: ["check_primary"],
+      },
+    ],
+    id: "bob-evaluation-v1",
+    lane: "bob-qa",
+    schema_version: 1,
+  };
+}
+
+function laneResult(overrides = {}) {
+  return {
+    blocking_evidence: [],
+    checklist: [],
+    findings: [],
+    flows: [
+      {
+        core: true,
+        effectiveness: true,
+        evidence: [
+          {
+            kind: "report-reference",
+            path: report.path,
+          },
+        ],
+        finding_ids: [],
+        id: reportIdentifiers.core_flow_ids[0],
+        state: "Pass",
+      },
+    ],
+    not_tested: [],
+    observations: [],
+    verdict: {
+      blocker: null,
+      severity_counts: {
+        S1: 0,
+        S2: 0,
+        S3: 0,
+        S4: 0,
+      },
+      state: "Go",
+    },
+    ...overrides,
+  };
+}
+
+async function hostTranscript(taskOverrides = {}) {
+  const baseReportOutput = {
+    lane_result: laneResult(),
+    report: {
+      path: report.path,
+      sha256: report.sha256,
+    },
+  };
+  const reportOutput = {
+    ...baseReportOutput,
+    ...taskOverrides.report_output,
+  };
+  const taskOutput = {
+    ...taskOverrides,
+    report_output: reportOutput,
+    results:
+      taskOverrides.results ??
+      [
+        {
+          control_ids: ["control_primary"],
+          disposition: "exercised",
+          evidence_sha256: sha256(
+            canonicalJson(reportOutput.lane_result.flows[0].evidence),
+          ),
+          flow_id: reportIdentifiers.core_flow_ids[0],
+          task_id: "task_primary",
+        },
+      ],
+  };
+  const outputs = [
+    {
+      surfaces: [
+        {
+          control_ids: ["control_primary"],
+          id: "surface_primary",
+        },
+      ],
+    },
+    {
+      tasks: [
+        {
+          control_ids: ["control_primary"],
+          id: "task_primary",
+          parent_task_id: null,
+          surface_id: "surface_primary",
+        },
+      ],
+    },
+    taskOutput,
+  ];
+  let index = 0;
+  return executePreparedBobCase({
+    adapter: {
+      async runPhase() {
+        const output = outputs[index];
+        index += 1;
+        return output;
+      },
+    },
+    dispatchId: "dispatch_0123456789abcdef0123456789abcdef",
+    preparation: {
+      case_id: "fx_0123456789abcdef0123456789abcdef",
+      controller_commit: "b".repeat(40),
+      lane: "bob-qa",
+      qualification: "not-evidence",
+      result: null,
+      run_id: "run_0123456789abcdef0123456789abcdef",
+      schema_version: 1,
+      subject_commit: "c".repeat(40),
+      suite_id: "bob-evaluation-v1",
+      verification_status: "unverified",
+    },
+    suite: suite(),
+  });
 }
 
 test("binds exactly one closed Bob report without reading or parsing it", () => {
@@ -222,19 +387,21 @@ for (const [name, closure, message] of [
   });
 }
 
-test("rejects sparse and named artifact arrays", () => {
+test("canonical snapshot rejects sparse entries and drops named properties", () => {
   const sparse = [];
   sparse.length = 1;
   assert.throws(
     () => bindClosedBobReport({ closure: closedBobRun({ artifacts: sparse }) }),
-    /must be dense/u,
+    /must be dense|must be an object/u,
   );
 
   const named = [{ ...report }];
   named.role = "adversarial";
-  assert.throws(
-    () => bindClosedBobReport({ closure: closedBobRun({ artifacts: named }) }),
-    /must not contain named properties/u,
+  assert.deepEqual(
+    bindClosedBobReport({
+      closure: closedBobRun({ artifacts: named }),
+    }).binding.report,
+    report,
   );
 });
 
@@ -248,7 +415,7 @@ test("rejects an artifact-tree digest that does not bind the inventory", () => {
   );
 });
 
-test("snapshots accessor-backed closure data before binding identities", () => {
+test("snapshots accessor-backed closure data exactly once before validation", () => {
   const primaryReport = { ...report };
   const substitutedReport = {
     ...report,
@@ -269,10 +436,9 @@ test("snapshots accessor-backed closure data before binding identities", () => {
   closure.artifact_tree_sha256 = sha256(canonicalJson([primaryReport]));
   reads = 0;
 
-  assert.throws(
-    () => bindClosedBobReport({ closure }),
-    /artifact_tree_sha256 does not match/u,
-  );
+  const binding = bindClosedBobReport({ closure });
+  assert.deepEqual(binding.binding.report, primaryReport);
+  assert.equal(reads, 1);
 });
 
 test("binding validation rejects tampering and semantic additions", () => {
@@ -315,5 +481,123 @@ test("binding validation rejects tampering and semantic additions", () => {
         },
       }),
     /binding\.report fields/u,
+  );
+});
+
+test("joins the closed report to the controller-hashed lane result", async () => {
+  const transcript = await hostTranscript();
+  const adaptation = adaptClosedBobHostResult({
+    closure: closedBobRun(),
+    suite: suite(),
+    transcript,
+  });
+
+  assert.equal(
+    validateClosedBobReportAdaptation(adaptation),
+    adaptation,
+  );
+  assert.equal(adaptation.verification_status, "unverified");
+  assert.equal(adaptation.qualification, "not-evidence");
+  assert.equal(adaptation.result, null);
+  assert.deepEqual(
+    adaptation.adaptation.report_identifiers,
+    reportIdentifiers,
+  );
+  assert.deepEqual(
+    adaptation.adaptation.lane_result,
+    laneResult(),
+  );
+  assert.deepEqual(adaptation.claims, {
+    artifact_inventory: "closed",
+    evidence_inventory: "closed",
+    method_order: "not-attested",
+    report_content: "not-read",
+    report_semantic_parity: "not-attested",
+    state_authentication: "not-attested",
+    structured_lane_result: "validated",
+  });
+});
+
+test("closed adaptation rejects report, identity, and evidence substitution", async () => {
+  const transcript = await hostTranscript();
+  const wrongReport = await hostTranscript({
+    report_output: {
+      report: {
+        path: report.path,
+        sha256: "f".repeat(64),
+      },
+    },
+  });
+  assert.throws(
+    () =>
+      adaptClosedBobHostResult({
+        closure: closedBobRun(),
+        suite: suite(),
+        transcript: wrongReport,
+      }),
+    /report path and digest do not match/u,
+  );
+
+  assert.throws(
+    () =>
+      adaptClosedBobHostResult({
+        closure: closedBobRun({
+          run_id: "run_fedcba9876543210fedcba9876543210",
+        }),
+        suite: suite(),
+        transcript,
+      }),
+    /run_id does not match/u,
+  );
+
+  const unclosedEvidence = await hostTranscript({
+    report_output: {
+      lane_result: laneResult({
+        flows: [
+          {
+            ...laneResult().flows[0],
+            evidence: [
+              {
+                kind: "screenshot",
+                path: "QA/evidence/missing.png",
+              },
+            ],
+          },
+        ],
+      }),
+    },
+  });
+  assert.throws(
+    () =>
+      adaptClosedBobHostResult({
+        closure: closedBobRun(),
+        suite: suite(),
+        transcript: unclosedEvidence,
+      }),
+    /evidence is absent from the closed artifact inventory/u,
+  );
+});
+
+test("adaptation digest rejects schema-valid semantic tampering", async () => {
+  const adaptation = adaptClosedBobHostResult({
+    closure: closedBobRun(),
+    suite: suite(),
+    transcript: await hostTranscript(),
+  });
+  const tampered = structuredClone(adaptation);
+  tampered.adaptation.lane_result.flows[0].state = "Fail";
+  tampered.adaptation.lane_result.flows[0].effectiveness = false;
+  tampered.adaptation.lane_result.verdict.state = "No-Go";
+
+  assert.throws(
+    () => validateClosedBobReportAdaptation(tampered),
+    /adaptation_sha256 does not match/u,
+  );
+
+  const rebound = structuredClone(adaptation);
+  rebound.binding.report_sha256 = "f".repeat(64);
+  assert.throws(
+    () => validateClosedBobReportAdaptation(rebound),
+    /binding_sha256 does not match/u,
   );
 });
