@@ -27,6 +27,7 @@ import {
   createCaseDisclosure,
   parseContractJson,
   sha256,
+  validateClosedCaseRun,
   validateFixtureManifest,
   validateSuite,
 } from "./contracts.mjs";
@@ -63,6 +64,7 @@ const CONTROLLER_PROGRAM_PATHS = Object.freeze([
   "qa-suite/scripts/finding-ledger.mjs",
   "scripts/evaluation/bob-host-executor.mjs",
   "scripts/evaluation/bob-host-protocol.mjs",
+  "scripts/evaluation/bob-report-adapter.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
@@ -1642,7 +1644,7 @@ async function verifyControllerBinding(state) {
 }
 
 function closureRecord({ inventory, snapshot, state }) {
-  return {
+  return validateClosedCaseRun({
     artifacts: snapshot.artifacts,
     artifact_snapshot_root: "artifacts",
     artifact_tree_sha256: sha256(
@@ -1672,7 +1674,7 @@ function closureRecord({ inventory, snapshot, state }) {
     suite_id: state.suite_id,
     verification_status: "unverified",
     workspace_tree_sha256: inventory.sha256,
-  };
+  });
 }
 
 export async function closeCaseRun({ statePath }) {
