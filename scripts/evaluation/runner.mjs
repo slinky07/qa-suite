@@ -65,6 +65,7 @@ const CONTROLLER_PROGRAM_PATHS = Object.freeze([
   "scripts/evaluation/bob-host-executor.mjs",
   "scripts/evaluation/bob-host-protocol.mjs",
   "scripts/evaluation/bob-report-adapter.mjs",
+  "scripts/evaluation/browser-gateway.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
