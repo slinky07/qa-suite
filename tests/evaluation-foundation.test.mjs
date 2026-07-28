@@ -377,7 +377,11 @@ test("oracle set requires one adversarial and one control with sealed commitment
   duplicateRole[1].assertions.expected_defects[0].id = tokens.budget;
   assert.throws(
     () => validateOracleSet(duplicateRole, suite),
-    /one adversarial and one control/,
+    (error) => {
+      assert.equal(error.message.includes(tokens.pair), false);
+      assert.match(error.message, /one adversarial and one control/u);
+      return true;
+    },
   );
 
   const reusedToken = clone(oracles);
