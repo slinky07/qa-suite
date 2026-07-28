@@ -520,6 +520,166 @@ export function validateClosedBobReportBinding(value) {
   return value;
 }
 
+export function validateClosedBobReportAdaptation(value) {
+  assertExactKeys(
+    value,
+    [
+      "adaptation",
+      "binding",
+      "binding_sha256",
+      "claims",
+      "confidentiality",
+      "observation",
+      "qualification",
+      "result",
+      "schema_version",
+      "verification_status",
+    ],
+    "closed Bob report adaptation",
+  );
+  assertVersion(value.schema_version, "closed Bob report adaptation");
+  if (
+    value.verification_status !== "unverified" ||
+    value.qualification !== "not-evidence" ||
+    value.result !== null
+  ) {
+    throw new Error("closed Bob report adaptation must remain non-qualifying");
+  }
+  if (value.confidentiality !== "controller-only") {
+    throw new Error(
+      "closed Bob report adaptation.confidentiality must equal controller-only",
+    );
+  }
+  if (value.observation !== "closed-bob-host-result-adapted") {
+    throw new Error(
+      "closed Bob report adaptation.observation is invalid",
+    );
+  }
+  assertExactKeys(
+    value.adaptation,
+    [
+      "case_id",
+      "completion_status",
+      "lane",
+      "lane_result",
+      "report_identifiers",
+      "subject_commit",
+      "suite_id",
+    ],
+    "closed Bob report adaptation.adaptation",
+  );
+  assertString(
+    value.adaptation.case_id,
+    "closed Bob report adaptation.adaptation.case_id",
+    CASE_ID,
+  );
+  if (value.adaptation.lane !== "bob-qa") {
+    throw new Error(
+      "closed Bob report adaptation.adaptation.lane must equal bob-qa",
+    );
+  }
+  assertString(
+    value.adaptation.subject_commit,
+    "closed Bob report adaptation.adaptation.subject_commit",
+    FULL_COMMIT,
+  );
+  assertString(
+    value.adaptation.suite_id,
+    "closed Bob report adaptation.adaptation.suite_id",
+    SUITE_ID,
+  );
+  validateBobReportIdentifiers(
+    value.adaptation.report_identifiers,
+    value.adaptation.case_id,
+    "closed Bob report adaptation.adaptation.report_identifiers",
+  );
+  validateBobLaneResult(
+    value.adaptation.lane_result,
+    value.adaptation.report_identifiers,
+    value.adaptation.case_id,
+    "closed Bob report adaptation.adaptation.lane_result",
+  );
+  const expectedCompletion =
+    value.adaptation.lane_result.verdict.state === "Blocked"
+      ? "lane-blocked"
+      : "completed";
+  if (value.adaptation.completion_status !== expectedCompletion) {
+    throw new Error(
+      `closed Bob report adaptation.adaptation.completion_status must equal ${expectedCompletion}`,
+    );
+  }
+  assertExactKeys(
+    value.binding,
+    [
+      "adaptation_sha256",
+      "closed_report_binding_sha256",
+      "host_transcript_sha256",
+      "report_sha256",
+    ],
+    "closed Bob report adaptation.binding",
+  );
+  for (const name of [
+    "adaptation_sha256",
+    "closed_report_binding_sha256",
+    "host_transcript_sha256",
+    "report_sha256",
+  ]) {
+    assertString(
+      value.binding[name],
+      `closed Bob report adaptation.binding.${name}`,
+      SHA256,
+    );
+  }
+  if (
+    value.binding.adaptation_sha256 !==
+    sha256(canonicalJson(value.adaptation))
+  ) {
+    throw new Error(
+      "closed Bob report adaptation.binding.adaptation_sha256 does not match",
+    );
+  }
+  assertString(
+    value.binding_sha256,
+    "closed Bob report adaptation.binding_sha256",
+    SHA256,
+  );
+  if (value.binding_sha256 !== sha256(canonicalJson(value.binding))) {
+    throw new Error(
+      "closed Bob report adaptation.binding_sha256 does not match",
+    );
+  }
+  assertExactKeys(
+    value.claims,
+    [
+      "artifact_inventory",
+      "evidence_inventory",
+      "method_order",
+      "report_content",
+      "report_semantic_parity",
+      "state_authentication",
+      "structured_lane_result",
+    ],
+    "closed Bob report adaptation.claims",
+  );
+  const expectedClaims = {
+    artifact_inventory: "closed",
+    evidence_inventory: "closed",
+    method_order: "not-attested",
+    report_content: "not-read",
+    report_semantic_parity: "not-attested",
+    state_authentication: "not-attested",
+    structured_lane_result: "validated",
+  };
+  for (const [name, expected] of Object.entries(expectedClaims)) {
+    if (value.claims[name] !== expected) {
+      throw new Error(
+        `closed Bob report adaptation.claims.${name} must equal ${expected}`,
+      );
+    }
+  }
+  return value;
+}
+
 function fixtureRoot(caseId) {
   return `tests/evaluation/fixtures/${caseId}`;
 }
@@ -640,7 +800,12 @@ function validateReportIdentifier(value, label, pattern) {
   }
 }
 
-function validateReportIdentifiers(value, caseId, label) {
+export function validateBobReportIdentifiers(
+  value,
+  caseId,
+  label = "Bob report identifiers",
+) {
+  assertString(caseId, `${label} case ID`, CASE_ID);
   assertExactKeys(value, ["core_flow_ids", "surface_id"], label);
   validateReportIdentifier(
     value.surface_id,
@@ -718,7 +883,7 @@ function validateSuiteCase(value, label) {
   );
   assertUnique(value.smoke_checks, `${label}.smoke_checks`);
   if (Object.hasOwn(value, "report_identifiers")) {
-    validateReportIdentifiers(
+    validateBobReportIdentifiers(
       value.report_identifiers,
       value.id,
       `${label}.report_identifiers`,
@@ -1595,6 +1760,46 @@ function validateLaneResult(value, lane, requiredSmokeChecks, label) {
     value.blocking_evidence.length > 0
   ) {
     throw new Error(`${label} specialist result cannot use smoke-only fields`);
+  }
+  return value;
+}
+
+export function validateBobLaneResult(
+  value,
+  reportIdentifiers,
+  caseId,
+  label = "Bob lane result",
+) {
+  validateBobReportIdentifiers(
+    reportIdentifiers,
+    caseId,
+    `${label}.report_identifiers`,
+  );
+  validateLaneResult(value, "bob-qa", [], label);
+  const surfaceId = reportIdentifiers.surface_id;
+  const wrongSurface = [
+    ...value.findings,
+    ...value.observations,
+  ].find(({ surface_id: observed }) => observed !== surfaceId);
+  if (wrongSurface) {
+    throw new Error(`${label} records must use the selected surface ID`);
+  }
+  assertUnique(
+    [
+      ...value.findings.map(({ id }) => id),
+      ...value.observations.map(({ id }) => id),
+    ],
+    `${label} finding and observation IDs`,
+  );
+  const flowIds = value.flows.map(({ id }) => id).sort();
+  if (
+    JSON.stringify(flowIds) !==
+    JSON.stringify(reportIdentifiers.core_flow_ids)
+  ) {
+    throw new Error(`${label} must contain every selected core flow exactly once`);
+  }
+  if (value.flows.some(({ core }) => core !== true)) {
+    throw new Error(`${label} selected flows must have core equal true`);
   }
   return value;
 }

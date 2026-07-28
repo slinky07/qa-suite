@@ -10,10 +10,18 @@ import {
 } from "../scripts/evaluation/bob-host-protocol.mjs";
 
 const digest = (character) => character.repeat(64);
+const CASE_ID = "fx_0123456789abcdef0123456789abcdef";
+const OTHER_CASE_ID = "fx_fedcba9876543210fedcba9876543210";
+const REPORT_PATH =
+  "QA/2026-07-28-0415-bob-qa-primary-surface.md";
+const reportIdentifiers = {
+  core_flow_ids: ["flow_0123456789abcdef0123456789abcdef_01"],
+  surface_id: "surface_0123456789abcdef0123456789abcdef",
+};
 
 function preparation(overrides = {}) {
   return {
-    case_id: "fx_0123456789abcdef0123456789abcdef",
+    case_id: CASE_ID,
     controller_commit: "a".repeat(40),
     lane: "bob-qa",
     qualification: "not-evidence",
@@ -21,8 +29,43 @@ function preparation(overrides = {}) {
     run_id: "run_0123456789abcdef0123456789abcdef",
     schema_version: 1,
     subject_commit: "b".repeat(40),
+    suite_id: "bob-evaluation-v1",
     verification_status: "unverified",
     ...overrides,
+  };
+}
+
+function suite() {
+  const suiteCase = (caseId, commitments, identifiers) => ({
+    fixture_manifest:
+      `tests/evaluation/fixtures/${caseId}/fixture-manifest.json`,
+    id: caseId,
+    oracle_commitments: commitments,
+    qa_context: `tests/evaluation/fixtures/${caseId}/qa-context.md`,
+    report_identifiers: identifiers,
+    smoke_checks: ["check_primary"],
+  });
+  return {
+    cases: [
+      suiteCase(
+        CASE_ID,
+        [`seal_${"1".repeat(64)}`, `seal_${"2".repeat(64)}`],
+        reportIdentifiers,
+      ),
+      suiteCase(
+        OTHER_CASE_ID,
+        [`seal_${"3".repeat(64)}`, `seal_${"4".repeat(64)}`],
+        {
+          core_flow_ids: [
+            "flow_fedcba9876543210fedcba9876543210_01",
+          ],
+          surface_id: "surface_fedcba9876543210fedcba9876543210",
+        },
+      ),
+    ],
+    id: "bob-evaluation-v1",
+    lane: "bob-qa",
+    schema_version: 1,
   };
 }
 
@@ -64,6 +107,44 @@ function model(overrides = {}) {
 
 function taskExecution(overrides = {}) {
   return {
+    report_output: {
+      lane_result: {
+        blocking_evidence: [],
+        checklist: [],
+        findings: [],
+        flows: [
+          {
+            core: true,
+            effectiveness: true,
+            evidence: [
+              {
+                kind: "report-reference",
+                path: REPORT_PATH,
+              },
+            ],
+            finding_ids: [],
+            id: reportIdentifiers.core_flow_ids[0],
+            state: "Pass",
+          },
+        ],
+        not_tested: [],
+        observations: [],
+        verdict: {
+          blocker: null,
+          severity_counts: {
+            S1: 0,
+            S2: 0,
+            S3: 0,
+            S4: 0,
+          },
+          state: "Go",
+        },
+      },
+      report: {
+        path: REPORT_PATH,
+        sha256: digest("a"),
+      },
+    },
     results: [
       {
         control_ids: ["control_search", "control_submit"],
@@ -80,6 +161,13 @@ function taskExecution(overrides = {}) {
     ],
     ...overrides,
   };
+}
+
+function executeCase(options) {
+  return executePreparedBobCase({
+    suite: suite(),
+    ...options,
+  });
 }
 
 function adapter(outputs = [
@@ -99,7 +187,7 @@ function adapter(outputs = [
 
 test("controller withholds task capabilities until inventory and modeling complete", async () => {
   const host = adapter();
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: host,
     dispatchId: "dispatch_0123456789abcdef0123456789abcdef",
     preparation: preparation(),
@@ -133,6 +221,12 @@ test("controller withholds task capabilities until inventory and modeling comple
     host.requests[2].prior_outputs.expected_use_model,
     model(),
   );
+  assert.equal("report_identifiers" in host.requests[0], false);
+  assert.equal("report_identifiers" in host.requests[1], false);
+  assert.deepEqual(
+    host.requests[2].report_identifiers,
+    reportIdentifiers,
+  );
   assert.equal("controller_commit" in host.requests[0].binding, false);
   assert.equal("suite_id" in host.requests[0], false);
   assert.equal("oracle" in host.requests[0], false);
@@ -163,7 +257,7 @@ test("invalid inventory prevents modeling and task dispatch", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
@@ -191,7 +285,7 @@ test("invalid expected-use model prevents task capabilities", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
@@ -214,7 +308,7 @@ test("task execution must follow the modeled hierarchy", async () => {
 
   await assert.rejects(
     () =>
-      executePreparedBobCase({
+      executeCase({
         adapter: host,
         preparation: preparation(),
       }),
@@ -264,6 +358,8 @@ test("structured phase contracts reject unknown fields and invalid references", 
           results: [taskExecution().results[0]],
         }),
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /cover every modeled task/u,
   );
@@ -280,6 +376,8 @@ test("structured phase contracts reject unknown fields and invalid references", 
           ],
         }),
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /account for every modeled control|must contain 2-2 items/u,
   );
@@ -296,7 +394,7 @@ test("only non-qualifying Bob preparations can enter the protocol", async () => 
   ]) {
     await assert.rejects(
       () =>
-        executePreparedBobCase({
+        executeCase({
           adapter: host,
           preparation: invalid,
         }),
@@ -323,9 +421,12 @@ test("sparse phase arrays cannot satisfy required coverage", () => {
     () =>
       validateTaskExecution(
         {
+          report_output: taskExecution().report_output,
           results: sparseResults,
         },
         model(),
+        reportIdentifiers,
+        CASE_ID,
       ),
     /dense array/u,
   );
@@ -349,7 +450,7 @@ test("adapter-owned objects are cloned before later phases receive them", async 
     },
   };
 
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: mutatingAdapter,
     preparation: preparation(),
   });
@@ -364,7 +465,7 @@ test("adapter-owned objects are cloned before later phases receive them", async 
 });
 
 test("event-chain or phase-output tampering invalidates the transcript", async () => {
-  const transcript = await executePreparedBobCase({
+  const transcript = await executeCase({
     adapter: adapter(),
     preparation: preparation(),
   });
@@ -403,7 +504,7 @@ test("event-chain or phase-output tampering invalidates the transcript", async (
         : "c".repeat(40);
     assert.throws(
       () => validateBobHostTranscript(relabeled),
-      /breaks the controller sequence/u,
+      /breaks the controller sequence|must be opaque and case-bound/u,
     );
   }
 

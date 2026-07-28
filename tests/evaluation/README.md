@@ -125,8 +125,9 @@ whole suite is a lane prompt. The runner writes only
 `evaluation-case.json`, a strict neutral single-case disclosure. Oracle
 commitments, smoke assertions, other cases, the suite, the fixture manifest,
 controller paths, and controller state remain outside the lane root.
-Bob report identifiers remain with the controller; neither the disclosure nor
-the selected fixture bytes expose them.
+Bob report identifiers remain with the controller; neither the disclosure,
+the selected fixture bytes, nor the first two host phases expose them. The
+controller supplies only the selected case's IDs to task execution.
 The runner rejects exact controller-confidential tokens and non-selected case
 IDs, but it cannot prove that a selected public fixture contains no semantic
 hint about its role or expected defect. That is why `fixture_opacity` remains
@@ -220,13 +221,17 @@ Callers must pass the returned closure directly; a metadata object supplied by
 an untrusted same-user process is not authenticated merely because it passes
 the schema.
 
-A later semantic adapter must read only the controller-owned captured
-`artifacts/` tree and recheck the closed journal and file metadata. The public
-surface and core-flow IDs now exist, but current Bob Markdown does not carry
-them structurally and observations have no stable IDs. The adapter must obtain
-those record bindings without report-prose, row-order, or sealed-oracle
-inference. Until that report-output seam exists, the binding cannot be
-promoted into `validateNormalizedCase()`.
+`adaptClosedBobHostResult()` snapshots and validates the closure, suite, and
+host transcript, then joins the selected report metadata to the
+controller-hashed structured lane result. The join requires exact run, case,
+commit, suite, report-ID, report-path, and report-digest bindings. Every
+lane-result evidence path must also exist in the closed artifact inventory.
+
+The adaptation does not read Markdown or claim that its prose matches the
+structured output. It is a partial Bob lane adaptation, not a complete
+normalized case: report content remains `not-read`, semantic parity,
+method-order, and state authentication remain `not-attested`, and the envelope
+remains `unverified`, `not-evidence`, with `result: null`.
 
 ## Bob method-order gate
 
@@ -245,7 +250,8 @@ ordered calls:
 2. `expected_use_model`, with the accepted inventory and observation
    capability only; and
 3. `task_execution`, with accepted inventory/model output and task-action
-   capability.
+   capability, the selected report IDs, and an exact structured lane result
+   plus canonical report path and SHA-256.
 
 The protocol rejects unknown fields, non-inventoried controls, invalid task
 parents, incomplete task coverage, and task results outside the modeled
@@ -343,12 +349,12 @@ public products may make pair membership inferable; this boundary hides role
 and controller tokens, not semantic similarity.
 
 Bob `report_identifiers` are strict, role-neutral, and globally unique per
-case, so they cannot act as a public pair join. They stay outside fixture bytes
-and lane disclosure until a later structural report-output seam can consume
-only the selected case's IDs. The declaration does not enumerate controls,
-observations, expected findings, criteria, severity, priority, or outcomes.
-It therefore preserves Bob's obligation to inventory the interface and form
-its own expected-use hierarchy.
+case, so they cannot act as a public pair join. They stay outside fixture
+bytes, lane disclosure, interface inventory, and expected-use modeling; only
+task execution receives the selected case's IDs. The declaration does not
+enumerate controls, observations, expected findings, criteria, severity,
+priority, or outcomes. It therefore preserves Bob's obligation to inventory
+the interface and form its own expected-use hierarchy.
 
 Each referenced manifest lists only the exact neutral QA context and public
 regular files. Paths are ordered and unique; modes are `100644` or `100755`;
@@ -578,8 +584,8 @@ The following remain deliberately outside this fixture constituent:
   context, process-tree completion, and network policy without conflating
   provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
-- lane-specific adapters that parse canonical report tables by stable finding
-  ID without using oracle prose;
+- composition of the partial Bob lane adaptation with the smoke gate into a
+  complete normalized case;
 - host-bound, authenticated evidence that a real Bob execution obeyed the
   controller's inventory/model-before-task protocol;
 - runner-controlled oracle opening and scanning of every closed output byte

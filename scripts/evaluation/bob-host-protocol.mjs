@@ -1,7 +1,12 @@
 import { randomBytes } from "node:crypto";
 import {
   canonicalJson,
+  isCanonicalBobReportPath,
+  parseContractJson,
   sha256,
+  validateBobLaneResult,
+  validateBobReportIdentifiers,
+  validateSuite,
 } from "./contracts.mjs";
 
 const CASE_ID = /^fx_[0-9a-f]{32}$/;
@@ -10,6 +15,7 @@ const CONTROL_ID = /^control_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const DISPATCH_ID = /^dispatch_[0-9a-f]{32}$/;
 const RUN_ID = /^run_[0-9a-f]{32}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
+const SUITE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-v1$/;
 const SURFACE_ID = /^surface_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const TASK_ID = /^task_[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const ZERO_DIGEST = "0".repeat(64);
@@ -94,7 +100,11 @@ function validateSha256(value, label) {
   assertString(value, label, SHA256);
 }
 
-function bindingFromPreparation(preparation, dispatchId) {
+function bindingFromPreparation(
+  preparation,
+  dispatchId,
+  reportIdentifiers,
+) {
   assertObject(preparation, "preparation");
   if (
     preparation.schema_version !== 1 ||
@@ -119,6 +129,12 @@ function bindingFromPreparation(preparation, dispatchId) {
     "preparation.subject_commit",
     COMMIT,
   );
+  assertString(preparation.suite_id, "preparation.suite_id", SUITE_ID);
+  validateBobReportIdentifiers(
+    reportIdentifiers,
+    preparation.case_id,
+    "report identifiers",
+  );
   const selectedDispatchId =
     dispatchId ?? `dispatch_${randomBytes(16).toString("hex")}`;
   assertString(selectedDispatchId, "dispatch_id", DISPATCH_ID);
@@ -127,9 +143,31 @@ function bindingFromPreparation(preparation, dispatchId) {
     controller_commit: preparation.controller_commit,
     dispatch_id: selectedDispatchId,
     lane: preparation.lane,
+    report_identifiers: structuredClone(reportIdentifiers),
     run_id: preparation.run_id,
     schema_version: 1,
     subject_commit: preparation.subject_commit,
+    suite_id: preparation.suite_id,
+  };
+}
+
+function selectedCaseContract(suite, preparation) {
+  const snapshot = parseContractJson(canonicalJson(suite), "Bob suite");
+  validateSuite(snapshot);
+  if (
+    snapshot.id !== preparation.suite_id ||
+    snapshot.lane !== "bob-qa"
+  ) {
+    throw new Error("Bob suite does not match the preparation");
+  }
+  const suiteCase = snapshot.cases.find(
+    ({ id }) => id === preparation.case_id,
+  );
+  if (suiteCase === undefined) {
+    throw new Error("Bob suite does not contain the prepared case");
+  }
+  return {
+    reportIdentifiers: structuredClone(suiteCase.report_identifiers),
   };
 }
 
@@ -239,10 +277,48 @@ export function validateExpectedUseModel(value, inventory) {
   return value;
 }
 
-export function validateTaskExecution(value, model) {
+function validateReportOutput(
+  value,
+  reportIdentifiers,
+  caseId,
+) {
   assertExactKeys(
     value,
-    ["results"],
+    ["lane_result", "report"],
+    "task execution.report_output",
+  );
+  assertExactKeys(
+    value.report,
+    ["path", "sha256"],
+    "task execution.report_output.report",
+  );
+  if (!isCanonicalBobReportPath(value.report.path)) {
+    throw new Error(
+      "task execution.report_output.report.path must be a canonical Bob report path",
+    );
+  }
+  validateSha256(
+    value.report.sha256,
+    "task execution.report_output.report.sha256",
+  );
+  validateBobLaneResult(
+    value.lane_result,
+    reportIdentifiers,
+    caseId,
+    "task execution.report_output.lane_result",
+  );
+  return value;
+}
+
+export function validateTaskExecution(
+  value,
+  model,
+  reportIdentifiers,
+  caseId,
+) {
+  assertExactKeys(
+    value,
+    ["report_output", "results"],
     "task execution",
   );
   assertBoundedArray(value.results, "task execution.results", {
@@ -296,6 +372,11 @@ export function validateTaskExecution(value, model) {
       throw new Error(`${label} must account for every modeled control`);
     }
   });
+  validateReportOutput(
+    value.report_output,
+    reportIdentifiers,
+    caseId,
+  );
   return value;
 }
 
@@ -315,6 +396,13 @@ function phaseRequest(binding, phase, priorOutputs) {
     },
     phase,
     prior_outputs: structuredClone(priorOutputs),
+    ...(phase === "task_execution"
+      ? {
+          report_identifiers: structuredClone(
+            binding.report_identifiers,
+          ),
+        }
+      : {}),
     qualification: "not-evidence",
     result: null,
     schema_version: 1,
@@ -379,9 +467,11 @@ export function validateBobHostTranscript(value) {
     "controller_commit",
     "dispatch_id",
     "lane",
+    "report_identifiers",
     "run_id",
     "schema_version",
     "subject_commit",
+    "suite_id",
   ], "Bob host transcript.binding");
   if (value.binding.schema_version !== 1) {
     throw new Error("Bob host transcript.binding.schema_version must equal 1");
@@ -391,7 +481,7 @@ export function validateBobHostTranscript(value) {
     qualification: "not-evidence",
     result: null,
     verification_status: "unverified",
-  }, value.binding.dispatch_id);
+  }, value.binding.dispatch_id, value.binding.report_identifiers);
   assertExactKeys(
     value.claims,
     Object.keys(UNATTESTED_CLAIMS),
@@ -454,6 +544,8 @@ export function validateBobHostTranscript(value) {
   validateTaskExecution(
     value.outputs.task_execution,
     value.outputs.expected_use_model,
+    value.binding.report_identifiers,
+    value.binding.case_id,
   );
   PHASES.forEach((phase, index) => {
     if (
@@ -486,6 +578,7 @@ export async function executePreparedBobCase({
   adapter,
   dispatchId,
   preparation,
+  suite,
 }) {
   if (
     adapter === null ||
@@ -494,7 +587,15 @@ export async function executePreparedBobCase({
   ) {
     throw new Error("adapter must provide runPhase(request)");
   }
-  const binding = bindingFromPreparation(preparation, dispatchId);
+  const { reportIdentifiers } = selectedCaseContract(
+    suite,
+    preparation,
+  );
+  const binding = bindingFromPreparation(
+    preparation,
+    dispatchId,
+    reportIdentifiers,
+  );
   const outputs = {};
   let events = [];
 
@@ -517,6 +618,8 @@ export async function executePreparedBobCase({
       outputs.task_execution = validateTaskExecution(
         output,
         outputs.expected_use_model,
+        binding.report_identifiers,
+        binding.case_id,
       );
     }
     events = appendEvent(events, binding, phase, output);

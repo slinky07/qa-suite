@@ -4,6 +4,7 @@ import {
   canonicalJson,
   fixtureManifestDeclarationDigest,
   parseContractJson,
+  validateBobLaneResult,
   validateFixtureManifest,
   validateNormalizedCase,
   validateOracle,
@@ -327,6 +328,74 @@ function previewFixture(lane = "bob-qa") {
   ];
   return { normalizedCases, oracles, suite };
 }
+
+test("Bob machine lane results use only the selected report identifiers", () => {
+  const valid = specialistResult();
+  assert.equal(
+    validateBobLaneResult(
+      valid,
+      bobReportIdentifiers.adversarial,
+      caseIds.adversarial,
+    ),
+    valid,
+  );
+
+  const wrongSurface = specialistResult({
+    findings: [finding({ surface_id: "surface_other" })],
+  });
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        wrongSurface,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /selected surface ID/u,
+  );
+
+  const nonCore = specialistResult();
+  nonCore.flows[0].core = false;
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        nonCore,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /core equal true/u,
+  );
+
+  const missingFlow = specialistResult({ flows: [] });
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        missingFlow,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /every selected core flow exactly once/u,
+  );
+
+  const duplicateRecordId = specialistResult({
+    findings: [finding({ id: "BOB-SHARED" })],
+    observations: [
+      {
+        evidence: [],
+        id: "BOB-SHARED",
+        surface_id: bobReportIdentifiers.adversarial.surface_id,
+      },
+    ],
+  });
+  assert.throws(
+    () =>
+      validateBobLaneResult(
+        duplicateRecordId,
+        bobReportIdentifiers.adversarial,
+        caseIds.adversarial,
+      ),
+    /finding and observation IDs must contain unique/u,
+  );
+});
 
 test("suite contract is strict and uses neutral opaque paths", () => {
   const suite = suiteFixture();
