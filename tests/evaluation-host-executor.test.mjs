@@ -8,10 +8,14 @@ import {
   realpath,
   rm,
   symlink,
+  writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import {
+  after,
+  test,
+} from "node:test";
 import {
   canonicalJson,
   sha256,
@@ -22,6 +26,26 @@ import {
 } from "../scripts/evaluation/bob-host-executor.mjs";
 
 const RUN_ID = "run_0123456789abcdef0123456789abcdef";
+const programParent = await realpath(
+  await mkdtemp(join(tmpdir(), "qa-suite-host-program-")),
+);
+const testExecutable = join(programParent, "node-wrapper");
+const nodeExecutable = (await realpath(process.execPath)).replaceAll(
+  "'",
+  "'\\''",
+);
+await writeFile(
+  testExecutable,
+  `#!/bin/sh\nexec '${nodeExecutable}' "$@"\n`,
+  { mode: 0o555 },
+);
+await chmod(testExecutable, 0o555);
+const testExecutableSha256 = sha256(await readFile(testExecutable));
+
+after(async () => {
+  await chmod(testExecutable, 0o700).catch(() => {});
+  await rm(programParent, { force: true, recursive: true });
+});
 
 function preparation() {
   return {
@@ -56,11 +80,13 @@ let source = "";
 process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) source += chunk;
 const request = JSON.parse(source);
-const environmentKeys = Object.keys(process.env)
-  .filter((key) => key !== "__CF_USER_TEXT_ENCODING")
-  .sort();
 if (
-  JSON.stringify(environmentKeys) !== JSON.stringify(["LANG", "LC_ALL", "TZ"]) ||
+  process.env.LANG !== "C" ||
+  process.env.LC_ALL !== "C" ||
+  process.env.TZ !== "UTC" ||
+  ["HOME", "PATH", "NODE_OPTIONS", "NODE_PATH"].some(
+    (key) => key in process.env,
+  ) ||
   !process.cwd().endsWith("/" + request.binding.run_id)
 ) {
   process.exit(9);
@@ -120,21 +146,19 @@ async function harness(t) {
   const laneRoot = join(parent, RUN_ID);
   await mkdir(laneRoot, { mode: 0o700 });
   await chmod(laneRoot, 0o555);
-  const executable = await realpath(process.execPath);
-  const executableSha256 = sha256(await readFile(executable));
   t.after(async () => {
     await chmod(laneRoot, 0o700).catch(() => {});
     await rm(parent, { force: true, recursive: true });
   });
   return {
-    executable,
-    executableSha256,
+    executable: testExecutable,
+    executableSha256: testExecutableSha256,
     laneRoot,
     program(source = successfulAdapter) {
       return {
         arguments: ["--input-type=module", "--eval", source],
-        executable,
-        executable_sha256: executableSha256,
+        executable: testExecutable,
+        executable_sha256: testExecutableSha256,
       };
     },
   };
