@@ -22,23 +22,29 @@ distributed skill without changing it:
   explicitly non-qualifying preview math.
 - `tests/evaluation/README.md` is the human-readable authority for the
   evaluation trust boundary and delivery sequence.
+- `scripts/evaluation/bob-host-protocol.mjs` is the non-qualifying
+  controller seam for Bob's interface-inventory, expected-use-model, then
+  task-execution order. It accepts only an injected host adapter and never
+  launches an arbitrary executable.
 - `scripts/evaluation/run-case.mjs` may prepare an exact single-case lane
   root and close its declared artifacts. Controller state must remain outside
   the lane root. Preparation and closure are always non-qualifying:
   `verification_status: "unverified"`, `qualification: "not-evidence"`, and
   `result: null`.
 
-This narrow exception does not make either path a source of distributed lane
+This narrow exception does not make these paths a source of distributed lane
 behavior. Evaluation infrastructure must not redefine a contract owned by
 `qa-suite/`, and it must not be mirrored into that tree. The release archives
-contain only `qa-suite/`, so both maintainer-only paths are deliberately
+contain only `qa-suite/`, so the maintainer-only paths are deliberately
 excluded from `qa-suite.skill` and `qa-suite-source.zip`.
 
 A closed input or artifact inventory does not attest model-context,
 filesystem, environment, or network isolation; does not run a lane adapter;
-does not attest semantic fixture opacity; and does not prove Bob's
-interface-model-before-task order. Do not promote a runner record until later
-reviewed infrastructure proves every missing claim.
+does not attest semantic fixture opacity; and does not prove that a real host
+obeyed Bob's controller sequence. A completed Bob protocol transcript proves
+only that an injected adapter returned structurally valid outputs in the
+required order. Do not promote a runner or protocol record until a reviewed
+host adapter proves every missing claim.
 
 Closed-artifact consumers must read the controller-owned captured snapshot,
 never the mutable lane tree. Captured hashes and the unkeyed journal chain can

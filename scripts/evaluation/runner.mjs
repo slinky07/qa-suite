@@ -61,6 +61,7 @@ const MAX_STATE_BYTES = 8 * 1024 * 1024;
 const MAX_TREE_DEPTH = 32;
 const CONTROLLER_PROGRAM_PATHS = Object.freeze([
   "qa-suite/scripts/finding-ledger.mjs",
+  "scripts/evaluation/bob-host-protocol.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",

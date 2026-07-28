@@ -41,6 +41,7 @@ const caseIds = {
 };
 const controllerProgramPaths = [
   "qa-suite/scripts/finding-ledger.mjs",
+  "scripts/evaluation/bob-host-protocol.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
