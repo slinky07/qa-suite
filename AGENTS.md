@@ -29,6 +29,12 @@ distributed skill without changing it:
   report IDs, withholds them from the first two phases, and supplies them only
   to task execution. It accepts only an injected host adapter and never
   launches an arbitrary executable.
+- `scripts/evaluation/codex-0145-events.mjs` is the dormant transport parser
+  for the deliberately narrower successful Bob-host subset of a Codex CLI
+  0.145.0 JSONL turn. It accepts only sequential MCP lifecycles, completed
+  reasoning, one final agent message, and exact usage fields. It does not
+  launch Codex, interpret browser tools, validate a Bob phase output, bind a
+  gateway journal, or qualify evidence.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of
