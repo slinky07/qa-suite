@@ -302,6 +302,7 @@ function startLiveGateway(policy) {
     errorContext() {
       return stderr;
     },
+    gatewayPid: gateway.pid,
     initialize() {
       return client.request("initialize", {
         capabilities: {},
@@ -316,6 +317,60 @@ function startLiveGateway(policy) {
       client.notify("notifications/initialized");
     },
   };
+}
+
+async function processTable() {
+  const child = spawn("/bin/ps", ["-axo", "pid=,ppid=,pgid="], {
+    env: FIXED_ENVIRONMENT,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+  const [code] = await onceWithTimeout(child, "close", 5000);
+  assert.equal(code, 0, stderr);
+  return stdout.trim().split("\n").map((line) => {
+    const [pid, parentPid, processGroupId] = line.trim().split(/\s+/u);
+    return {
+      parentPid: Number(parentPid),
+      pid: Number(pid),
+      processGroupId: Number(processGroupId),
+    };
+  });
+}
+
+async function waitForBrowserSupervisor(gatewayPid) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const children = (await processTable()).filter(
+      ({ parentPid, pid, processGroupId }) =>
+        parentPid === gatewayPid && pid === processGroupId,
+    );
+    if (children.length === 1) return children[0].processGroupId;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("browser supervisor process group was not observed");
+}
+
+async function waitForEmptyProcessGroup(processGroupId) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    try {
+      process.kill(-processGroupId, 0);
+    } catch (error) {
+      if (error?.code === "ESRCH") return true;
+      if (error?.code !== "EPERM") throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  return false;
 }
 
 function toolResult(response) {
@@ -500,6 +555,48 @@ test("live gateway denies WebSocket egress before the sink", {
     throw new Error(`${error.message}\n${session.errorContext()}`);
   } finally {
     session.kill();
+    await fixture.stop();
+  }
+});
+
+test("live gateway loss force-empties its supervised Chrome group", {
+  skip: !RUN_LIVE,
+  timeout: 30_000,
+}, async () => {
+  const fixture = await startFixtureServer();
+  const evidenceToken = randomBytes(8).toString("hex");
+  const policy = await livePolicy({
+    allowedPaths: ["/", "/app.mjs", "/index.html", "/styles.css"],
+    evidencePath:
+      `QA/evidence/live_${evidenceToken}/task_execution`,
+    targetUrl: `http://127.0.0.1:${fixture.port}/`,
+  });
+  const session = startLiveGateway(policy);
+  let processGroupId;
+
+  try {
+    await session.initialize();
+    session.notifyInitialized();
+    await session.client.request("tools/list");
+    processGroupId = await waitForBrowserSupervisor(session.gatewayPid);
+
+    session.kill();
+
+    assert.equal(
+      await waitForEmptyProcessGroup(processGroupId),
+      true,
+      "Chrome process group survived gateway loss",
+    );
+  } catch (error) {
+    throw new Error(`${error.message}\n${session.errorContext()}`);
+  } finally {
+    session.kill();
+    if (
+      processGroupId !== undefined &&
+      !(await waitForEmptyProcessGroup(processGroupId))
+    ) {
+      process.kill(-processGroupId, "SIGKILL");
+    }
     await fixture.stop();
   }
 });

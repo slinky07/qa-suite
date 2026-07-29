@@ -961,14 +961,19 @@ export function validateBobHostExecution(value) {
 
 export async function executePreparedBobHostProgram({
   confidentialValues = [],
+  dispatchId,
   laneRoot,
   limits = {},
+  observePhase,
   preparation,
   program,
   suite,
 }) {
   assertBobHostProcessGroupSupport();
   assertObject(preparation, "preparation");
+  if (observePhase !== undefined && typeof observePhase !== "function") {
+    throw new Error("observePhase must be a function");
+  }
   const selectedLimits = normalizedLimits(limits);
   const selectedConfidentialValues =
     normalizedConfidentialValues(confidentialValues);
@@ -993,6 +998,20 @@ export async function executePreparedBobHostProgram({
   };
   const transcript = await executePreparedBobCase({
     adapter,
+    dispatchId,
+    observePhase: observePhase === undefined
+      ? undefined
+      : async ({ output, request }) => {
+          const receipt = processReceipts.at(-1);
+          if (receipt?.phase !== request.phase) {
+            throw new Error("Bob host process receipt order is inconsistent");
+          }
+          await observePhase(structuredClone({
+            output,
+            receipt,
+            request,
+          }));
+        },
     preparation,
     suite,
   });

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "surfaces": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "control_ids": {
+            "items": {
+              "pattern": "^control_[a-z0-9]+(?:_[a-z0-9]+)*$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "id": {
+            "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "control_ids",
+          "id"
+        ],
+        "type": "object"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "surfaces"
+  ],
+  "title": "Codex Bob interface inventory v1",
+  "type": "object"
+}

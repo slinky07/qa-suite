@@ -47,13 +47,19 @@ const controllerProgramPaths = [
   "scripts/evaluation/bob-report-adapter.mjs",
   "scripts/evaluation/browser-gateway.mjs",
   "scripts/evaluation/codex-0145-events.mjs",
+  "scripts/evaluation/codex-bob-live-controller.mjs",
   "scripts/evaluation/codex-bob-phase-adapter.mjs",
   "scripts/evaluation/codex-bob-phase-composition.mjs",
+  "scripts/evaluation/codex-bob-phase-target.mjs",
   "scripts/evaluation/codex-host-policy.mjs",
+  "scripts/evaluation/codex-session-chain.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
   "scripts/evaluation/runner.mjs",
+  "scripts/evaluation/schemas/codex-bob-expected-use-model-v1.schema.json",
+  "scripts/evaluation/schemas/codex-bob-interface-inventory-v1.schema.json",
+  "scripts/evaluation/schemas/codex-bob-task-execution-draft-v1.schema.json",
 ];
 const suitePath = "tests/evaluation/suites/bob-evaluation-v1.json";
 const runnerCli = join(
@@ -943,9 +949,15 @@ test("prepare rejects controller program drift", async (t) => {
 
 for (const controllerProgramPath of [
   "scripts/evaluation/codex-0145-events.mjs",
+  "scripts/evaluation/codex-bob-live-controller.mjs",
   "scripts/evaluation/codex-bob-phase-adapter.mjs",
   "scripts/evaluation/codex-bob-phase-composition.mjs",
+  "scripts/evaluation/codex-bob-phase-target.mjs",
   "scripts/evaluation/codex-host-policy.mjs",
+  "scripts/evaluation/codex-session-chain.mjs",
+  "scripts/evaluation/schemas/codex-bob-expected-use-model-v1.schema.json",
+  "scripts/evaluation/schemas/codex-bob-interface-inventory-v1.schema.json",
+  "scripts/evaluation/schemas/codex-bob-task-execution-draft-v1.schema.json",
 ]) {
   test(`prepare rejects drift in ${controllerProgramPath}`, async (t) => {
     const harness = await createHarness(t, {

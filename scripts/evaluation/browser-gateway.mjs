@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { closeSync } from "node:fs";
 import {
   appendFile,
   chmod,
@@ -62,6 +63,8 @@ const MAX_TEXT_BYTES = 64 * 1024;
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const VIOLATION_KIND = /^[a-z][a-z0-9-]{0,63}$/;
 const SOURCE_PATH = fileURLToPath(import.meta.url);
+const BROWSER_SUPERVISOR_MODE = "--browser-supervisor";
+const BROWSER_SUPERVISOR_CONFIG = "QA_SUITE_BROWSER_SUPERVISOR";
 
 const OBSERVATION_TOOLS = Object.freeze([
   {
@@ -1803,6 +1806,110 @@ function journalRequestReference(value, maximum) {
   };
 }
 
+function parseBrowserSupervisorConfig(source) {
+  if (
+    typeof source !== "string" ||
+    Buffer.byteLength(source, "utf8") > MAX_POLICY_BYTES
+  ) {
+    throw new Error("browser supervisor config source is invalid");
+  }
+  const value = parseContractJson(source, "browser supervisor config");
+  if (source !== canonicalJson(value)) {
+    throw new Error("browser supervisor config must use canonical JSON");
+  }
+  assertExactKeys(
+    value,
+    ["arguments", "executable"],
+    "browser supervisor config",
+  );
+  const args = assertDenseArray(
+    value.arguments,
+    "browser supervisor config.arguments",
+    { maximum: 64, minimum: 1 },
+  ).map((argument, index) =>
+    assertBoundedString(
+      argument,
+      `browser supervisor config.arguments[${index}]`,
+      4096,
+      1,
+    )
+  );
+  return {
+    arguments: args,
+    executable: assertAbsolutePath(
+      value.executable,
+      "browser supervisor config.executable",
+    ),
+  };
+}
+
+function killBrowserSupervisorGroup() {
+  try {
+    process.kill(-process.pid, "SIGKILL");
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+}
+
+async function runBrowserSupervisor(source) {
+  assertBrowserProcessGroupSupport();
+  const config = parseBrowserSupervisorConfig(source);
+  let livenessLost = false;
+  const terminateOwnedGroup = () => {
+    if (livenessLost) return;
+    livenessLost = true;
+    killBrowserSupervisorGroup();
+  };
+  process.stdin.once("end", terminateOwnedGroup);
+  process.stdin.once("close", terminateOwnedGroup);
+  process.stdin.once("error", terminateOwnedGroup);
+  process.stdin.resume();
+
+  // The gateway performs the graceful group signal. Keeping the leader alive
+  // until escalation prevents reuse of an unowned process-group identifier.
+  process.on("SIGTERM", () => {});
+
+  let browser;
+  try {
+    browser = spawn(config.executable, config.arguments, {
+      detached: false,
+      env: { ...FIXED_ENVIRONMENT },
+      shell: false,
+      stdio: ["ignore", "ignore", "inherit", 3, 4],
+      windowsHide: true,
+    });
+  } finally {
+    closeSync(3);
+    closeSync(4);
+  }
+  browser.once("error", (error) => {
+    process.stderr.write(`Chrome launch failed: ${error.message}\n`);
+  });
+}
+
+function spawnBrowserSupervisor(chrome, args) {
+  const config = canonicalJson({
+    arguments: args,
+    executable: chrome.path,
+  });
+  const child = spawn(
+    process.execPath,
+    [SOURCE_PATH, BROWSER_SUPERVISOR_MODE],
+    {
+      detached: true,
+      env: {
+        ...FIXED_ENVIRONMENT,
+        [BROWSER_SUPERVISOR_CONFIG]: config,
+      },
+      shell: false,
+      stdio: ["pipe", "ignore", "pipe", "pipe", "pipe"],
+      windowsHide: true,
+    },
+  );
+  child.stdin.on("error", () => {});
+  return child;
+}
+
 class BrowserDenyProxy {
   constructor(timeoutMs) {
     this.audit = {
@@ -2082,13 +2189,7 @@ async function launchBrowser(policy, evidence, chrome) {
     `--window-size=${policy.viewport.width},${policy.viewport.height}`,
     `--force-device-scale-factor=${policy.viewport.device_scale_factor}`,
   ];
-  const child = spawn(chrome.path, args, {
-    detached: true,
-    env: { ...FIXED_ENVIRONMENT },
-    shell: false,
-    stdio: ["ignore", "ignore", "pipe", "pipe", "pipe"],
-    windowsHide: true,
-  });
+  const child = spawnBrowserSupervisor(chrome, args);
   const spawned = once(child, "spawn");
   child.stderr.on("data", (chunk) => {
     if (stderr.length + chunk.length > MAX_BROWSER_STDERR_BYTES) {
@@ -3298,10 +3399,19 @@ export async function runBrowserGateway(policySource) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const policySource = process.env.QA_SUITE_BROWSER_POLICY;
-  delete process.env.QA_SUITE_BROWSER_POLICY;
-  await runBrowserGateway(policySource).catch((error) => {
-    process.stderr.write(`Browser gateway failed: ${error.message}\n`);
-    process.exitCode = 1;
-  });
+  if (process.argv[2] === BROWSER_SUPERVISOR_MODE) {
+    const configSource = process.env[BROWSER_SUPERVISOR_CONFIG];
+    delete process.env[BROWSER_SUPERVISOR_CONFIG];
+    await runBrowserSupervisor(configSource).catch((error) => {
+      process.stderr.write(`Browser supervisor failed: ${error.message}\n`);
+      process.exitCode = 1;
+    });
+  } else {
+    const policySource = process.env.QA_SUITE_BROWSER_POLICY;
+    delete process.env.QA_SUITE_BROWSER_POLICY;
+    await runBrowserGateway(policySource).catch((error) => {
+      process.stderr.write(`Browser gateway failed: ${error.message}\n`);
+      process.exitCode = 1;
+    });
+  }
 }

@@ -148,6 +148,16 @@ for (const phase of [
     for (const forbidden of ["resume", "--oss", "--profile"]) {
       assert(!policy.invocation.arguments.includes(forbidden), forbidden);
     }
+    for (const contextControl of [
+      "project_doc_max_bytes=0",
+      "project_doc_fallback_filenames=[]",
+      'developer_instructions=""',
+    ]) {
+      assert(
+        policy.invocation.arguments.includes(contextControl),
+        contextControl,
+      );
+    }
     const mcpOverride = policy.invocation.arguments.find(
       (argument) =>
         typeof argument === "string" &&

@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "log",
+            "measurement",
+            "report-reference",
+            "request-response",
+            "screenshot"
+          ]
+        },
+        "path": {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "path"
+      ],
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "lane_result": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking_evidence": {
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "checklist": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "evidence": {
+                "items": {
+                  "$ref": "#/$defs/evidence"
+                },
+                "maxItems": 256,
+                "type": "array"
+              },
+              "id": {
+                "pattern": "^check_[a-z0-9]+(?:_[a-z0-9]+)*$",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "Fail",
+                  "Not tested",
+                  "Observed only",
+                  "Pass"
+                ]
+              }
+            },
+            "required": [
+              "evidence",
+              "id",
+              "state"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "findings": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "classification": {
+                "const": "governed"
+              },
+              "criteria": {
+                "items": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "evidence": {
+                "items": {
+                  "$ref": "#/$defs/evidence"
+                },
+                "maxItems": 256,
+                "minItems": 1,
+                "type": "array"
+              },
+              "id": {
+                "pattern": "^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$",
+                "type": "string"
+              },
+              "priority": {
+                "enum": [
+                  "P0",
+                  "P1",
+                  "P2",
+                  "P3"
+                ]
+              },
+              "severity": {
+                "enum": [
+                  "S1",
+                  "S2",
+                  "S3",
+                  "S4"
+                ]
+              },
+              "surface_id": {
+                "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "classification",
+              "criteria",
+              "evidence",
+              "id",
+              "priority",
+              "severity",
+              "surface_id"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "flows": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "core": {
+                "type": "boolean"
+              },
+              "effectiveness": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "evidence": {
+                "items": {
+                  "$ref": "#/$defs/evidence"
+                },
+                "maxItems": 256,
+                "type": "array"
+              },
+              "finding_ids": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$",
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "id": {
+                "pattern": "^flow_[a-z0-9]+(?:_[a-z0-9]+)*$",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "Blocked",
+                  "Fail",
+                  "Not tested",
+                  "Observed only",
+                  "Pass"
+                ]
+              }
+            },
+            "required": [
+              "core",
+              "effectiveness",
+              "evidence",
+              "finding_ids",
+              "id",
+              "state"
+            ],
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "type": "array"
+        },
+        "not_tested": {
+          "items": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 256,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "observations": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "evidence": {
+                "items": {
+                  "$ref": "#/$defs/evidence"
+                },
+                "maxItems": 256,
+                "type": "array"
+              },
+              "id": {
+                "pattern": "^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$",
+                "type": "string"
+              },
+              "surface_id": {
+                "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "evidence",
+              "id",
+              "surface_id"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "verdict": {
+          "additionalProperties": false,
+          "properties": {
+            "blocker": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "severity_counts": {
+              "additionalProperties": false,
+              "properties": {
+                "S1": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "S2": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "S3": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "S4": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "S1",
+                "S2",
+                "S3",
+                "S4"
+              ],
+              "type": "object"
+            },
+            "state": {
+              "enum": [
+                "Blocked",
+                "Go",
+                "Go with findings",
+                "No-Go"
+              ]
+            }
+          },
+          "required": [
+            "blocker",
+            "severity_counts",
+            "state"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "blocking_evidence",
+        "checklist",
+        "findings",
+        "flows",
+        "not_tested",
+        "observations",
+        "verdict"
+      ],
+      "type": "object"
+    },
+    "report_markdown": {
+      "maxLength": 1048576,
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "control_ids": {
+            "items": {
+              "pattern": "^control_[a-z0-9]+(?:_[a-z0-9]+)*$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "disposition": {
+            "enum": [
+              "exercised",
+              "not-tested",
+              "observed-only"
+            ]
+          },
+          "flow_id": {
+            "pattern": "^flow_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "task_id": {
+            "pattern": "^task_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "control_ids",
+          "disposition",
+          "flow_id",
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "lane_result",
+    "report_markdown",
+    "results"
+  ],
+  "title": "Codex Bob task-execution draft v1",
+  "type": "object"
+}
