@@ -61,7 +61,7 @@ test("packaging reads the exact Git tree and mirrors both asset names", async ()
 
 test("every supported distribution channel has a checked contract", async () => {
   const library = await text("scripts/release/lib.mjs");
-  const agents = await text("AGENTS.md");
+  const releaseGuide = await text("docs/releasing.md");
 
   for (const channel of [
     "claude_ai",
@@ -76,9 +76,9 @@ test("every supported distribution channel has a checked contract", async () => 
   assert.match(library, /Claude Code agent tree/);
   assert.match(library, /Claude Code command tree/);
   assert.match(library, /\.agents\/plugins\/marketplace\.json/);
-  assert.match(agents, /\| Claude\.ai \|/);
-  assert.match(agents, /\| Claude Code \|/);
-  assert.match(agents, /\| Codex \|/);
+  assert.match(releaseGuide, /\| Claude\.ai \|/);
+  assert.match(releaseGuide, /\| Claude Code \|/);
+  assert.match(releaseGuide, /\| Codex \|/);
 });
 
 test("workflows pin actions and separate validation from release authority", async () => {
@@ -227,36 +227,50 @@ test("remote verification checks API metadata and a fresh download", async () =>
   assert.match(verifier, /verifyArtifactSet\(options\.ref, downloadDirectory\)/);
 });
 
-test("AGENTS.md preserves the human publication gate and recovery rules", async () => {
+test("release guide preserves the human publication gate and recovery rules", async () => {
   const agents = await text("AGENTS.md");
+  const releaseGuide = await text("docs/releasing.md");
 
-  assert.match(agents, /gh release create --draft\s+--verify-tag/);
-  assert.match(agents, /gh api/);
-  assert.match(agents, /paginated Releases API/);
-  assert.match(agents, /does not expose draft releases/);
-  assert.match(agents, /gh release download/);
-  assert.match(agents, /gh workflow run publish-release\.yml -f tag=vX\.Y\.Z/);
-  assert.match(agents, /gh run download <run-id>/);
-  assert.match(agents, /never uses `--clobber`/);
-  assert.match(agents, /owner-admin gate/);
-  assert.match(agents, /draft releases only to tokens with write access/);
-  assert.match(agents, /Verification after publication remains read-only/);
-  assert.match(agents, /must see `true` before dispatching/);
-  assert.match(agents, /`GITHUB_TOKEN` cannot read/);
+  assert.match(agents, /docs\/releasing\.md/);
+  assert.match(releaseGuide, /gh release create --draft\s+--verify-tag/);
+  assert.match(releaseGuide, /gh api/);
+  assert.match(releaseGuide, /paginated Releases API/);
+  assert.match(releaseGuide, /does not expose draft releases/);
+  assert.match(releaseGuide, /gh release download/);
   assert.match(
-    agents,
+    releaseGuide,
+    /gh workflow run publish-release\.yml -f tag=vX\.Y\.Z/,
+  );
+  assert.match(releaseGuide, /gh run download <run-id>/);
+  assert.match(releaseGuide, /never uses `--clobber`/);
+  assert.match(releaseGuide, /owner-admin gate/);
+  assert.match(releaseGuide, /draft releases only to tokens with write access/);
+  assert.match(
+    releaseGuide,
+    /Verification after publication remains read-only/,
+  );
+  assert.match(releaseGuide, /must see `true` before dispatching/);
+  assert.match(releaseGuide, /`GITHUB_TOKEN` cannot read/);
+  assert.match(
+    releaseGuide,
     /reviewed release automation from the dispatched\s+`main` commit/,
   );
-  assert.match(agents, /failed only because of a release-automation defect/);
-  assert.match(agents, /retain replacement validation\s+evidence/);
   assert.match(
-    agents,
+    releaseGuide,
+    /failed only because of a release-automation defect/,
+  );
+  assert.match(releaseGuide, /retain replacement validation\s+evidence/);
+  assert.match(
+    releaseGuide,
     /recovery path accepts\s+only the exact immutable\s+release/,
   );
   assert.match(
-    agents,
+    releaseGuide,
     /Do\s+not\s+move the tag,\s+overwrite\s+assets, or publish/,
   );
   assert.match(agents, /scripts\/evaluation\/contracts\.mjs/);
-  assert.match(agents, /deliberately\s+excluded from `qa-suite\.skill`/);
+  assert.match(
+    agents,
+    /deliberately\s+excluded\s+from\s+`qa-suite\.skill`/,
+  );
 });
