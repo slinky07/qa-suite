@@ -326,6 +326,21 @@ and `result: null`. It does not inspect the final agent message, validate a Bob
 phase output, launch Codex, follow a mutable journal path, authenticate the
 unkeyed records or provider, attest the sandbox, or qualify execution.
 
+### Atomic Codex Bob phase adaptation
+
+`adaptCodexBobPhaseTurn()` in
+`scripts/evaluation/codex-bob-phase-adapter.mjs` joins exactly one raw Codex
+turn, one validated Bob phase request, and that turn's compact gateway binding.
+It accepts only the phase-specific canonical output. Inventory and modeling
+return their canonical outputs directly; task execution alone converts its
+exact `report_markdown` UTF-8 bytes into an unwritten
+`{ bytes, path, sha256 }` report candidate.
+
+The adapter returns a fixed `unverified`, `not-evidence`, `result: null`
+receipt. It writes and launches nothing, and it does not authenticate the
+inputs, attest a sandbox or method order, compose multiple phases, qualify an
+execution, or prove that any report or evidence artifact exists.
+
 ### Non-qualifying direct-process boundary
 
 `scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three

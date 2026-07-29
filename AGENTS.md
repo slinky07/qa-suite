@@ -41,6 +41,14 @@ distributed skill without changing it:
   closure, and captured journal. It consumes every gateway call and receipt
   once in order, including the screenshot byte/artifact join, but never
   interprets the final Bob phase output or authenticates either process.
+- `adaptCodexBobPhaseTurn()` in
+  `scripts/evaluation/codex-bob-phase-adapter.mjs` is the pure atomic join for
+  one raw Codex turn, one validated Bob phase request, and that turn's compact
+  gateway binding. It accepts only the phase-specific canonical output; task
+  execution alone may yield an unwritten report candidate. Its fixed
+  non-evidence receipt performs no writes or launches and proves no
+  authentication, sandbox attestation, method order, multi-phase composition,
+  qualification, or artifact existence.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of
