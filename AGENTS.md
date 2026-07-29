@@ -49,6 +49,13 @@ distributed skill without changing it:
   non-evidence receipt performs no writes or launches and proves no
   authentication, sandbox attestation, method order, multi-phase composition,
   qualification, or artifact existence.
+- `composeCodexBobPhaseRecords()` joins exactly three validated atomic records
+  into the Bob transcript accepted by the public transcript and request
+  validators, one compact composition, and the task phase's unwritten report
+  candidate. It binds the atomic receipts and digests and requires distinct
+  recorded Codex thread IDs, but performs no writes or launches and proves no
+  process chronology, method order, provider or state authentication, sandbox
+  attestation, report or artifact existence, or qualification.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of
@@ -96,11 +103,13 @@ A closed input, artifact inventory, or structured lane-result adaptation does
 not attest model-context,
 filesystem, environment, or network isolation; does not attest a qualifying
 lane execution or semantic fixture opacity; and does not prove that a real
-host obeyed Bob's controller sequence. A completed Bob protocol transcript
-proves only that an injected adapter returned structurally valid outputs in
-the required order. A completed host execution additionally records
-direct-child launch, bounded I/O, exit, and request/response binding. Neither
-record proves filesystem, provider, network, tool, model-context,
+host obeyed Bob's controller sequence. A controller-executed Bob protocol
+transcript proves only that an injected adapter returned structurally valid
+outputs across the required controller call order. A composer-built transcript
+proves only validated structural dependencies and digest/event ordering, not
+process chronology or method order. A completed host execution additionally
+records direct-child launch, bounded I/O, exit, and request/response binding.
+No such record proves filesystem, provider, network, tool, model-context,
 process-tree, or hostile same-user isolation, report semantic parity, or state
 authentication. Do not promote any record until a reviewed host and sandbox
 adapter proves every missing claim.
