@@ -92,6 +92,9 @@ test("workflows pin actions and separate validation from release authority", asy
   for (const use of uses) {
     assert.match(use[1], /^[0-9a-f]{40}$/);
   }
+  for (const workflow of [integrity, draftRelease, publishRelease]) {
+    assert.match(workflow, /run: node --test/);
+  }
 
   assert.match(integrity, /permissions:\s*\n\s+contents: read/);
   assert.match(integrity, /node scripts\/release\/check\.mjs/);

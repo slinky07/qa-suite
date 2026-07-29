@@ -658,11 +658,13 @@ and tokens retain the contract's full required shape:
 }
 ```
 
-Every public commitment is globally unique. The sealed oracle assigns each
-case's commitments to its canary and expected-defect or budget ID. Only the
-sealed oracle maps a case to its role and sealed pair identifier. Similar
-public products may make pair membership inferable; this boundary hides role
-and controller tokens, not semantic similarity.
+Every public commitment is globally unique across all committed suites.
+Sealed pair identifiers are also globally unique and cannot reuse a public
+commitment. The sealed oracle assigns each case's commitments to its canary
+and expected-defect or budget ID. Only the sealed oracle maps a case to its
+role and sealed pair identifier. Similar public products may make pair
+membership inferable; this boundary hides role and controller tokens, not
+semantic similarity.
 
 Bob `report_identifiers` are strict, role-neutral, and globally unique per
 case, so they cannot act as a public pair join. They stay outside fixture
@@ -820,7 +822,10 @@ checks prove deterministic fixture bytes and behavior only. They do not attest
 semantic opacity, host isolation, a Bob baseline, or any qualifying evaluation
 result.
 
-## Committed smoke and regression corpus
+## Complete committed seven-lane corpus
+
+Together with the four Bob cases above, the reusable corpus contains exactly
+seven shipped lanes, sixteen opaque cases, and eight adversarial/control pairs:
 
 - `smoke-evaluation-v1` pairs two otherwise identical Recovery Console
   fixtures. Both start with HTTP 200 and a valid title; the adversarial action
@@ -829,6 +834,15 @@ result.
   public base and candidate tests pass. At the uncovered inclusive boundary,
   the adversarial candidate changes `>=` to `>`, while the control preserves
   the base behavior.
+- `performance-evaluation-v1` pairs two Journey Brief fixtures that differ only
+  in whether the measured user task runs independent requests sequentially or
+  concurrently.
+- `security-evaluation-v1` pairs two Status Board fixtures whose deployment
+  guidance differs only in its forwarding-trust boundary.
+- `api-evaluation-v1` pairs two Delivery Queue fixtures whose identical retry
+  either creates a second delivery or preserves the first delivery.
+- `compatibility-evaluation-v1` pairs two Message Composer fixtures whose
+  declared compact target either loses or preserves its primary action.
 
 Each suite is role-neutral: its commitments reveal neither pair membership nor
 role or meaning. Pair roles, pair IDs, and expected assertions remain only in
@@ -837,6 +851,18 @@ sibling case IDs never enter selected fixture bytes. The fixture-pair tests
 validate exact corpus bytes, isolated behavior, and deterministic non-qualifying
 scoring. Only fresh isolated runs of the unchanged lanes provide semantic
 evidence that a lane detected or missed the sealed defect.
+
+Run the corpus-wide contract check with:
+
+```sh
+node --test tests/evaluation-seven-lane-corpus.test.mjs
+```
+
+This check validates the exact suite/oracle inventory, manifest contracts,
+global opaque-token namespaces, control budgets, and expected classification
+and evidence shapes. It does not create normalized results, score a lane, or
+turn static fixture validation into release evidence. The existing release
+workflows run it through their unchanged `node --test` gates.
 
 ## Smoke gating and incomplete coverage
 
@@ -939,24 +965,25 @@ reproduced Bob miss, change the smallest authoritative Bob behavior without
 changing the fixtures, oracle, scoring, or frozen controller, then rerun all
 four cases against the remediated subject and retain the before/after evidence.
 
-## Deferred Issue #30 delivery
+## Remaining Issue #30 boundaries
 
-The following remain deliberately outside the current non-qualifying
-constituents:
+The complete seven-lane corpus is now committed. The following remain outside
+the non-qualifying maintainer infrastructure:
 
-- the other lane corpora required for campaign acceptance;
 - a qualifying runtime boundary that authenticates controller state, the
   provider/model/tool inventory, fresh model context, hostile process-tree
   completion, and command-network isolation without conflating provider
   transport with tool egress;
-- smoke-first dispatch and deeper-lane gating;
-- host-bound, authenticated evidence that a real Bob execution obeyed the
-  controller's inventory/model-before-task protocol;
-- baseline runs and retained baseline evidence;
-- remediation, before/after comparison, and retained remediation evidence; and
-- CI scheduling for recurring or release-gated evaluation.
+- qualifying proof beyond the controller-observed inventory/model-before-task
+  order in the retained live Bob executions;
+- closed generic-lane adapters that bind report semantics to normalized
+  results; and
+- CI scheduling for recurring or release-gated semantic lane execution.
 
-Those capabilities must land through later Issue #30 branches and PRs. Until
-they do, contracts, fixtures, previews, preparations, protocol transcripts,
-and closures are maintainer verification aids, not QA findings, release
-certification, issue proposals, or proof that a lane passes its evaluation.
+No recurring semantic evaluation is added while those claims remain
+unattested. Contracts, fixtures, previews, preparations, protocol transcripts,
+closures, and compact ignored `QA/` records remain maintainer verification
+aids, not QA findings, release certification, issue proposals, or proof that a
+lane passes its evaluation. They remain explicitly
+`verification_status: "unverified"`, `qualification: "not-evidence"`, and
+`result: null`.
