@@ -14,6 +14,9 @@ single-case disclosure, lane-root preparation, and artifact closure mechanics.
 controller sequence for Bob host adapters.
 `scripts/evaluation/codex-host-policy.mjs` owns the pure non-qualifying Codex
 host-configuration contract.
+`scripts/evaluation/codex-bob-phase-target.mjs` is the measured one-phase live
+target. `scripts/evaluation/codex-bob-live-controller.mjs` owns its
+three-phase runtime composition and retained controller state.
 `scripts/evaluation/bob-report-adapter.mjs` owns the non-qualifying closed Bob
 report metadata binding. `scripts/evaluation/browser-gateway.mjs` owns the
 non-qualifying rendered-page boundary and is the machine authority for its
@@ -361,6 +364,23 @@ IDs do not prove actual process chronology or method order, authenticate the
 provider or controller state, attest a sandbox, prove that a report or
 artifact exists, or qualify an execution.
 
+### Signed controller session chain
+
+`scripts/evaluation/codex-session-chain.mjs` creates one ephemeral Ed25519
+keypair and signs exactly three accepted controller transitions in Bob's fixed
+phase order. Each transition binds the request, emptied-process receipt, host
+policy, authentication observation, prompt-input diagnostic, raw Codex JSONL,
+gateway binding, atomic receipt, thread, and output digests to the preceding
+transition. The private key remains inside the signer and is discarded when
+the complete chain closes; retained readers receive the canonical
+transitions, signatures, and public key.
+
+Signature verification proves only that the same ephemeral key signed the
+three supplied transition digests. It does not authenticate the controller or
+provider, rederive the supplied observations, resist hostile same-user or root
+memory and record replacement, attest a sandbox, or qualify evidence. The
+chain therefore remains `unverified`, `not-evidence`, and `result: null`.
+
 ### Pure Codex host policy
 
 `scripts/evaluation/codex-host-policy.mjs` validates and canonically binds the
@@ -373,6 +393,9 @@ phase. No phase resumes or reuses another phase's client context.
 Each invocation disables Codex's built-in shell, unified-exec, and web tools,
 uses the stable read-only command sandbox, and admits exactly one trusted MCP
 server: the measured browser gateway with only that phase's canonical tools.
+It requests zero project-document bytes, no fallback project-document names,
+and empty configured developer instructions. Those are launch requests, not
+proof that a managed application supplied no additional instruction layers.
 The command sandbox governs model-initiated local commands; the Codex
 process's provider transport is a separate client channel outside that sandbox
 and is not reclassified as command egress. The gateway and controller, not the
@@ -430,6 +453,12 @@ narrow process claim that the controller-owned group was observed empty. The
 resulting record is still `unverified`, `not-evidence`, and `result: null`, and
 the protocol's claims remain `not-attested`.
 
+An optional trusted observer receives defensive copies only after the target
+group is empty and the protocol has semantically accepted that phase output
+and appended its controller event. Observer rejection stops before the next
+phase. Framing-valid but semantically invalid output never reaches the
+observer.
+
 This bounded cleanup covers only ordinary descendants that remain in the
 inherited process group; it is not general process-tree proof or a sandbox. It
 does not contain hostile `setsid`, `setpgid`, or detached-session escape,
@@ -460,8 +489,12 @@ snapshot, one after snapshot, and an action receipt.
 The controller supplies one canonical policy that binds the phase, request,
 numeric-loopback target and allowed paths, fresh evidence directory, viewport,
 Chrome path and SHA-256, and artifact, journal, tool, and transport limits. The
-gateway launches that measured Chrome with a fresh temporary profile and a
-NUL-framed remote-debugging pipe. For proxy-aware URL traffic, Chrome bypasses
+gateway launches a detached same-source Node supervisor as the owned process
+group leader. The supervisor launches measured Chrome in that group with a
+fresh temporary profile, passes the NUL-framed remote-debugging descriptors
+directly, and watches a gateway-only liveness pipe. Pipe loss force-kills the
+owned group, covering abrupt gateway or outer-controller loss for ordinary
+Chrome descendants. For proxy-aware URL traffic, Chrome bypasses
 the proxy only for the exact declared HTTP origin; selected-page interception
 enforces the GET/path allowlist before those requests reach the fixture. Other
 proxy-aware URL traffic is routed to a deny-only loopback proxy, with QUIC
@@ -471,11 +504,13 @@ unrelated background requests. The gateway creates one fresh browser context,
 denies downloads, synthesizes an empty favicon response, pauses and closes
 observed extra page/worker targets, detects WebSocket, WebTransport, and direct
 TCP attempts plus top-frame URL drift, and removes its temporary profile at
-close. While the owned Chrome leader is still live, close sends the detached
-process group `SIGTERM` and polls it until empty. If the group survives while
-the leader remains live, close sends `SIGKILL` and polls once more. It never
+close. While the supervisor leader is still live, close sends the supervised
+group `SIGTERM` and polls it until empty. If the group survives while the
+leader remains live, close sends `SIGKILL` and polls once more. It never
 signals a stale group ID after leader exit; either ambiguity or a surviving
-group makes the closure invalid. MCP framing accepts the protocol's
+group makes the closure invalid. Hostile session escape, same-user or root
+interference, and supervisor suspension remain outside this narrow claim. MCP
+framing accepts the protocol's
 parameter-optional messages, bounds every message and response, and honors
 output backpressure. The profile is removed only after the group is proven
 empty; an invalid ambiguous cleanup retains it for safe diagnosis. The profile
@@ -497,11 +532,77 @@ constrains proxy-aware URL traffic in the measured Chrome run; it is not
 OS-level network isolation and does not attest non-proxy UDP, Direct Sockets,
 a hostile Chrome, or hostile same-user processes. Node and the operating
 system remain outside its confinement; the journal is unkeyed; fixture opacity
-and report semantics remain unattested; and no model host is connected yet.
-Every closure therefore remains `verification_status: "unverified"`,
+and report semantics remain unattested. The live phase target can connect this
+gateway to a model host, but that does not expand the gateway's claim. The
+measured Chrome launcher does not authenticate the rest of the application
+bundle. Every closure therefore remains `verification_status: "unverified"`,
 `qualification: "not-evidence"`, and `result: null`. The opt-in live tests
 require `QA_SUITE_LIVE_BROWSER=1` and retain their receipts below
 `QA/evidence/`.
+
+## Live Codex Bob target and controller
+
+`scripts/evaluation/codex-bob-phase-target.mjs` is one measured Node target
+for one Bob protocol phase. The live controller accepts it only when the
+direct-process program names the real resolved Node executable, the exact
+target source, and the complete hashed support set. That set contains the
+target's transitive evaluation sources, the three phase-output schemas, the
+measured fixture server and fixture assets, and every distributed prompt
+input. The executor checks those files before and after each launch. The
+target separately rechecks its Node, Codex CLI 0.145.0, gateway, Chrome
+launcher, fixture, prompt, and selected-schema identities.
+
+Each target invocation runs two bounded client diagnostics before its phase.
+`codex login status` must report the exact ChatGPT login method; this observes
+only the local client's status. `codex debug prompt-input` receives the exact
+phase prompt, but runs as a separate process and retains only message count,
+roles, byte counts, and digests. It does not attest the context supplied to
+the later `codex exec` process. Configured project-document and developer
+instruction suppression does not remove managed or application context.
+
+The target starts the measured numeric-loopback fixture, creates the fixed
+host and gateway policies, and launches one fresh Codex 0.145.0 phase process.
+It never resumes another phase. Every phase must call both `observe_page` and
+`capture_screenshot`; task execution may also use its phase-scoped control
+tools. The target retains the raw JSONL, bounded stderr, policies, client
+observations, browser journal and closure, gateway binding, and atomic phase
+record below:
+
+```text
+QA/evidence/<run-id>/<dispatch-id>/<phase>/
+```
+
+The target-side binding and adapter check are preliminary. They run before
+the outer target group settles and do not authorize the retained output.
+
+`executeCodexBobLiveSession()` dispatches exactly three one-shot targets in
+Bob's fixed order, which yields three distinct Codex phase processes. A
+controller observer runs only after the direct-process executor has proven
+the target group empty and the protocol has semantically accepted the phase.
+The observer then rereads bounded retained files, independently rebuilds the
+Codex-to-gateway binding and atomic adaptation, and compares those authorities
+with the target record, executor output, request, process receipt, and host
+policy. Only that accepted transition enters the ephemeral Ed25519 chain.
+
+The caller supplies a persistent `0700` controller-state parent outside and
+non-nested with the lane. The controller creates a new private session
+directory and exclusively retains each phase record, the completed session
+chain, and the live-session record there. After all three accepted phase
+records independently compose to the executor transcript, it writes the task
+report candidate once with exclusive creation under the lane and makes it
+read-only. It never overwrites a report.
+
+The live result is strictly non-qualifying. Its only positive identity claims
+are the controller-observed ChatGPT client status and continuity under the
+ephemeral Ed25519 key. It does not authenticate the provider, model, effective
+tool inventory, managed prompt context, report semantics, or sandbox. It also
+does not contain hostile same-user or root interference, `setsid`/`setpgid`
+escape, or a hostile Chrome launcher, and the launcher digest does not
+authenticate the complete Chrome application bundle. The report remains a
+candidate, not a QA finding or release result. Every retained atomic target,
+controller phase, chain, and live-session record stays
+`verification_status: "unverified"`, `qualification: "not-evidence"`, and
+`result: null`.
 
 ## Public suite
 
@@ -790,11 +891,10 @@ The following remain deliberately outside the current non-qualifying
 constituents:
 
 - the other lane corpora required for campaign acceptance;
-- a reviewed runtime Codex host that applies the pure Darwin policy, composes
-  the direct-process and browser boundaries, and authenticates controller
-  state, the observed provider/model/tool inventory, fresh model context,
-  hostile process-tree completion, and command-network isolation without
-  conflating provider transport with tool egress;
+- a qualifying runtime boundary that authenticates controller state, the
+  provider/model/tool inventory, fresh model context, hostile process-tree
+  completion, and command-network isolation without conflating provider
+  transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - composition of the partial Bob lane adaptation with the smoke gate into a
   complete normalized case;

@@ -171,6 +171,22 @@ function selectedCaseContract(suite, preparation) {
   };
 }
 
+export function createPreparedBobHostBinding({
+  dispatchId,
+  preparation,
+  suite,
+}) {
+  const { reportIdentifiers } = selectedCaseContract(
+    suite,
+    preparation,
+  );
+  return bindingFromPreparation(
+    preparation,
+    dispatchId,
+    reportIdentifiers,
+  );
+}
+
 export function validateInterfaceInventory(value) {
   assertExactKeys(
     value,
@@ -808,6 +824,7 @@ export function requestsFromBobHostTranscript(value) {
 export async function executePreparedBobCase({
   adapter,
   dispatchId,
+  observePhase,
   preparation,
   suite,
 }) {
@@ -818,15 +835,14 @@ export async function executePreparedBobCase({
   ) {
     throw new Error("adapter must provide runPhase(request)");
   }
-  const { reportIdentifiers } = selectedCaseContract(
+  if (observePhase !== undefined && typeof observePhase !== "function") {
+    throw new Error("observePhase must be a function");
+  }
+  const binding = createPreparedBobHostBinding({
+    dispatchId,
     suite,
     preparation,
-  );
-  const binding = bindingFromPreparation(
-    preparation,
-    dispatchId,
-    reportIdentifiers,
-  );
+  });
   const outputs = {};
   let events = [];
 
@@ -854,6 +870,12 @@ export async function executePreparedBobCase({
       );
     }
     events = appendEvent(events, binding, phase, output);
+    if (observePhase !== undefined) {
+      await observePhase(structuredClone({
+        output,
+        request,
+      }));
+    }
   }
 
   return validateBobHostTranscript({

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  createPreparedBobHostBinding,
   executePreparedBobCase,
   requestsFromBobHostTranscript,
   validateBobHostPhaseRequest,
@@ -193,6 +194,34 @@ function adapter(outputs = [
     },
   };
 }
+
+test("exposes the exact prepared binding before phase dispatch", () => {
+  const dispatchId = "dispatch_0123456789abcdef0123456789abcdef";
+  const selectedSuite = suite();
+  const binding = createPreparedBobHostBinding({
+    dispatchId,
+    preparation: preparation(),
+    suite: selectedSuite,
+  });
+
+  assert.deepEqual(binding, {
+    case_id: CASE_ID,
+    controller_commit: "a".repeat(40),
+    dispatch_id: dispatchId,
+    lane: "bob-qa",
+    report_identifiers: reportIdentifiers,
+    run_id: "run_0123456789abcdef0123456789abcdef",
+    schema_version: 1,
+    subject_commit: "b".repeat(40),
+    suite_id: "bob-evaluation-v1",
+  });
+
+  binding.report_identifiers.core_flow_ids.push("observer_mutation");
+  assert.deepEqual(
+    selectedSuite.cases[0].report_identifiers,
+    reportIdentifiers,
+  );
+});
 
 test("controller withholds task capabilities until inventory and modeling complete", async () => {
   const host = adapter();

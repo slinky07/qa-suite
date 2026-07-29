@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "tasks": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "control_ids": {
+            "items": {
+              "pattern": "^control_[a-z0-9]+(?:_[a-z0-9]+)*$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^task_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "parent_task_id": {
+            "anyOf": [
+              {
+                "pattern": "^task_[a-z0-9]+(?:_[a-z0-9]+)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "surface_id": {
+            "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "control_ids",
+          "id",
+          "parent_task_id",
+          "surface_id"
+        ],
+        "type": "object"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "tasks"
+  ],
+  "title": "Codex Bob expected-use model v1",
+  "type": "object"
+}

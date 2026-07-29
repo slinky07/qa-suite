@@ -702,6 +702,145 @@ test("runs each Bob phase in a fresh, emptied process group", async (t) => {
   }
 });
 
+test("observes each emptied phase with fixed dispatch and clone isolation", async (t) => {
+  const setup = await harness(t);
+  const dispatchId = "dispatch_0123456789abcdef0123456789abcdef";
+  const observations = [];
+
+  const execution = await execute(setup, {
+    dispatchId,
+    async observePhase(observation) {
+      assert.deepEqual(
+        Object.keys(observation).sort(),
+        ["output", "receipt", "request"],
+      );
+      assert.equal(
+        observation.receipt.owned_process_group,
+        "proven-empty",
+      );
+      assert.equal(observation.receipt.phase, observation.request.phase);
+      observations.push(structuredClone(observation));
+
+      observation.request.binding.dispatch_id =
+        "dispatch_ffffffffffffffffffffffffffffffff";
+      observation.output.observer_mutation = true;
+      observation.receipt.phase = "observer_mutation";
+      delete observation.receipt.output_sha256;
+    },
+  });
+
+  const phases = [
+    "interface_inventory",
+    "expected_use_model",
+    "task_execution",
+  ];
+  assert.deepEqual(
+    observations.map(({ request }) => request.phase),
+    phases,
+  );
+  assert.deepEqual(
+    observations.map(({ request }) => request.binding.dispatch_id),
+    [dispatchId, dispatchId, dispatchId],
+  );
+  assert.equal(execution.transcript.binding.dispatch_id, dispatchId);
+  assert.deepEqual(
+    execution.process_receipts.map(({ phase }) => phase),
+    phases,
+  );
+  for (const output of Object.values(execution.transcript.outputs)) {
+    assert.equal(Object.hasOwn(output, "observer_mutation"), false);
+  }
+  assert.equal(validateBobHostExecution(execution), execution);
+});
+
+test("observer rejection stops before a later phase launches", async (t) => {
+  const setup = await harness(t);
+  const launchLogPath = join(
+    await realpath(join(setup.laneRoot, "..")),
+    "observer-launches.txt",
+  );
+  const requestStatement = "const request = JSON.parse(source);";
+  const source = successfulAdapter.replace(
+    requestStatement,
+    String.raw`${requestStatement}
+const { appendFile } = await import("node:fs/promises");
+await appendFile(
+  ${JSON.stringify(launchLogPath)},
+  request.phase + "\n",
+  { mode: 0o600 },
+);`,
+  );
+  const observedPhases = [];
+  const observerError = new Error("controller state-chain update failed");
+
+  await assert.rejects(
+    () =>
+      execute(setup, {
+        observePhase(observation) {
+          assert.equal(
+            observation.receipt.owned_process_group,
+            "proven-empty",
+          );
+          observedPhases.push(observation.request.phase);
+          if (observation.request.phase === "expected_use_model") {
+            throw observerError;
+          }
+        },
+        program: setup.program(source),
+      }),
+    (error) => {
+      assert.equal(error, observerError);
+      return true;
+    },
+  );
+
+  assert.deepEqual(
+    observedPhases,
+    ["interface_inventory", "expected_use_model"],
+  );
+  assert.equal(
+    await readFile(launchLogPath, "utf8"),
+    "interface_inventory\nexpected_use_model\n",
+  );
+});
+
+test("observer sees only semantically accepted phase outputs", async (t) => {
+  const phases = [
+    "interface_inventory",
+    "expected_use_model",
+    "task_execution",
+  ];
+
+  for (const invalidPhase of phases) {
+    await t.test(invalidPhase, async (childTest) => {
+      const setup = await harness(childTest);
+      const invalidSource = successfulAdapter.replace(
+        "process.stdout.write(canonical({",
+        String.raw`
+if (request.phase === ${JSON.stringify(invalidPhase)}) output = {};
+process.stdout.write(canonical({`,
+      );
+      const observedPhases = [];
+
+      await assert.rejects(
+        () =>
+          execute(setup, {
+            observePhase({ request }) {
+              observedPhases.push(request.phase);
+            },
+            program: setup.program(invalidSource),
+          }),
+        Error,
+      );
+
+      assert.deepEqual(
+        observedPhases,
+        phases.slice(0, phases.indexOf(invalidPhase)),
+      );
+    });
+  }
+});
+
 test("rejects executable and lane-root drift before dispatch", async (t) => {
   const setup = await harness(t);
 

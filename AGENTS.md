@@ -27,14 +27,16 @@ distributed skill without changing it:
   controller seam for Bob's interface-inventory, expected-use-model, then
   task-execution order. The controller snapshots the selected suite case's
   report IDs, withholds them from the first two phases, and supplies them only
-  to task execution. It accepts only an injected host adapter and never
-  launches an arbitrary executable.
+  to task execution. It exposes the same prepared binding before dispatch and
+  may notify a trusted observer only after a phase output passes its semantic
+  authority and enters the controller event chain. It accepts only an injected
+  host adapter and never launches an arbitrary executable.
 - `scripts/evaluation/codex-0145-events.mjs` is the dormant transport parser
   for the deliberately narrower successful Bob-host subset of a Codex CLI
-  0.145.0 JSONL turn. It accepts only sequential MCP lifecycles, completed
-  reasoning, one final agent message, and exact usage fields. It does not
-  launch Codex, interpret browser tools, validate a Bob phase output, bind a
-  gateway journal, or qualify evidence.
+  0.145.0 JSONL turn. It accepts only one exact optional todo-list lifecycle,
+  sequential MCP lifecycles, completed reasoning, one final agent message, and
+  exact usage fields. It does not launch Codex, interpret browser tools,
+  validate a Bob phase output, bind a gateway journal, or qualify evidence.
 - `bindCodexBrowserGatewayJournal()` in
   `scripts/evaluation/browser-gateway.mjs` is the pure non-qualifying join
   between one raw Codex turn and one controller-supplied browser policy,
@@ -56,15 +58,49 @@ distributed skill without changing it:
   recorded Codex thread IDs, but performs no writes or launches and proves no
   process chronology, method order, provider or state authentication, sandbox
   attestation, report or artifact existence, or qualification.
+- `scripts/evaluation/codex-session-chain.mjs` signs exactly three accepted
+  controller transitions with one ephemeral Ed25519 key and retains the public
+  key, canonical transitions, signatures, and bound request, process, policy,
+  context-diagnostic, transport, gateway, atomic-receipt, thread, and output
+  digests. External signature verification proves continuity under that
+  ephemeral key only. It does not authenticate who controlled the key, the
+  provider, model, sandbox, same-user boundary, or retained record, and it
+  never promotes the session beyond `unverified`, `not-evidence`, and
+  `result: null`.
+- `scripts/evaluation/codex-bob-phase-target.mjs` is the one-phase live target.
+  It rechecks the measured Node, Codex CLI 0.145.0, gateway, Chrome launcher,
+  fixture server and assets, prompt inputs, and selected output schema. It
+  records an exact ChatGPT client-login observation and a separate digest-only
+  `prompt-input` diagnostic, starts the measured loopback fixture, launches
+  one fresh Codex phase process under the fixed host policy, and retains its
+  bounded raw artifacts below the phase's `QA/evidence/` directory. The
+  diagnostic is not the dispatched process's context, and neither observation
+  authenticates the provider, model, effective tool inventory, managed
+  instructions, or sandbox.
+- `scripts/evaluation/codex-bob-live-controller.mjs` accepts only the real
+  measured Node executable, the exact phase target, and the complete hashed
+  target support set: its transitive evaluation sources, three output schemas,
+  fixture server and assets, and distributed prompt inputs. It dispatches
+  three one-shot targets and therefore three distinct Codex phase processes.
+  After each target group is proven empty and its phase output is semantically
+  accepted, the controller rereads the retained bytes, independently rebinds
+  the gateway journal and reruns the atomic adapter, then signs the accepted
+  transition. It retains phase, chain, and session records with exclusive
+  writes in a caller-supplied private state directory outside the lane and
+  creates the report candidate exclusively only after three-phase composition.
+  The live record remains `unverified`, `not-evidence`, and `result: null`.
 - `scripts/evaluation/codex-host-policy.mjs` is the pure non-qualifying Darwin
   host-configuration contract. It rejects unsupported platforms before a
   conforming caller can dispatch and binds the measured Codex CLI 0.145.0
   executable, requested built-in OpenAI transport, three fresh ephemeral
   phases, disabled built-in shell, unified-exec, and web tools, the stable
   read-only command sandbox, and exactly one phase-scoped browser gateway.
-  Provider transport is outside that command sandbox and is never presented
-  as permitted command egress. The contract launches nothing and does not prove
-  provider-signed identity, controller-state authentication, the runtime
+  It also requests zero project-document bytes, no fallback project-document
+  names, and empty configured developer instructions. Managed or application
+  instruction layers may still remain. Provider transport is outside that
+  command sandbox and is never presented as permitted command egress. The
+  contract launches nothing and does not prove provider-signed identity,
+  effective context removal, controller-state authentication, the runtime
   model/tool inventory, hostile same-user or root isolation, escaped-session
   containment, Chrome non-proxy isolation, semantic fixture opacity, or
   qualification.
@@ -78,8 +114,10 @@ distributed skill without changing it:
   so the supervisor sends `SIGKILL` to its inherited group and exits without a
   receipt. While the controller remains live, every success or failure path
   force-terminates the known-live group and proves it empty before settling.
-  A successful receipt records only the narrow process claim of owned-group
-  emptiness.
+  A trusted observer may receive defensive copies of a request, semantically
+  accepted output, and successful receipt only after that cleanup and protocol
+  acceptance. A successful receipt records only the narrow process claim of
+  owned-group emptiness.
 - `scripts/evaluation/bob-report-adapter.mjs` binds exactly one canonical Bob
   report in a closed artifact inventory and joins that metadata to the
   controller-hashed structured lane result. It does not read or parse report
@@ -93,11 +131,14 @@ distributed skill without changing it:
   GET/path allowlist through selected-page request interception, and routes
   other proxy-aware URL traffic to a deny-only loopback boundary. It retains
   bounded snapshots, screenshots, action receipts, proxy summaries, and a
-  terminal hash-chained journal below `QA/evidence/`. Its temporary Chrome
-  profile is never evidence. A normal closure requires the detached Chrome
-  process group to be empty before removing the profile. Ambiguous or failed
-  process cleanup retains the profile and makes the closure invalid. Platforms
-  without POSIX process-group signaling fail before Chrome launch.
+  terminal hash-chained journal below `QA/evidence/`. A detached same-source
+  Node supervisor owns the browser process group, launches Chrome in that
+  group, passes the CDP descriptors directly, and watches a gateway-only
+  liveness pipe. Gateway loss force-kills the group. Its temporary Chrome
+  profile is never evidence. A normal closure requires the supervised browser
+  group to be empty before removing the profile. Ambiguous or failed process
+  cleanup retains the profile and makes the closure invalid. Platforms without
+  POSIX process-group signaling fail before Chrome launch.
 - Bob suite cases declare globally unique, role-neutral report surface and
   core-flow IDs from independent opaque tokens that cannot be derived from the
   earlier case disclosure. They remain controller-only until task execution,
@@ -137,7 +178,8 @@ and retained receipts. It is not a sandbox or a Bob host, and it does not
 attest model context, provider transport, same-user isolation, fixture
 opacity, non-proxy UDP or direct-socket isolation, lane correctness, or report
 semantics. Its closure must remain `unverified`, `not-evidence`, with
-`result: null`.
+`result: null`. The measured Chrome launcher does not authenticate the rest of
+the application bundle.
 
 The host executor's support-file list is mandatory even when empty. Every
 interpreter source, MCP server, schema, or static configuration consumed by a

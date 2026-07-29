@@ -238,6 +238,12 @@ function expectedArguments(policy) {
     "--config",
     'shell_environment_policy.include_only=["LANG","LC_ALL","TZ"]',
     "--config",
+    "project_doc_max_bytes=0",
+    "--config",
+    "project_doc_fallback_filenames=[]",
+    "--config",
+    'developer_instructions=""',
+    "--config",
     gatewayConfig(policy),
     "-",
   );
