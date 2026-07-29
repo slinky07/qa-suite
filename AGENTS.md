@@ -33,10 +33,10 @@ distributed skill without changing it:
   host adapter and never launches an arbitrary executable.
 - `scripts/evaluation/codex-0145-events.mjs` is the dormant transport parser
   for the deliberately narrower successful Bob-host subset of a Codex CLI
-  0.145.0 JSONL turn. It accepts only sequential MCP lifecycles, completed
-  reasoning, one final agent message, and exact usage fields. It does not
-  launch Codex, interpret browser tools, validate a Bob phase output, bind a
-  gateway journal, or qualify evidence.
+  0.145.0 JSONL turn. It accepts only one exact optional todo-list lifecycle,
+  sequential MCP lifecycles, completed reasoning, one final agent message, and
+  exact usage fields. It does not launch Codex, interpret browser tools,
+  validate a Bob phase output, bind a gateway journal, or qualify evidence.
 - `bindCodexBrowserGatewayJournal()` in
   `scripts/evaluation/browser-gateway.mjs` is the pure non-qualifying join
   between one raw Codex turn and one controller-supplied browser policy,
