@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "compatibility-evaluation-v1",
+  "lane": "compatibility-qa",
+  "cases": [
+    {
+      "id": "fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e",
+      "qa_context": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0707070707070707070707070707070707070707070707070707070707070707",
+        "seal_1717171717171717171717171717171717171717171717171717171717171717"
+      ],
+      "smoke_checks": [
+        "check_page_render"
+      ]
+    },
+    {
+      "id": "fx_f6d361b9ef532534b6f25796e528ef89",
+      "qa_context": "tests/evaluation/fixtures/fx_f6d361b9ef532534b6f25796e528ef89/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_f6d361b9ef532534b6f25796e528ef89/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0808080808080808080808080808080808080808080808080808080808080808",
+        "seal_1818181818181818181818181818181818181818181818181818181818181818"
+      ],
+      "smoke_checks": [
+        "check_page_render"
+      ]
+    }
+  ]
+}

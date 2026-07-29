@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/app.mjs",
+      "mode": "100644",
+      "sha256": "a9606a7723c03f294124804f871eb96f2c5bd7a01c39e9a944ad196931fa8fb1"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/index.html",
+      "mode": "100644",
+      "sha256": "907d21b32270c1b0eeaa8d1c2226101e25960bc1db0792f15c2b354e0f628d30"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/server.mjs",
+      "mode": "100644",
+      "sha256": "c675e1b4f27b70a3a3cc1cc962f84bc7a1817268ac2d57da5fc3508e0bd0ed74"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/styles.css",
+      "mode": "100644",
+      "sha256": "97dd8c0e4a7d9dd5fa54805fa41f72411c5a71c95d83e4d46ec9b93873263d24"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/public/support-matrix.json",
+      "mode": "100644",
+      "sha256": "790f049e4837ac5cbe7a1a3fc76e36c9903d29e32fb6990c70771943080e90a6"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_a4ba6e16f6d783cbbc0f0f22c9e9e51e/qa-context.md",
+      "mode": "100644",
+      "sha256": "d435fa8b4385842a181e92094c94d6cc7eee46d78e56cebdba0ababb39dd681c"
+    }
+  ]
+}

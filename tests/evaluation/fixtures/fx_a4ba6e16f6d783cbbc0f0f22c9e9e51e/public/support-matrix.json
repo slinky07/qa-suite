@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "surface": "Message Composer",
+  "requirement": {
+    "id": "COMPAT-01",
+    "primary_action": "send-message",
+    "expected_status": "Message sent.",
+    "action_available_after_completion": true
+  },
+  "targets": [
+    {
+      "id": "chromium-1024",
+      "engine": "Chromium",
+      "viewport_width": 1024,
+      "coverage": "emulated"
+    },
+    {
+      "id": "chromium-375",
+      "engine": "Chromium",
+      "viewport_width": 375,
+      "coverage": "emulated"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Message Composer</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main>
+      <h1>Message Composer</h1>
+      <p>Send one disposable message from this local workspace.</p>
+      <form id="message-form">
+        <label for="message-body">Message</label>
+        <textarea id="message-body" required>Fixture status update</textarea>
+        <button id="send-message" type="submit">Send message</button>
+      </form>
+      <p id="message-status" role="status" aria-live="polite">Draft ready.</p>
+    </main>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>
