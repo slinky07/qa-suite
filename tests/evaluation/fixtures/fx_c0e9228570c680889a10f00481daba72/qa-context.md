@@ -40,7 +40,7 @@
 - **How to start the app (deployment path):** N/A
 - **How to check it's running:** `curl --fail --show-error http://127.0.0.1:4173/health`
 - **How to read logs:** Read the foreground server terminal.
-- **App URL(s):** http://127.0.0.1:4173/
+- **App URL(s):** http://127.0.0.1:4173/health
 - **How to stop the app (non-destructive):** Send Ctrl-C to the foreground server.
 - **Services that may already be running:** N/A
 - **Disposable test target:** The entire local fixture is disposable and has no persistent state.
