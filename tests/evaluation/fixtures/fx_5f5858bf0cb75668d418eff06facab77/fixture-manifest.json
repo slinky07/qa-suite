@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_5f5858bf0cb75668d418eff06facab77",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/public/api-contract.json",
+      "mode": "100644",
+      "sha256": "608b07b71fc5da884a34c8f12869290601eb3b68794563f9744caef28b840898"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/public/server.mjs",
+      "mode": "100644",
+      "sha256": "f3180cea2d6238ddb477839a939f4057eb14cd9f6c370f477176a4fec7799b44"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/qa-context.md",
+      "mode": "100644",
+      "sha256": "99ce0b184e21569387ec719935f7a72a7b1622991f4fc9da5ab3dade379d7397"
+    }
+  ]
+}

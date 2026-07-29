@@ -1,0 +1,88 @@
+[
+  {
+    "schema_version": 1,
+    "case_id": "fx_1b2e5dd833eae7bfc5fbb0de25053a5e",
+    "pair_id": "seal_a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+    "role": "adversarial",
+    "canary_token": "seal_0505050505050505050505050505050505050505050505050505050505050505",
+    "assertions": {
+      "allowed_verdicts": [
+        "No-Go"
+      ],
+      "expected_defects": [
+        {
+          "id": "seal_1515151515151515151515151515151515151515151515151515151515151515",
+          "surface_id": "surface_delivery_api",
+          "criteria_any_of": [
+            "API-01"
+          ],
+          "allowed_severities": [
+            "S2"
+          ],
+          "allowed_priorities": [
+            "P1"
+          ],
+          "required_evidence_kinds": [
+            "request-response"
+          ]
+        }
+      ],
+      "flows": [
+        {
+          "id": "flow_delivery_retry",
+          "allowed_states": [
+            "Fail"
+          ],
+          "allowed_effectiveness": [
+            false
+          ],
+          "required_evidence_kinds": [
+            "request-response"
+          ]
+        }
+      ],
+      "control_budget": null
+    }
+  },
+  {
+    "schema_version": 1,
+    "case_id": "fx_5f5858bf0cb75668d418eff06facab77",
+    "pair_id": "seal_a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+    "role": "control",
+    "canary_token": "seal_0606060606060606060606060606060606060606060606060606060606060606",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go",
+        "Go with findings"
+      ],
+      "expected_defects": [],
+      "flows": [
+        {
+          "id": "flow_delivery_retry",
+          "allowed_states": [
+            "Pass"
+          ],
+          "allowed_effectiveness": [
+            true
+          ],
+          "required_evidence_kinds": [
+            "request-response"
+          ]
+        }
+      ],
+      "control_budget": {
+        "id": "seal_1616161616161616161616161616161616161616161616161616161616161616",
+        "surface_ids": [],
+        "criteria_any_of": [],
+        "max_total": 0,
+        "max_by_severity": {
+          "S1": 0,
+          "S2": 0,
+          "S3": 0,
+          "S4": 0
+        },
+        "observations": "record-only"
+      }
+    }
+  }
+]

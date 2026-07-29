@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "api-evaluation-v1",
+  "lane": "api-qa",
+  "cases": [
+    {
+      "id": "fx_1b2e5dd833eae7bfc5fbb0de25053a5e",
+      "qa_context": "tests/evaluation/fixtures/fx_1b2e5dd833eae7bfc5fbb0de25053a5e/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_1b2e5dd833eae7bfc5fbb0de25053a5e/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0505050505050505050505050505050505050505050505050505050505050505",
+        "seal_1515151515151515151515151515151515151515151515151515151515151515"
+      ],
+      "smoke_checks": [
+        "check_api_startup"
+      ]
+    },
+    {
+      "id": "fx_5f5858bf0cb75668d418eff06facab77",
+      "qa_context": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_5f5858bf0cb75668d418eff06facab77/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0606060606060606060606060606060606060606060606060606060606060606",
+        "seal_1616161616161616161616161616161616161616161616161616161616161616"
+      ],
+      "smoke_checks": [
+        "check_api_startup"
+      ]
+    }
+  ]
+}

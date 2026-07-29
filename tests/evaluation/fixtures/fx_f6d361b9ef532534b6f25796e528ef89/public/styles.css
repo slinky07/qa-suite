@@ -1,0 +1,58 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  background: #f4f6f8;
+  color: #18202a;
+  margin: 0;
+}
+
+main {
+  background: #ffffff;
+  border: 1px solid #c5ced8;
+  border-radius: 0.75rem;
+  margin: 3rem auto;
+  max-width: 42rem;
+  padding: 2rem;
+}
+
+form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+button {
+  background: #135f9f;
+  border: 0;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  cursor: pointer;
+  min-height: 2.75rem;
+  padding: 0.75rem 1rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 480px) {
+  main {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin: 1rem 0;
+    padding: 1rem;
+  }
+
+  button {
+    width: 100%;
+  }
+}

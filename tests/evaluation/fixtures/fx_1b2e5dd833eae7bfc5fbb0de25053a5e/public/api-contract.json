@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "service": "Delivery Queue API",
+  "create_delivery": {
+    "requirement_id": "API-01",
+    "method": "POST",
+    "path": "/api/deliveries",
+    "idempotency_header": "Idempotency-Key",
+    "first_status": 201,
+    "retry_status": 200,
+    "request_schema": {
+      "recipient": "non-empty string"
+    },
+    "response_schema": {
+      "delivery": {
+        "id": "string",
+        "recipient": "string",
+        "state": "queued"
+      }
+    },
+    "retry_outcome": "An identical retry returns the original delivery ID and leaves exactly one queued delivery."
+  },
+  "list_deliveries": {
+    "requirement_id": "API-02",
+    "method": "GET",
+    "path": "/api/deliveries",
+    "status": 200,
+    "response_schema": {
+      "deliveries": "array of delivery objects"
+    }
+  }
+}
