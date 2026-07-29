@@ -1024,6 +1024,55 @@ test("one action binds one retained before snapshot to its receipt", async () =>
   );
 });
 
+test("select snapshots advertise the exact accepted option values", async () => {
+  const selectControl = control({
+    id: "control_status",
+    role: "combobox",
+    tag: "select",
+    type: "select",
+  });
+  const { cdp, gateway } = gatewayWith({ controls: [selectControl] });
+  const optionValues = new Map([
+    [100, "all"],
+    [101, "active"],
+  ]);
+  const send = cdp.send.bind(cdp);
+  cdp.send = async (method, params, sessionId) => {
+    if (
+      method === "DOM.querySelectorAll" &&
+      params.selector === "option"
+    ) {
+      return { nodeIds: [...optionValues.keys()] };
+    }
+    if (
+      method === "DOM.describeNode" &&
+      optionValues.has(params.nodeId)
+    ) {
+      return {
+        node: {
+          attributes: ["value", optionValues.get(params.nodeId)],
+        },
+      };
+    }
+    return send(method, params, sessionId);
+  };
+
+  const snapshot = await gateway.observePage();
+  assert.deepEqual(snapshot.controls[0].options, ["all", "active"]);
+  await gateway.callTool("set_control", {
+    control_id: "control_status",
+    value: "active",
+  });
+  await assert.rejects(
+    () =>
+      gateway.callTool("set_control", {
+        control_id: "control_status",
+        value: "Active",
+      }),
+    /not a declared select option/u,
+  );
+});
+
 test("action hit testing rejects an occluding node", async () => {
   const { cdp, gateway } = gatewayWith();
   const send = cdp.send.bind(cdp);

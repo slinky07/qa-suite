@@ -1495,6 +1495,9 @@ export class BrowserGateway {
       bounds,
       id,
       name: boundedText(axValue(axNode.name), 512) ?? "",
+      ...(tag === "select"
+        ? { options: await this.#selectOptionValues(nodeId) }
+        : {}),
       role: boundedText(axValue(axNode.role), 64) ?? "",
       state: {
         checked: axBoolean(properties.checked, "checked"),
@@ -1603,9 +1606,9 @@ export class BrowserGateway {
     });
   }
 
-  async #setSelect(control, value) {
+  async #selectOptionValues(nodeId) {
     const options = await this.send("DOM.querySelectorAll", {
-      nodeId: control.nodeId,
+      nodeId,
       selector: "option",
     });
     const optionNodeIds = assertDenseArray(
@@ -1627,6 +1630,11 @@ export class BrowserGateway {
         attributesMap(described.node?.attributes).value ?? "",
       );
     }
+    return optionValues;
+  }
+
+  async #setSelect(control, value) {
+    const optionValues = await this.#selectOptionValues(control.nodeId);
     const selectedIndex = optionValues.indexOf(value);
     if (selectedIndex < 0) {
       throw new Error("set_control value is not a declared select option");

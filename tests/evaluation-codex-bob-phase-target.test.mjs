@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import {
+  buildCodexBobPhasePrompt,
   codexBobPhaseEvidencePath,
   parseCodexBobPhaseTargetConfig,
   validateCodexBobPhaseRecord,
@@ -58,6 +59,47 @@ function inventoryRequest() {
     result: null,
     schema_version: 1,
     verification_status: "unverified",
+  };
+}
+
+function taskRequest() {
+  return {
+    ...inventoryRequest(),
+    allowed_capabilities: [
+      "observe-interface",
+      "perform-task-actions",
+    ],
+    phase: "task_execution",
+    prior_outputs: {
+      expected_use_model: {
+        tasks: [
+          {
+            control_ids: ["control_primary"],
+            id: "task_primary",
+            parent_task_id: null,
+            surface_id: "surface_primary",
+          },
+          {
+            control_ids: ["control_secondary"],
+            id: "task_secondary",
+            parent_task_id: "task_primary",
+            surface_id: "surface_primary",
+          },
+        ],
+      },
+      interface_inventory: {
+        surfaces: [
+          {
+            control_ids: [
+              "control_primary",
+              "control_secondary",
+            ],
+            id: "surface_primary",
+          },
+        ],
+      },
+    },
+    report_identifiers: structuredClone(REPORT_IDENTIFIERS),
   };
 }
 
@@ -284,6 +326,31 @@ test("derives one deterministic dispatch-scoped evidence root", () => {
         `QA/evidence/${RUN_ID}/${DISPATCH_ID}/interface_inventory`,
     },
   );
+});
+
+test("task prompt states the controller-enforced output contract", () => {
+  const prompt = buildCodexBobPhasePrompt(
+    config(),
+    taskRequest(),
+    [{
+      content: "# Bob QA\n",
+      path: "qa-suite/references/agents/bob-qa.md",
+    }],
+    {
+      relative_path:
+        `QA/evidence/${RUN_ID}/${DISPATCH_ID}/task_execution`,
+    },
+  );
+
+  for (const required of [
+    "use only a value advertised in the latest observe_page control.options array",
+    `Use exactly these controller-selected core flow IDs in order, each with core true: ${REPORT_IDENTIFIERS.core_flow_ids[0]}.`,
+    `Use ${REPORT_IDENTIFIERS.surface_id} for every finding and observation surface_id`,
+    "Return results in this exact modeled task order: task_primary, task_secondary.",
+    "If any selected core flow state is Fail, verdict.state must be No-Go.",
+  ]) {
+    assert.equal(prompt.includes(required), true, required);
+  }
 });
 
 test("accepts only canonical, closed target configuration", () => {

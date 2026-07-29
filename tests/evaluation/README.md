@@ -267,8 +267,10 @@ order. Each task result names exactly one selected core flow and hashes that
 flow's ordered evidence-pointer set. Pass/Fail flows require exercised tasks;
 Observed-only and Not-tested flows require matching task dispositions. The
 protocol also rejects a Go-family result when every selected core flow is Not
-tested. The adapter asserts the finalized report SHA-256. The controller
-hashes the accepted output into the transcript; only
+tested. The task prompt names the selected flow and surface IDs, the modeled
+task order, and the core-Fail `No-Go` rule without supplying an expected
+fixture outcome. The adapter asserts the finalized report SHA-256. The
+controller hashes the accepted output into the transcript; only
 `adaptClosedBobHostResult()` later compares the report assertion and evidence
 paths with the closed artifact inventory. These adapter assertions are not
 proof by themselves.
@@ -484,7 +486,9 @@ three Bob phases. Interface inventory and expected-use modeling receive only
 `set_control` and `activate_control`. Tool arguments cannot supply a selector,
 URL, script, CDP method, executable, or filesystem path. Actions resolve a
 visible `data-control-id` immediately before input and retain one before
-snapshot, one after snapshot, and an action receipt.
+snapshot, one after snapshot, and an action receipt. A select snapshot exposes
+the bounded exact option values accepted by `set_control`; the gateway
+rescans the same values before each select action.
 
 The controller supplies one canonical policy that binds the phase, request,
 numeric-loopback target and allowed paths, fresh evidence directory, viewport,

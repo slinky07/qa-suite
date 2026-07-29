@@ -463,6 +463,12 @@ test("live gateway inventories and exercises Project Finder controls", {
         "control_search_help",
       ],
     );
+    assert.deepEqual(
+      initial.controls.find(
+        ({ id }) => id === "control_project_status",
+      ).options,
+      ["all", "active", "planning", "complete"],
+    );
     toolResult(
       await client.request("tools/call", {
         arguments: { control_id: "control_search_help" },
