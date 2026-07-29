@@ -377,6 +377,16 @@ test("adapts one-call task output and derives report and evidence digests", () =
   assert.equal(adapted.receipt.binding.codex_final_message_sequence, 5);
 });
 
+test("accepts canonical final JSON with only its terminal LF omitted", () => {
+  const canonicalSource = canonicalJson(INVENTORY);
+  const input = fixture(
+    "interface_inventory",
+    canonicalSource.slice(0, -1),
+  );
+
+  assert.deepEqual(adapt(input).output, INVENTORY);
+});
+
 test("requires canonical final JSON and exact authoritative wire fields", () => {
   const noncanonical = fixture(
     "interface_inventory",
