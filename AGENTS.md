@@ -56,6 +56,18 @@ distributed skill without changing it:
   recorded Codex thread IDs, but performs no writes or launches and proves no
   process chronology, method order, provider or state authentication, sandbox
   attestation, report or artifact existence, or qualification.
+- `scripts/evaluation/codex-host-policy.mjs` is the pure non-qualifying Darwin
+  host-configuration contract. It rejects unsupported platforms before a
+  conforming caller can dispatch and binds the measured Codex CLI 0.145.0
+  executable, requested built-in OpenAI transport, three fresh ephemeral
+  phases, disabled built-in shell, unified-exec, and web tools, the stable
+  read-only command sandbox, and exactly one phase-scoped browser gateway.
+  Provider transport is outside that command sandbox and is never presented
+  as permitted command egress. The contract launches nothing and does not prove
+  provider-signed identity, controller-state authentication, the runtime
+  model/tool inventory, hostile same-user or root isolation, escaped-session
+  containment, Chrome non-proxy isolation, semantic fixture opacity, or
+  qualification.
 - `scripts/evaluation/bob-host-executor.mjs` is the non-qualifying direct
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of

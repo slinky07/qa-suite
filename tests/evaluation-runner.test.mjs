@@ -46,6 +46,10 @@ const controllerProgramPaths = [
   "scripts/evaluation/bob-host-protocol.mjs",
   "scripts/evaluation/bob-report-adapter.mjs",
   "scripts/evaluation/browser-gateway.mjs",
+  "scripts/evaluation/codex-0145-events.mjs",
+  "scripts/evaluation/codex-bob-phase-adapter.mjs",
+  "scripts/evaluation/codex-bob-phase-composition.mjs",
+  "scripts/evaluation/codex-host-policy.mjs",
   "scripts/evaluation/contracts.mjs",
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
@@ -225,7 +229,7 @@ async function createHarness(
   {
     badManifest = false,
     fixtureLeakValue,
-    programMismatch = false,
+    programMismatchPath,
     subjectDirectoryDepth = 0,
     subjectFileCount = 0,
     subjectSymlink = false,
@@ -246,9 +250,9 @@ async function createHarness(
 
   runGit(repository, ["init", "--quiet"]);
   await copyControllerProgram(repository);
-  if (programMismatch) {
+  if (programMismatchPath) {
     await write(
-      join(repository, "scripts", "evaluation", "runner.mjs"),
+      join(repository, ...programMismatchPath.split("/")),
       "export const mismatchedController = true;\n",
     );
   }
@@ -927,13 +931,33 @@ test("materialization rejects excessive unique parent nodes before writes", asyn
 });
 
 test("prepare rejects controller program drift", async (t) => {
-  const harness = await createHarness(t, { programMismatch: true });
+  const harness = await createHarness(t, {
+    programMismatchPath: "scripts/evaluation/runner.mjs",
+  });
 
   await assert.rejects(
     () => prepare(harness),
     /differs from controller commit/u,
   );
 });
+
+for (const controllerProgramPath of [
+  "scripts/evaluation/codex-0145-events.mjs",
+  "scripts/evaluation/codex-bob-phase-adapter.mjs",
+  "scripts/evaluation/codex-bob-phase-composition.mjs",
+  "scripts/evaluation/codex-host-policy.mjs",
+]) {
+  test(`prepare rejects drift in ${controllerProgramPath}`, async (t) => {
+    const harness = await createHarness(t, {
+      programMismatchPath: controllerProgramPath,
+    });
+
+    await assert.rejects(
+      () => prepare(harness),
+      /differs from controller commit/u,
+    );
+  });
+}
 
 test("close rejects a tampered hash-chain journal", async (t) => {
   const harness = await createHarness(t);
