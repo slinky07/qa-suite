@@ -498,7 +498,7 @@ test("browser cleanup proves its live process group empty after SIGTERM", async 
 
   assert.deepEqual(calls, [
     { pid: 102, signal: "SIGTERM" },
-    { pid: 102, timeoutMs: 500 },
+    { pid: 102, timeoutMs: 1500 },
   ]);
 });
 
@@ -527,7 +527,7 @@ test("browser cleanup never escalates after the leader exits", async () => {
 
   assert.deepEqual(calls, [
     { pid: 103, signal: "SIGTERM" },
-    { pid: 103, timeoutMs: 500 },
+    { pid: 103, timeoutMs: 1500 },
   ]);
 });
 
@@ -552,7 +552,7 @@ test("browser cleanup escalates while the owned leader remains live", async () =
 
   assert.deepEqual(calls, [
     { pid: 104, signal: "SIGTERM" },
-    { pid: 104, timeoutMs: 500 },
+    { pid: 104, timeoutMs: 1500 },
     { pid: 104, signal: "SIGKILL" },
     { pid: 104, timeoutMs: 500 },
   ]);
@@ -582,7 +582,7 @@ test("browser cleanup fails when the owned group remains present", async () => {
 
   assert.deepEqual(calls, [
     { pid: 105, signal: "SIGTERM" },
-    { pid: 105, timeoutMs: 500 },
+    { pid: 105, timeoutMs: 1500 },
     { pid: 105, signal: "SIGKILL" },
     { pid: 105, timeoutMs: 500 },
   ]);

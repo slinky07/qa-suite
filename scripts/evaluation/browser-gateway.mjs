@@ -65,6 +65,7 @@ const VIOLATION_KIND = /^[a-z][a-z0-9-]{0,63}$/;
 const SOURCE_PATH = fileURLToPath(import.meta.url);
 const BROWSER_SUPERVISOR_MODE = "--browser-supervisor";
 const BROWSER_SUPERVISOR_CONFIG = "QA_SUITE_BROWSER_SUPERVISOR";
+const GATEWAY_WORKER_MODE = "--gateway-worker";
 
 const OBSERVATION_TOOLS = Object.freeze([
   {
@@ -1729,8 +1730,6 @@ const PROCESS_GROUP_CONTROL = Object.freeze({
   signal: signalProcessGroup,
   waitForEmpty: waitForEmptyProcessGroup,
 });
-const BROWSER_TERM_WAIT_MS = 500;
-const BROWSER_KILL_WAIT_MS = 500;
 
 export async function terminateProcessGroup(
   child,
@@ -1747,18 +1746,14 @@ export async function terminateProcessGroup(
     throw new Error("browser leader exited before process-group cleanup");
   }
   processGroup.signal(child.pid, "SIGTERM");
-  if (await processGroup.waitForEmpty(child.pid, BROWSER_TERM_WAIT_MS)) {
-    return true;
-  }
+  if (await processGroup.waitForEmpty(child.pid, 1500)) return true;
   if (child.exitCode !== null || child.signalCode !== null) {
     throw new Error(
       "browser leader exited before process-group cleanup completed",
     );
   }
   processGroup.signal(child.pid, "SIGKILL");
-  if (await processGroup.waitForEmpty(child.pid, BROWSER_KILL_WAIT_MS)) {
-    return true;
-  }
+  if (await processGroup.waitForEmpty(child.pid, 500)) return true;
   throw new Error("browser process group did not become empty");
 }
 
@@ -3424,6 +3419,41 @@ export async function runBrowserGateway(policySource) {
   return closure;
 }
 
+async function runGatewayWorkerProcess(policySource) {
+  assertBrowserProcessGroupSupport();
+  const worker = spawn(
+    process.execPath,
+    [SOURCE_PATH, GATEWAY_WORKER_MODE],
+    {
+      detached: true,
+      env: {
+        ...FIXED_ENVIRONMENT,
+        QA_SUITE_BROWSER_POLICY: policySource,
+      },
+      shell: false,
+      stdio: ["pipe", "inherit", "inherit"],
+      windowsHide: true,
+    },
+  );
+  worker.stdin.on("error", () => {});
+  process.stdin.pipe(worker.stdin);
+  let exitCode;
+  let signal;
+  try {
+    [exitCode, signal] = await once(worker, "exit");
+  } finally {
+    process.stdin.unpipe(worker.stdin);
+    process.stdin.pause();
+  }
+  if (signal !== null) {
+    throw new Error(`Browser gateway worker exited with signal ${signal}`);
+  }
+  if (!Number.isSafeInteger(exitCode) || exitCode < 0 || exitCode > 255) {
+    throw new Error("Browser gateway worker returned an invalid exit code");
+  }
+  return exitCode;
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.argv[2] === BROWSER_SUPERVISOR_MODE) {
     const configSource = process.env[BROWSER_SUPERVISOR_CONFIG];
@@ -3432,21 +3462,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.stderr.write(`Browser supervisor failed: ${error.message}\n`);
       process.exitCode = 1;
     });
+  } else if (process.argv[2] === GATEWAY_WORKER_MODE) {
+    const policySource = process.env.QA_SUITE_BROWSER_POLICY;
+    delete process.env.QA_SUITE_BROWSER_POLICY;
+    await runBrowserGateway(policySource).catch((error) => {
+      process.stderr.write(`Browser gateway failed: ${error.message}\n`);
+      process.exitCode = 1;
+    });
   } else {
     const policySource = process.env.QA_SUITE_BROWSER_POLICY;
     delete process.env.QA_SUITE_BROWSER_POLICY;
-    // Codex 0.145 uses SIGTERM as its stdio MCP shutdown boundary.
-    // End local input so the existing gateway close path can publish its record.
-    const endMcpInput = () => process.stdin.push(null);
-    process.on("SIGTERM", endMcpInput);
     try {
-      await runBrowserGateway(policySource);
+      process.exitCode = await runGatewayWorkerProcess(policySource);
     } catch (error) {
-      process.stderr.write(`Browser gateway failed: ${error.message}\n`);
+      process.stderr.write(`Browser gateway launcher failed: ${error.message}\n`);
       process.exitCode = 1;
-    } finally {
-      process.removeListener("SIGTERM", endMcpInput);
-      process.stdin.destroy();
     }
   }
 }

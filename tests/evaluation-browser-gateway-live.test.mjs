@@ -289,12 +289,24 @@ function startLiveGateway(policy) {
   });
   const client = createMcpClient(gateway);
   const readGatewayClosure = async () => {
-    const [code] = await onceWithTimeout(gateway, "close", 10_000);
+    const [code, signal] = await onceWithTimeout(gateway, "close", 10_000);
     const evidenceRoot = join(ROOT, policy.evidence_path);
-    const closure = JSON.parse(
-      await readFile(join(evidenceRoot, "gateway-close.json"), "utf8"),
-    );
-    return { closure, code, evidenceRoot };
+    const closurePath = join(evidenceRoot, "gateway-close.json");
+    const deadline = Date.now() + 10_000;
+    let closure;
+    while (Date.now() < deadline) {
+      try {
+        closure = JSON.parse(await readFile(closurePath, "utf8"));
+        break;
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    }
+    if (closure === undefined) {
+      throw new Error("browser gateway closure publication timed out");
+    }
+    return { closure, code, evidenceRoot, signal };
   };
   return {
     client,
@@ -363,9 +375,15 @@ async function processTable() {
 async function waitForBrowserSupervisor(gatewayPid) {
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {
-    const children = (await processTable()).filter(
+    const table = await processTable();
+    const workers = table.filter(
       ({ parentPid, pid, processGroupId }) =>
         parentPid === gatewayPid && pid === processGroupId,
+    );
+    const children = table.filter(
+      ({ parentPid, pid, processGroupId }) =>
+        workers.some((worker) => worker.pid === parentPid) &&
+        pid === processGroupId,
     );
     if (children.length === 1) return children[0].processGroupId;
     await new Promise((resolve) => setTimeout(resolve, 25));
@@ -636,10 +654,11 @@ test("live gateway treats Codex termination as its MCP input boundary", {
     await session.client.request("tools/list");
     processGroupId = await waitForBrowserSupervisor(session.gatewayPid);
 
-    const { closure, code, evidenceRoot } =
+    const { closure, code, evidenceRoot, signal } =
       await session.closeLikeCodexTransport();
 
-    assert.equal(code, 0, session.errorContext());
+    assert.equal(code, null, session.errorContext());
+    assert.equal(signal, "SIGTERM", session.errorContext());
     assert.equal(validateBrowserGatewayClosure(closure), closure);
     assert.equal(closure.status, "closed");
     assert.equal(
