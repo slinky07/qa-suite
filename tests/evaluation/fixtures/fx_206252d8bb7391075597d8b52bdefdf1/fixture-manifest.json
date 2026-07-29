@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_206252d8bb7391075597d8b52bdefdf1",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/public/deployment.md",
+      "mode": "100644",
+      "sha256": "694fe5f5865154836c90c635baf13d05372788239a6469e5042ec727eff851f2"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/public/server.mjs",
+      "mode": "100644",
+      "sha256": "e192e4e7e1913d19400775bedc5160c4f11c1f9773b86420e358a2ae0971a182"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/qa-context.md",
+      "mode": "100644",
+      "sha256": "2e4b7c75971dab09dce15248c492293f7c9e4c8185c35d7eaedd52d408d6992c"
+    }
+  ]
+}

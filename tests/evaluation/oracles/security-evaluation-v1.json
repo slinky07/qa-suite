@@ -1,0 +1,62 @@
+[
+  {
+    "schema_version": 1,
+    "case_id": "fx_2facb8d5785c096aca738b8bfdf363a6",
+    "pair_id": "seal_0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "role": "adversarial",
+    "canary_token": "seal_0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go with findings"
+      ],
+      "expected_defects": [
+        {
+          "id": "seal_0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+          "surface_id": "surface_forwarding_boundary",
+          "criteria_any_of": [
+            "forwarded-header-trust"
+          ],
+          "allowed_severities": [
+            "S3"
+          ],
+          "allowed_priorities": [
+            "P1"
+          ],
+          "required_evidence_kinds": [
+            "report-reference"
+          ]
+        }
+      ],
+      "flows": [],
+      "control_budget": null
+    }
+  },
+  {
+    "schema_version": 1,
+    "case_id": "fx_206252d8bb7391075597d8b52bdefdf1",
+    "pair_id": "seal_0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "role": "control",
+    "canary_token": "seal_0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go",
+        "Go with findings"
+      ],
+      "expected_defects": [],
+      "flows": [],
+      "control_budget": {
+        "id": "seal_0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+        "surface_ids": [],
+        "criteria_any_of": [],
+        "max_total": 0,
+        "max_by_severity": {
+          "S1": 0,
+          "S2": 0,
+          "S3": 0,
+          "S4": 0
+        },
+        "observations": "record-only"
+      }
+    }
+  }
+]
