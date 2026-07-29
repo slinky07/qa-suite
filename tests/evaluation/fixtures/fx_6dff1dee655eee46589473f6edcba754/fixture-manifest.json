@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_6dff1dee655eee46589473f6edcba754",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/public/base/cancellation.mjs",
+      "mode": "100644",
+      "sha256": "7c7a0d0b7deecbf237ee9af46417d7e72b0ac674b3362942b2e1ee476612946b"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/public/cancellation-suite.mjs",
+      "mode": "100644",
+      "sha256": "77859b3390aeb7afb6525d5f2ba23b949cb3d864de66e1b39508a901c483fff5"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/public/candidate/cancellation.mjs",
+      "mode": "100644",
+      "sha256": "01260b1ce99ebda9ec52c8a347d1650c15bee42644c591f0e99616f2c4d58c19"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/qa-context.md",
+      "mode": "100644",
+      "sha256": "99c7b0f4263639566517ce93bbc542812cf672605ab5200958b4d7fe3819cdc1"
+    }
+  ]
+}

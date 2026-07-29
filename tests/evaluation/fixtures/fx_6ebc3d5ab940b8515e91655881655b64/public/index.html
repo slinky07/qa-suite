@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Recovery Console</title>
+  </head>
+  <body>
+    <main>
+      <h1>Recovery Console</h1>
+      <p>Restart the local worker after an interruption.</p>
+      <form id="recovery-form">
+        <button id="start-recovery" type="submit">Start recovery</button>
+      </form>
+      <p id="recovery-status" role="status" aria-live="polite">
+        Ready to start recovery.
+      </p>
+    </main>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>

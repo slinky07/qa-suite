@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "regression-evaluation-v1",
+  "lane": "regression-qa",
+  "cases": [
+    {
+      "id": "fx_6dff1dee655eee46589473f6edcba754",
+      "qa_context": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_6dff1dee655eee46589473f6edcba754/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0303030303030303030303030303030303030303030303030303030303030303",
+        "seal_17a90cae70bb2e90d99ac35b29aaa08635f4968ae24948fa4a386ae8acb57ecd"
+      ],
+      "smoke_checks": [
+        "check_candidate_syntax"
+      ]
+    },
+    {
+      "id": "fx_11ac2bf374eb701b330c6316209892fc",
+      "qa_context": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0404040404040404040404040404040404040404040404040404040404040404",
+        "seal_c84c5fc3f6156e5970792c336e389a11071af79b30536855bec2378bc7ac9e81"
+      ],
+      "smoke_checks": [
+        "check_candidate_syntax"
+      ]
+    }
+  ]
+}

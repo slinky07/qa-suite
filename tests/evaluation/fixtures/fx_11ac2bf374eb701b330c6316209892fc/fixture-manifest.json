@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_11ac2bf374eb701b330c6316209892fc",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/public/base/cancellation.mjs",
+      "mode": "100644",
+      "sha256": "7c7a0d0b7deecbf237ee9af46417d7e72b0ac674b3362942b2e1ee476612946b"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/public/cancellation-suite.mjs",
+      "mode": "100644",
+      "sha256": "77859b3390aeb7afb6525d5f2ba23b949cb3d864de66e1b39508a901c483fff5"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/public/candidate/cancellation.mjs",
+      "mode": "100644",
+      "sha256": "786919cb3548b086d0d462785b1ec4d5f079c53e344385c9767f2caf6ac9ebdf"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_11ac2bf374eb701b330c6316209892fc/qa-context.md",
+      "mode": "100644",
+      "sha256": "ad44195ac487c93cbb44af935d312e4bcfcd019fd9cc746e9566ffed808cd644"
+    }
+  ]
+}
