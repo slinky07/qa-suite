@@ -12,6 +12,8 @@ math. `scripts/evaluation/git-snapshot.mjs` and
 single-case disclosure, lane-root preparation, and artifact closure mechanics.
 `scripts/evaluation/bob-host-protocol.mjs` owns the non-qualifying
 controller sequence for Bob host adapters.
+`scripts/evaluation/codex-host-policy.mjs` owns the pure non-qualifying Codex
+host-configuration contract.
 `scripts/evaluation/bob-report-adapter.mjs` owns the non-qualifying closed Bob
 report metadata binding. `scripts/evaluation/browser-gateway.mjs` owns the
 non-qualifying rendered-page boundary and is the machine authority for its
@@ -358,6 +360,37 @@ It writes and launches nothing. Digest linkage and distinct recorded thread
 IDs do not prove actual process chronology or method order, authenticate the
 provider or controller state, attest a sandbox, prove that a report or
 artifact exists, or qualify an execution.
+
+### Pure Codex host policy
+
+`scripts/evaluation/codex-host-policy.mjs` validates and canonically binds the
+configuration for a future Codex Bob host. It accepts Darwin only and rejects
+every other platform before a conforming caller has a policy to dispatch. The
+policy pins a measured Codex CLI 0.145.0 executable, requests the built-in
+OpenAI transport, and requires one new ephemeral invocation for each Bob
+phase. No phase resumes or reuses another phase's client context.
+
+Each invocation disables Codex's built-in shell, unified-exec, and web tools,
+uses the stable read-only command sandbox, and admits exactly one trusted MCP
+server: the measured browser gateway with only that phase's canonical tools.
+The command sandbox governs model-initiated local commands; the Codex
+process's provider transport is a separate client channel outside that sandbox
+and is not reclassified as command egress. The gateway and controller, not the
+model, retain browser receipts and QA artifacts.
+
+The canonical policy and its digest prove only that this closed configuration
+was accepted. They do not launch Codex or authenticate controller state,
+provider-signed model identity, the actual runtime model/tool inventory, or a
+fresh provider context. They also do not resist hostile same-user or root
+interference, contain `setsid` or detached-session escape, attest Chrome
+non-proxy isolation, establish semantic fixture opacity, or qualify an
+execution.
+
+Bounded P1 follow-ups remain: authenticate the applied controller policy and
+observed provider/model/tool inventory at runtime; close or explicitly govern
+the hostile same-user, root, and escaped-session boundary; and obtain
+independent evidence for Chrome non-proxy isolation and fixture semantic
+opacity. These are evidence gaps, not claims supplied by the pure policy.
 
 ### Non-qualifying direct-process boundary
 
@@ -757,10 +790,11 @@ The following remain deliberately outside the current non-qualifying
 constituents:
 
 - the other lane corpora required for campaign acceptance;
-- a reviewed sandbox and provider/Codex host that composes the direct-process
-  and browser boundaries, then proves filesystem confinement, exact model-tool
-  inventory, fresh model context, hostile process-tree completion, and network
-  policy without conflating provider transport with tool egress;
+- a reviewed runtime Codex host that applies the pure Darwin policy, composes
+  the direct-process and browser boundaries, and authenticates controller
+  state, the observed provider/model/tool inventory, fresh model context,
+  hostile process-tree completion, and command-network isolation without
+  conflating provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - composition of the partial Bob lane adaptation with the smoke gate into a
   complete normalized case;
