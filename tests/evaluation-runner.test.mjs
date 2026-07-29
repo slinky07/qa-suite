@@ -44,6 +44,7 @@ const controllerProgramPaths = [
   "qa-suite/scripts/finding-ledger.mjs",
   "scripts/evaluation/bob-host-executor.mjs",
   "scripts/evaluation/bob-host-protocol.mjs",
+  "scripts/evaluation/bob-qualification-composer.mjs",
   "scripts/evaluation/bob-report-adapter.mjs",
   "scripts/evaluation/browser-gateway.mjs",
   "scripts/evaluation/codex-0145-events.mjs",
@@ -57,6 +58,7 @@ const controllerProgramPaths = [
   "scripts/evaluation/git-snapshot.mjs",
   "scripts/evaluation/run-case.mjs",
   "scripts/evaluation/runner.mjs",
+  "scripts/evaluation/scoring.mjs",
   "scripts/evaluation/schemas/codex-bob-expected-use-model-v1.schema.json",
   "scripts/evaluation/schemas/codex-bob-interface-inventory-v1.schema.json",
   "scripts/evaluation/schemas/codex-bob-task-execution-draft-v1.schema.json",
@@ -434,9 +436,14 @@ test("prepare freezes independent commits into a neutral single-case root", asyn
   );
 
   const result = await prepare(harness);
+  const state = JSON.parse(await readFile(result.state_path, "utf8"));
 
   assert.equal(result.controller_commit, harness.controllerCommit);
   assert.equal(result.subject_commit, harness.subjectCommit);
+  assert.deepEqual(
+    state.controller_program_paths,
+    controllerProgramPaths,
+  );
   assert.equal(result.preparation.qualification, "not-evidence");
   assert.equal(result.preparation.result, null);
   assert.equal(result.preparation.verification_status, "unverified");
@@ -948,6 +955,7 @@ test("prepare rejects controller program drift", async (t) => {
 });
 
 for (const controllerProgramPath of [
+  "scripts/evaluation/bob-qualification-composer.mjs",
   "scripts/evaluation/codex-0145-events.mjs",
   "scripts/evaluation/codex-bob-live-controller.mjs",
   "scripts/evaluation/codex-bob-phase-adapter.mjs",
@@ -955,6 +963,7 @@ for (const controllerProgramPath of [
   "scripts/evaluation/codex-bob-phase-target.mjs",
   "scripts/evaluation/codex-host-policy.mjs",
   "scripts/evaluation/codex-session-chain.mjs",
+  "scripts/evaluation/scoring.mjs",
   "scripts/evaluation/schemas/codex-bob-expected-use-model-v1.schema.json",
   "scripts/evaluation/schemas/codex-bob-interface-inventory-v1.schema.json",
   "scripts/evaluation/schemas/codex-bob-task-execution-draft-v1.schema.json",
