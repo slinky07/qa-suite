@@ -40,7 +40,7 @@
 - **How to start the app (deployment path):** N/A
 - **How to check it's running:** `curl --fail --show-error http://127.0.0.1:4311/api/deliveries`
 - **How to read logs:** Read the foreground server terminal.
-- **App URL(s):** http://127.0.0.1:4311/
+- **App URL(s):** http://127.0.0.1:4311/api/deliveries
 - **How to stop the app (non-destructive):** Send Ctrl-C to the foreground server.
 - **Services that may already be running:** N/A
 - **Disposable test target:** The entire local fixture is disposable. Its synthetic in-memory queue is discarded when the server stops.
