@@ -87,8 +87,7 @@
                 },
                 "maxItems": 256,
                 "minItems": 1,
-                "type": "array",
-                "uniqueItems": true
+                "type": "array"
               },
               "evidence": {
                 "items": {
@@ -163,8 +162,7 @@
                   "type": "string"
                 },
                 "maxItems": 256,
-                "type": "array",
-                "uniqueItems": true
+                "type": "array"
               },
               "id": {
                 "pattern": "^flow_[a-z0-9]+(?:_[a-z0-9]+)*$",
@@ -201,8 +199,7 @@
             "type": "string"
           },
           "maxItems": 256,
-          "type": "array",
-          "uniqueItems": true
+          "type": "array"
         },
         "observations": {
           "items": {
@@ -314,8 +311,7 @@
             },
             "maxItems": 128,
             "minItems": 1,
-            "type": "array",
-            "uniqueItems": true
+            "type": "array"
           },
           "disposition": {
             "enum": [

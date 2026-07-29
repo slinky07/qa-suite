@@ -463,5 +463,10 @@ test("ships closed bounded output schemas for all three phases", async () => {
     assert.equal(schema.additionalProperties, false);
     assert.ok(Array.isArray(schema.required));
     assert.ok(schema.required.length > 0);
+    assert.equal(
+      JSON.stringify(schema).includes('"uniqueItems"'),
+      false,
+      `${filename} must use the OpenAI Structured Outputs schema subset`,
+    );
   }
 });

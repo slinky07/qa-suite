@@ -13,8 +13,7 @@
             },
             "maxItems": 128,
             "minItems": 1,
-            "type": "array",
-            "uniqueItems": true
+            "type": "array"
           },
           "id": {
             "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
