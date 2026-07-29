@@ -715,6 +715,11 @@ test("MCP lifecycle exposes exact tools and canonical tool output", async () => 
     id: 3,
     jsonrpc: "2.0",
     method: "tools/list",
+    params: {
+      _meta: {
+        progressToken: "tools-list",
+      },
+    },
   })}\n`);
   input.write(`${JSON.stringify({
     id: 4,
@@ -797,6 +802,18 @@ test("MCP malformed requests return errors without ending the server", async () 
   input.write(`${JSON.stringify({
     id: 4,
     jsonrpc: "2.0",
+    method: "tools/list",
+    params: { _meta: [] },
+  })}\n`);
+  input.write(`${JSON.stringify({
+    id: 5,
+    jsonrpc: "2.0",
+    method: "tools/list",
+    params: { _meta: {}, cursor: "unsupported" },
+  })}\n`);
+  input.write(`${JSON.stringify({
+    id: 6,
+    jsonrpc: "2.0",
     method: "unknown",
   })}\n`);
   input.end();
@@ -806,7 +823,9 @@ test("MCP malformed requests return errors without ending the server", async () 
   assert.equal(responses[0].error.code, -32600);
   assert.match(responses[1].error.message, /unsupported/u);
   assert.equal(responses[2].result.serverInfo.name, "qa-suite-browser-gateway");
-  assert.equal(responses[3].error.code, -32601);
+  assert.match(responses[3].error.message, /must be an object/u);
+  assert.match(responses[4].error.message, /fields are/u);
+  assert.equal(responses[5].error.code, -32601);
 });
 
 test("MCP input has a global message budget", async () => {

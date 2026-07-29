@@ -2611,6 +2611,15 @@ function validatedMcpRequest(value) {
   };
 }
 
+function validateIgnoredMcpMeta(params, label) {
+  if (Object.keys(params).length === 0) return;
+  assertExactKeys(params, ["_meta"], label);
+  assertObject(params._meta, `${label}._meta`);
+  if (Buffer.byteLength(canonicalJson(params._meta), "utf8") > 16 * 1024) {
+    throw new Error(`${label}._meta exceeds its byte limit`);
+  }
+}
+
 function isWellFormedNotification(value) {
   return (
     value !== null &&
@@ -2678,7 +2687,7 @@ async function handleMcpMessage(message, state, gateway) {
   }
   if (!state.ready) throw new Error("MCP request arrived before initialization");
   if (request.method === "tools/list") {
-    assertExactKeys(request.params, [], "tools/list.params");
+    validateIgnoredMcpMeta(request.params, "tools/list.params");
     return jsonRpcResult(request.id, { tools: gateway.listTools() });
   }
   if (request.method === "tools/call") {
