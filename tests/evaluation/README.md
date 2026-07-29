@@ -820,6 +820,24 @@ checks prove deterministic fixture bytes and behavior only. They do not attest
 semantic opacity, host isolation, a Bob baseline, or any qualifying evaluation
 result.
 
+## Committed smoke and regression corpus
+
+- `smoke-evaluation-v1` pairs two otherwise identical Recovery Console
+  fixtures. Both start with HTTP 200 and a valid title; the adversarial action
+  stays disabled at `Starting recovery…`, while the control completes recovery.
+- `regression-evaluation-v1` pairs two cancellation-window fixtures whose
+  public base and candidate tests pass. At the uncovered inclusive boundary,
+  the adversarial candidate changes `>=` to `>`, while the control preserves
+  the base behavior.
+
+Each suite is role-neutral: its commitments reveal neither pair membership nor
+role or meaning. Pair roles, pair IDs, and expected assertions remain only in
+the matching controller-side oracle. Oracle paths and bytes, seal tokens, and
+sibling case IDs never enter selected fixture bytes. The fixture-pair tests
+validate exact corpus bytes, isolated behavior, and deterministic non-qualifying
+scoring. Only fresh isolated runs of the unchanged lanes provide semantic
+evidence that a lane detected or missed the sealed defect.
+
 ## Smoke gating and incomplete coverage
 
 Smoke always runs first. Its canonical outcome controls whether a deeper lane

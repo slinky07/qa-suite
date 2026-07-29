@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "smoke-evaluation-v1",
+  "lane": "smoke-qa",
+  "cases": [
+    {
+      "id": "fx_40b511323ff4e856bd4f39d1e94398b7",
+      "qa_context": "tests/evaluation/fixtures/fx_40b511323ff4e856bd4f39d1e94398b7/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_40b511323ff4e856bd4f39d1e94398b7/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0101010101010101010101010101010101010101010101010101010101010101",
+        "seal_2374b5aa3704ab0eab44f48409807055ce8a295476d24548ed9cfe17e1bde445"
+      ],
+      "smoke_checks": [
+        "check_app_startup",
+        "check_recovery_action"
+      ]
+    },
+    {
+      "id": "fx_6ebc3d5ab940b8515e91655881655b64",
+      "qa_context": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0202020202020202020202020202020202020202020202020202020202020202",
+        "seal_b6146648af4366c111a75661d62271e941dc6bb712328b0e2e66131fe97c6c12"
+      ],
+      "smoke_checks": [
+        "check_app_startup",
+        "check_recovery_action"
+      ]
+    }
+  ]
+}

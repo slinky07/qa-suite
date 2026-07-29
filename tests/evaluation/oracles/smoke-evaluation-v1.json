@@ -1,0 +1,49 @@
+[
+  {
+    "schema_version": 1,
+    "case_id": "fx_40b511323ff4e856bd4f39d1e94398b7",
+    "pair_id": "seal_a911cb3385dac900396e4ba47976304a0679ec1a12a5c1f75c9bb92e6e37bd4f",
+    "role": "adversarial",
+    "canary_token": "seal_0101010101010101010101010101010101010101010101010101010101010101",
+    "assertions": {
+      "allowed_verdicts": [
+        "No-Go"
+      ],
+      "expected_defects": [
+        {
+          "id": "seal_2374b5aa3704ab0eab44f48409807055ce8a295476d24548ed9cfe17e1bde445",
+          "checklist_ids_any_of": [
+            "check_recovery_action"
+          ],
+          "required_evidence_kinds": [
+            "screenshot"
+          ]
+        }
+      ],
+      "flows": [],
+      "control_budget": null
+    }
+  },
+  {
+    "schema_version": 1,
+    "case_id": "fx_6ebc3d5ab940b8515e91655881655b64",
+    "pair_id": "seal_a911cb3385dac900396e4ba47976304a0679ec1a12a5c1f75c9bb92e6e37bd4f",
+    "role": "control",
+    "canary_token": "seal_0202020202020202020202020202020202020202020202020202020202020202",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go"
+      ],
+      "expected_defects": [],
+      "flows": [],
+      "control_budget": {
+        "id": "seal_b6146648af4366c111a75661d62271e941dc6bb712328b0e2e66131fe97c6c12",
+        "surface_ids": [],
+        "criteria_any_of": [],
+        "max_total": 0,
+        "max_by_severity": null,
+        "observations": "record-only"
+      }
+    }
+  }
+]

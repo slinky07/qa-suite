@@ -1,0 +1,62 @@
+[
+  {
+    "schema_version": 1,
+    "case_id": "fx_6dff1dee655eee46589473f6edcba754",
+    "pair_id": "seal_b858e284b02f209cb8cff476b91914c18db4e8c4ae26ddea0eb9a5647c5c9e1a",
+    "role": "adversarial",
+    "canary_token": "seal_0303030303030303030303030303030303030303030303030303030303030303",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go with findings"
+      ],
+      "expected_defects": [
+        {
+          "id": "seal_17a90cae70bb2e90d99ac35b29aaa08635f4968ae24948fa4a386ae8acb57ecd",
+          "surface_id": "surface_cancellation_window",
+          "criteria_any_of": [
+            "regression"
+          ],
+          "allowed_severities": [
+            "S3"
+          ],
+          "allowed_priorities": [
+            "P1"
+          ],
+          "required_evidence_kinds": [
+            "report-reference"
+          ]
+        }
+      ],
+      "flows": [],
+      "control_budget": null
+    }
+  },
+  {
+    "schema_version": 1,
+    "case_id": "fx_11ac2bf374eb701b330c6316209892fc",
+    "pair_id": "seal_b858e284b02f209cb8cff476b91914c18db4e8c4ae26ddea0eb9a5647c5c9e1a",
+    "role": "control",
+    "canary_token": "seal_0404040404040404040404040404040404040404040404040404040404040404",
+    "assertions": {
+      "allowed_verdicts": [
+        "Go",
+        "Go with findings"
+      ],
+      "expected_defects": [],
+      "flows": [],
+      "control_budget": {
+        "id": "seal_c84c5fc3f6156e5970792c336e389a11071af79b30536855bec2378bc7ac9e81",
+        "surface_ids": [],
+        "criteria_any_of": [],
+        "max_total": 0,
+        "max_by_severity": {
+          "S1": 0,
+          "S2": 0,
+          "S3": 0,
+          "S4": 0
+        },
+        "observations": "record-only"
+      }
+    }
+  }
+]

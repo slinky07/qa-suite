@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_6ebc3d5ab940b8515e91655881655b64",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/public/app.mjs",
+      "mode": "100644",
+      "sha256": "09712faac411f0d493cb343ee82a906a4f76da5f2974c93d2eeebf48a950ef4f"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/public/index.html",
+      "mode": "100644",
+      "sha256": "456c20c154207be2fb1a0dcda4344914581e2214974c52d645cb661bae4d0bee"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/public/server.mjs",
+      "mode": "100644",
+      "sha256": "7b18e8c1b686d9c331a22d2b7076a363a0c6d83129b1671cdd7c422e699e5a3c"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_6ebc3d5ab940b8515e91655881655b64/qa-context.md",
+      "mode": "100644",
+      "sha256": "8a3ebaa6d361d7e339f6bc8bddb9ccf1e53a5e36976522cdf4453498122e4133"
+    }
+  ]
+}
