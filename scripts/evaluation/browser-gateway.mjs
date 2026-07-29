@@ -3429,9 +3429,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   } else {
     const policySource = process.env.QA_SUITE_BROWSER_POLICY;
     delete process.env.QA_SUITE_BROWSER_POLICY;
-    await runBrowserGateway(policySource).catch((error) => {
+    // Codex 0.145 sends SIGTERM before dropping its MCP stdio transport.
+    // Ignore that signal so the following EOF can drive the existing close path.
+    const awaitTransportClose = () => {};
+    process.on("SIGTERM", awaitTransportClose);
+    try {
+      await runBrowserGateway(policySource);
+    } catch (error) {
       process.stderr.write(`Browser gateway failed: ${error.message}\n`);
       process.exitCode = 1;
-    });
+    } finally {
+      process.removeListener("SIGTERM", awaitTransportClose);
+    }
   }
 }

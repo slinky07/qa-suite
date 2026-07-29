@@ -288,16 +288,28 @@ function startLiveGateway(policy) {
     stderr += chunk;
   });
   const client = createMcpClient(gateway);
+  const closeGateway = async () => {
+    gateway.stdin.end();
+    const [code] = await onceWithTimeout(gateway, "close", 10_000);
+    const evidenceRoot = join(ROOT, policy.evidence_path);
+    const closure = JSON.parse(
+      await readFile(join(evidenceRoot, "gateway-close.json"), "utf8"),
+    );
+    return { closure, code, evidenceRoot };
+  };
   return {
     client,
-    async close() {
-      gateway.stdin.end();
-      const [code] = await onceWithTimeout(gateway, "close", 10_000);
-      const evidenceRoot = join(ROOT, policy.evidence_path);
-      const closure = JSON.parse(
-        await readFile(join(evidenceRoot, "gateway-close.json"), "utf8"),
-      );
-      return { closure, code, evidenceRoot };
+    close: closeGateway,
+    async closeLikeCodexTransport() {
+      gateway.kill("SIGTERM");
+      const forceKill = setTimeout(() => {
+        if (gateway.exitCode === null) gateway.kill("SIGKILL");
+      }, 2000);
+      try {
+        return await closeGateway();
+      } finally {
+        clearTimeout(forceKill);
+      }
     },
     errorContext() {
       return stderr;
@@ -587,6 +599,57 @@ test("live gateway loss force-empties its supervised Chrome group", {
       true,
       "Chrome process group survived gateway loss",
     );
+  } catch (error) {
+    throw new Error(`${error.message}\n${session.errorContext()}`);
+  } finally {
+    session.kill();
+    if (
+      processGroupId !== undefined &&
+      !(await waitForEmptyProcessGroup(processGroupId))
+    ) {
+      process.kill(-processGroupId, "SIGKILL");
+    }
+    await fixture.stop();
+  }
+});
+
+test("live gateway survives Codex termination until transport EOF", {
+  skip: !RUN_LIVE,
+  timeout: 30_000,
+}, async () => {
+  const fixture = await startFixtureServer();
+  const evidenceToken = randomBytes(8).toString("hex");
+  const policy = await livePolicy({
+    allowedPaths: ["/", "/app.mjs", "/index.html", "/styles.css"],
+    evidencePath:
+      `QA/evidence/live_${evidenceToken}/task_execution`,
+    targetUrl: `http://127.0.0.1:${fixture.port}/`,
+  });
+  const session = startLiveGateway(policy);
+  let processGroupId;
+
+  try {
+    await session.initialize();
+    session.notifyInitialized();
+    await session.client.request("tools/list");
+    processGroupId = await waitForBrowserSupervisor(session.gatewayPid);
+
+    const { closure, code, evidenceRoot } =
+      await session.closeLikeCodexTransport();
+
+    assert.equal(code, 0, session.errorContext());
+    assert.equal(validateBrowserGatewayClosure(closure), closure);
+    assert.equal(closure.status, "closed");
+    assert.equal(
+      await waitForEmptyProcessGroup(processGroupId),
+      true,
+      "Chrome process group survived Codex transport closure",
+    );
+    const journal = (await readFile(
+      join(evidenceRoot, "gateway-journal.jsonl"),
+      "utf8",
+    )).trim().split("\n").map((line) => JSON.parse(line));
+    assert.equal(journal.at(-1).event, "gateway_closed");
   } catch (error) {
     throw new Error(`${error.message}\n${session.errorContext()}`);
   } finally {
