@@ -82,6 +82,8 @@ const CHILD_TIMEOUT_MS = 180_000;
 const DIAGNOSTIC_TIMEOUT_MS = 15_000;
 const FIXTURE_START_TIMEOUT_MS = 5_000;
 const FIXTURE_STOP_TIMEOUT_MS = 2_000;
+const GATEWAY_CLOSE_ATTEMPTS = 200;
+const GATEWAY_CLOSE_POLL_MS = 25;
 
 function assertObject(value, label) {
   if (
@@ -1068,6 +1070,28 @@ async function readBounded(path, maximum, label) {
   return readFile(path);
 }
 
+async function readPublishedGatewayClosure(path) {
+  for (let attempt = 0; attempt < GATEWAY_CLOSE_ATTEMPTS; attempt += 1) {
+    try {
+      return await readBounded(
+        path,
+        64 * 1024,
+        "browser gateway closure",
+      );
+    } catch (error) {
+      if (
+        error?.code !== "ENOENT" ||
+        attempt === GATEWAY_CLOSE_ATTEMPTS - 1
+      ) {
+        throw error;
+      }
+      await new Promise((resolvePoll) =>
+        setTimeout(resolvePoll, GATEWAY_CLOSE_POLL_MS)
+      );
+    }
+  }
+}
+
 export async function runCodexBobPhaseTarget({
   configSource,
   requestSource,
@@ -1169,10 +1193,8 @@ export async function runCodexBobPhaseTarget({
     await inspectMeasuredFile(identity, `${label} after execution`);
   }
   const browserRoot = join(evidencePath.absolute_path, "browser");
-  const closureBytes = await readBounded(
+  const closureBytes = await readPublishedGatewayClosure(
     join(browserRoot, "gateway-close.json"),
-    64 * 1024,
-    "browser gateway closure",
   );
   const journalBytes = await readBounded(
     join(browserRoot, "gateway-journal.jsonl"),
