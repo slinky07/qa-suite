@@ -124,6 +124,41 @@ test("preserves optional MCP metadata and structured content", () => {
   assert.equal(parsed.final_message.completed_sequence, 6);
 });
 
+test("accepts the exact Codex 0.145 todo-list lifecycle", () => {
+  const events = fixtureEvents();
+  events[2].item.id = "item_1";
+  events[3].item.id = "item_1";
+  events[4].item.id = "item_2";
+  const todoList = {
+    id: "item_0",
+    items: [
+      {
+        completed: false,
+        text: "Observe the app interface",
+      },
+    ],
+    type: "todo_list",
+  };
+  events.splice(2, 0, {
+    item: structuredClone(todoList),
+    type: "item.started",
+  });
+  events.splice(3, 0, {
+    item: structuredClone(todoList),
+    type: "item.updated",
+  });
+  events.splice(-1, 0, {
+    item: structuredClone(todoList),
+    type: "item.completed",
+  });
+
+  const parsed = parseCodex0145TurnJsonl(serialize(events));
+
+  assert.equal(parsed.event_count, 9);
+  assert.equal(parsed.mcp_calls[0].id, "item_1");
+  assert.equal(parsed.final_message.id, "item_2");
+});
+
 test("rejects incomplete and drifted top-level lifecycles", () => {
   assert.throws(
     () => parseCodex0145TurnJsonl(fixtureSource.slice(0, -1)),
@@ -276,6 +311,79 @@ test("rejects interleaved, unsupported, and non-final items", () => {
       });
     },
     /reasoning text must not be whitespace-only/u,
+  );
+  expectMutation(
+    (events) => {
+      events[4].type = "item.updated";
+    },
+    /agent_message cannot be updated/u,
+  );
+});
+
+test("rejects drifted and incomplete todo-list lifecycles", () => {
+  const todoList = {
+    id: "item_0",
+    items: [
+      {
+        completed: false,
+        text: "Observe the app interface",
+      },
+    ],
+    type: "todo_list",
+  };
+
+  expectMutation(
+    (events) => {
+      events.splice(2, 0, {
+        item: structuredClone(todoList),
+        type: "item.updated",
+      });
+    },
+    /has no matching start/u,
+  );
+  expectMutation(
+    (events) => {
+      events[2].item.id = "item_1";
+      events[3].item.id = "item_1";
+      events[4].item.id = "item_2";
+      events.splice(2, 0, {
+        item: structuredClone(todoList),
+        type: "item.started",
+      });
+    },
+    /only final completed item|closed todo list/u,
+  );
+  expectMutation(
+    (events) => {
+      events[2].item.id = "item_1";
+      events[3].item.id = "item_1";
+      events[4].item.id = "item_2";
+      events.splice(2, 0, {
+        item: structuredClone(todoList),
+        type: "item.started",
+      });
+      const completion = structuredClone(todoList);
+      completion.items[0].completed = true;
+      events.splice(-1, 0, {
+        item: completion,
+        type: "item.completed",
+      });
+    },
+    /completion is invalid/u,
+  );
+  expectMutation(
+    (events) => {
+      events[2].item.id = "item_1";
+      events[3].item.id = "item_1";
+      events[4].item.id = "item_2";
+      const invalid = structuredClone(todoList);
+      invalid.items[0].completed = "false";
+      events.splice(2, 0, {
+        item: invalid,
+        type: "item.started",
+      });
+    },
+    /completed must be boolean/u,
   );
 });
 

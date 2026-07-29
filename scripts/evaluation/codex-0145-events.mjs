@@ -10,11 +10,13 @@ const ITEM_ID = /^item_(?:0|[1-9][0-9]*)$/u;
 const MAX_SOURCE_BYTES = 16 * 1024 * 1024;
 const MAX_EVENTS = 2_048;
 const MAX_CONTENT_BLOCKS = 256;
+const MAX_TODO_ITEMS = 256;
 const MAX_TEXT_BYTES = 4 * 1024 * 1024;
 const ALLOWED_ITEM_TYPES = new Set([
   "agent_message",
   "mcp_tool_call",
   "reasoning",
+  "todo_list",
 ]);
 
 function assertObject(value, label) {
@@ -168,6 +170,41 @@ function validateTextItem(item) {
   };
 }
 
+function validateTodoList(item) {
+  assertExactKeys(item, ["id", "items", "type"], "Codex todo list");
+  if (item.type !== "todo_list") {
+    throw new Error("Codex todo list type is invalid");
+  }
+  const items = assertDenseArray(item.items, "Codex todo list.items", {
+    maximum: MAX_TODO_ITEMS,
+  }).map((todo, index) => {
+    assertExactKeys(
+      todo,
+      ["completed", "text"],
+      `Codex todo list.items[${index}]`,
+    );
+    if (typeof todo.completed !== "boolean") {
+      throw new Error(
+        `Codex todo list.items[${index}].completed must be boolean`,
+      );
+    }
+    return {
+      completed: todo.completed,
+      text: assertString(
+        todo.text,
+        `Codex todo list.items[${index}].text`,
+      ),
+    };
+  });
+  return {
+    id: assertString(item.id, "Codex todo list ID", {
+      maximum: 256,
+      pattern: ITEM_ID,
+    }),
+    items,
+  };
+}
+
 function parseEvents(source) {
   assertString(source, "Codex 0.145 JSONL", {
     maximum: MAX_SOURCE_BYTES,
@@ -218,13 +255,17 @@ export function parseCodex0145TurnJsonl(source) {
   const mcpCalls = [];
   const reasoning = [];
   let activeCall = null;
+  let activeTodoList = null;
+  let completedTodoList = false;
   let finalMessage = null;
   let nextItemIndex = 0;
 
   itemEvents.forEach((event, index) => {
     const sequence = index + 3;
     assertExactKeys(event, ["item", "type"], "Codex item event");
-    if (!["item.started", "item.completed"].includes(event.type)) {
+    if (
+      !["item.started", "item.updated", "item.completed"].includes(event.type)
+    ) {
       throw new Error(`Codex JSONL event ${event.type} is unsupported`);
     }
     assertObject(event.item, "Codex JSONL item");
@@ -232,6 +273,65 @@ export function parseCodex0145TurnJsonl(source) {
       throw new Error(`Codex item type ${event.item.type} is unsupported`);
     }
 
+    if (event.item.type === "todo_list") {
+      const todoList = validateTodoList(event.item);
+      if (activeCall !== null) {
+        throw new Error("Codex MCP tool call lifecycle was interleaved");
+      }
+      if (event.type === "item.started") {
+        if (
+          activeTodoList !== null ||
+          completedTodoList ||
+          finalMessage !== null ||
+          completedIds.has(todoList.id)
+        ) {
+          throw new Error("Codex todo list start is invalid");
+        }
+        assertExpectedItemId(todoList.id, nextItemIndex);
+        nextItemIndex += 1;
+        activeTodoList = {
+          ...todoList,
+          started_sequence: sequence,
+        };
+        return;
+      }
+      if (
+        activeTodoList === null ||
+        todoList.id !== activeTodoList.id
+      ) {
+        throw new Error("Codex todo list has no matching start");
+      }
+      if (event.type === "item.updated") {
+        if (finalMessage !== null) {
+          throw new Error(
+            "Codex agent message must be the only final completed item",
+          );
+        }
+        activeTodoList.items = todoList.items;
+        return;
+      }
+      if (
+        finalMessage === null ||
+        index !== itemEvents.length - 1 ||
+        canonicalJson(todoList.items) !==
+          canonicalJson(activeTodoList.items)
+      ) {
+        throw new Error("Codex todo list completion is invalid");
+      }
+      completedIds.add(todoList.id);
+      completedTodoList = true;
+      activeTodoList = null;
+      return;
+    }
+
+    if (event.type === "item.updated") {
+      throw new Error(`Codex ${event.item.type} cannot be updated`);
+    }
+    if (finalMessage !== null) {
+      throw new Error(
+        "Codex agent message must be the only final completed item",
+      );
+    }
     if (event.item.type === "mcp_tool_call") {
       const identity = validateMcpIdentity(event.item);
       if (event.type === "item.started") {
@@ -308,10 +408,10 @@ export function parseCodex0145TurnJsonl(source) {
       });
       return;
     }
-    if (
-      finalMessage !== null ||
-      index !== itemEvents.length - 1
-    ) {
+    const expectedFinalIndex = activeTodoList === null
+      ? itemEvents.length - 1
+      : itemEvents.length - 2;
+    if (index !== expectedFinalIndex) {
       throw new Error(
         "Codex agent message must be the only final completed item",
       );
@@ -323,9 +423,13 @@ export function parseCodex0145TurnJsonl(source) {
     };
   });
 
-  if (activeCall !== null || finalMessage === null) {
+  if (
+    activeCall !== null ||
+    activeTodoList !== null ||
+    finalMessage === null
+  ) {
     throw new Error(
-      "Codex turn requires closed MCP calls and one final agent message",
+      "Codex turn requires closed MCP calls, closed todo list, and one final agent message",
     );
   }
   return {
