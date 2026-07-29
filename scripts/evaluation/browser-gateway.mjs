@@ -1729,6 +1729,8 @@ const PROCESS_GROUP_CONTROL = Object.freeze({
   signal: signalProcessGroup,
   waitForEmpty: waitForEmptyProcessGroup,
 });
+const BROWSER_TERM_WAIT_MS = 500;
+const BROWSER_KILL_WAIT_MS = 500;
 
 export async function terminateProcessGroup(
   child,
@@ -1745,14 +1747,18 @@ export async function terminateProcessGroup(
     throw new Error("browser leader exited before process-group cleanup");
   }
   processGroup.signal(child.pid, "SIGTERM");
-  if (await processGroup.waitForEmpty(child.pid, 1500)) return true;
+  if (await processGroup.waitForEmpty(child.pid, BROWSER_TERM_WAIT_MS)) {
+    return true;
+  }
   if (child.exitCode !== null || child.signalCode !== null) {
     throw new Error(
       "browser leader exited before process-group cleanup completed",
     );
   }
   processGroup.signal(child.pid, "SIGKILL");
-  if (await processGroup.waitForEmpty(child.pid, 500)) return true;
+  if (await processGroup.waitForEmpty(child.pid, BROWSER_KILL_WAIT_MS)) {
+    return true;
+  }
   throw new Error("browser process group did not become empty");
 }
 
