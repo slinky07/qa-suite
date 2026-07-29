@@ -288,8 +288,7 @@ function startLiveGateway(policy) {
     stderr += chunk;
   });
   const client = createMcpClient(gateway);
-  const closeGateway = async () => {
-    gateway.stdin.end();
+  const readGatewayClosure = async () => {
     const [code] = await onceWithTimeout(gateway, "close", 10_000);
     const evidenceRoot = join(ROOT, policy.evidence_path);
     const closure = JSON.parse(
@@ -299,14 +298,17 @@ function startLiveGateway(policy) {
   };
   return {
     client,
-    close: closeGateway,
+    close() {
+      gateway.stdin.end();
+      return readGatewayClosure();
+    },
     async closeLikeCodexTransport() {
       gateway.kill("SIGTERM");
       const forceKill = setTimeout(() => {
         if (gateway.exitCode === null) gateway.kill("SIGKILL");
       }, 2000);
       try {
-        return await closeGateway();
+        return await readGatewayClosure();
       } finally {
         clearTimeout(forceKill);
       }
@@ -613,7 +615,7 @@ test("live gateway loss force-empties its supervised Chrome group", {
   }
 });
 
-test("live gateway survives Codex termination until transport EOF", {
+test("live gateway treats Codex termination as its MCP input boundary", {
   skip: !RUN_LIVE,
   timeout: 30_000,
 }, async () => {

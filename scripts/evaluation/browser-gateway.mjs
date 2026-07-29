@@ -3429,17 +3429,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   } else {
     const policySource = process.env.QA_SUITE_BROWSER_POLICY;
     delete process.env.QA_SUITE_BROWSER_POLICY;
-    // Codex 0.145 sends SIGTERM before dropping its MCP stdio transport.
-    // Ignore that signal so the following EOF can drive the existing close path.
-    const awaitTransportClose = () => {};
-    process.on("SIGTERM", awaitTransportClose);
+    // Codex 0.145 uses SIGTERM as its stdio MCP shutdown boundary.
+    // End local input so the existing gateway close path can publish its record.
+    const endMcpInput = () => process.stdin.push(null);
+    process.on("SIGTERM", endMcpInput);
     try {
       await runBrowserGateway(policySource);
     } catch (error) {
       process.stderr.write(`Browser gateway failed: ${error.message}\n`);
       process.exitCode = 1;
     } finally {
-      process.removeListener("SIGTERM", awaitTransportClose);
+      process.removeListener("SIGTERM", endMcpInput);
+      process.stdin.destroy();
     }
   }
 }
