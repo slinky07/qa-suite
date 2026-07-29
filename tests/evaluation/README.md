@@ -268,11 +268,13 @@ hashes the accepted output into the transcript; only
 paths with the closed artifact inventory. These adapter assertions are not
 proof by themselves.
 
-The transcript remains `unverified`, `not-evidence`, and `result: null`; every
-isolation and method-order claim remains `not-attested`. This proves the
-controller call sequence only. It does not prove that an unreviewed adapter
-withheld other tools, that the inventory or model is semantically correct, or
-that a real host obeyed the requests.
+A controller-executed transcript remains `unverified`, `not-evidence`, and
+`result: null`; every isolation and method-order claim remains `not-attested`.
+Its completion proves only the controller call sequence. A composer-built
+transcript proves only validated structural dependencies and digest/event
+ordering, not process chronology or method order. Neither kind proves that an
+unreviewed adapter withheld other tools, that the inventory or model is
+semantically correct, or that a real host obeyed the requests.
 Report sections, filenames, timestamps, and lane-authored event files remain
 unacceptable chronology evidence.
 
@@ -340,6 +342,22 @@ The adapter returns a fixed `unverified`, `not-evidence`, `result: null`
 receipt. It writes and launches nothing, and it does not authenticate the
 inputs, attest a sandbox or method order, compose multiple phases, qualify an
 execution, or prove that any report or evidence artifact exists.
+
+### Three-phase Codex Bob composition
+
+`composeCodexBobPhaseRecords()` joins exactly one validated atomic record for
+each Bob phase. It delegates Bob request and transcript semantics to the
+public validators in `bob-host-protocol.mjs`, binds each atomic receipt and
+its digests, and requires the three recorded Codex thread IDs to be distinct.
+It returns the authoritative Bob transcript, one compact composition, and the
+task phase's unwritten report candidate without restating either authority's
+schema.
+
+The composition remains `unverified`, `not-evidence`, and `result: null`.
+It writes and launches nothing. Digest linkage and distinct recorded thread
+IDs do not prove actual process chronology or method order, authenticate the
+provider or controller state, attest a sandbox, prove that a report or
+artifact exists, or qualify an execution.
 
 ### Non-qualifying direct-process boundary
 
