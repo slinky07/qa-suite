@@ -123,6 +123,12 @@ function stream(bytes, character) {
 
 function authObservation() {
   const status = Buffer.from("Logged in using ChatGPT\n", "utf8");
+  const warning = Buffer.from(
+    "WARNING: proceeding, even though we could not create PATH aliases: " +
+      "Operation not permitted (os error 1)\n",
+    "utf8",
+  );
+  const stderr = Buffer.concat([warning, status]);
   return {
     arguments_sha256: digest("1"),
     exit_code: 0,
@@ -132,11 +138,11 @@ function authObservation() {
     qualification: "not-evidence",
     result: null,
     schema_version: 1,
-    stderr: stream(0, "2"),
-    stdout: {
-      bytes: status.length,
-      sha256: sha256(status),
+    stderr: {
+      bytes: stderr.length,
+      sha256: sha256(stderr),
     },
+    stdout: stream(0, "2"),
     verification_status: "unverified",
   };
 }
@@ -338,6 +344,49 @@ test("validates the non-evidence atomic phase record and its joins", () => {
   assert.throws(
     () => validateCodexBobPhaseRecord(promoted, request, authorities),
     /fixed and non-qualifying/u,
+  );
+
+  const statusOnly = structuredClone(record);
+  const status = Buffer.from("Logged in using ChatGPT\n", "utf8");
+  statusOnly.auth_observation.stderr = {
+    bytes: status.length,
+    sha256: sha256(status),
+  };
+  assert.equal(
+    validateCodexBobPhaseRecord(statusOnly, request, authorities),
+    statusOnly,
+  );
+
+  const staleStdoutContract = structuredClone(record);
+  staleStdoutContract.auth_observation.stderr = stream(0, "2");
+  staleStdoutContract.auth_observation.stdout = {
+    bytes: status.length,
+    sha256: sha256(status),
+  };
+  assert.throws(
+    () =>
+      validateCodexBobPhaseRecord(
+        staleStdoutContract,
+        request,
+        authorities,
+      ),
+    /streams do not match ChatGPT status/u,
+  );
+
+  const duplicateStatus = structuredClone(record);
+  const duplicated = Buffer.concat([status, status]);
+  duplicateStatus.auth_observation.stderr = {
+    bytes: duplicated.length,
+    sha256: sha256(duplicated),
+  };
+  assert.throws(
+    () =>
+      validateCodexBobPhaseRecord(
+        duplicateStatus,
+        request,
+        authorities,
+      ),
+    /streams do not match ChatGPT status/u,
   );
 
   const renamedDiagnostic = structuredClone(record);

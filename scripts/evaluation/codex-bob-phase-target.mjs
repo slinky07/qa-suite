@@ -57,6 +57,19 @@ const FIXED_ENVIRONMENT = Object.freeze({
   LC_ALL: "C",
   TZ: "UTC",
 });
+const CHATGPT_LOGIN_STATUS = Buffer.from(
+  "Logged in using ChatGPT\n",
+  "utf8",
+);
+const PATH_ALIAS_WARNING = Buffer.from(
+  "WARNING: proceeding, even though we could not create PATH aliases: " +
+    "Operation not permitted (os error 1)\n",
+  "utf8",
+);
+const CHATGPT_LOGIN_STDERR_VARIANTS = Object.freeze([
+  CHATGPT_LOGIN_STATUS,
+  Buffer.concat([PATH_ALIAS_WARNING, CHATGPT_LOGIN_STATUS]),
+]);
 const MAX_CONFIG_BYTES = 16 * 1024;
 const MAX_REQUEST_BYTES = 512 * 1024;
 const MAX_CODEX_JSONL_BYTES = 16 * 1024 * 1024;
@@ -545,12 +558,13 @@ async function observeAuthentication(config) {
     stdoutMaximum: MAX_DIAGNOSTIC_BYTES,
     timeoutMs: DIAGNOSTIC_TIMEOUT_MS,
   });
-  const status = result.stdout.toString("utf8").trim();
   if (
     result.code !== 0 ||
     result.signal !== null ||
-    result.stdout.toString("utf8") !== "Logged in using ChatGPT\n" ||
-    status !== "Logged in using ChatGPT"
+    result.stdout.length !== 0 ||
+    !CHATGPT_LOGIN_STDERR_VARIANTS.some((expected) =>
+      result.stderr.equals(expected)
+    )
   ) {
     throw new Error("Codex client is not observed as logged in using ChatGPT");
   }
@@ -876,12 +890,15 @@ function validateAuthenticationObservation(value) {
     "auth observation.stdout",
     MAX_DIAGNOSTIC_BYTES,
   );
-  const expected = Buffer.from("Logged in using ChatGPT\n", "utf8");
   if (
-    value.stdout.bytes !== expected.length ||
-    value.stdout.sha256 !== sha256(expected)
+    value.stdout.bytes !== 0 ||
+    value.stdout.sha256 !== sha256(Buffer.alloc(0)) ||
+    !CHATGPT_LOGIN_STDERR_VARIANTS.some((expected) =>
+      value.stderr.bytes === expected.length &&
+      value.stderr.sha256 === sha256(expected)
+    )
   ) {
-    throw new Error("auth observation stdout does not match ChatGPT status");
+    throw new Error("auth observation streams do not match ChatGPT status");
   }
   return value;
 }

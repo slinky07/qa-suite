@@ -60,6 +60,19 @@ const MAX_CODEX_JSONL_BYTES = 16 * 1024 * 1024;
 const MAX_GATEWAY_JOURNAL_BYTES = 4 * 1024 * 1024;
 const MAX_POLICY_BYTES = 64 * 1024;
 const MAX_OBSERVATION_BYTES = 1024 * 1024;
+const CHATGPT_LOGIN_STATUS = Buffer.from(
+  "Logged in using ChatGPT\n",
+  "utf8",
+);
+const PATH_ALIAS_WARNING = Buffer.from(
+  "WARNING: proceeding, even though we could not create PATH aliases: " +
+    "Operation not permitted (os error 1)\n",
+  "utf8",
+);
+const CHATGPT_LOGIN_STDERR_VARIANTS = Object.freeze([
+  CHATGPT_LOGIN_STATUS,
+  Buffer.concat([PATH_ALIAS_WARNING, CHATGPT_LOGIN_STATUS]),
+]);
 const PHASE_TARGET_PATH = fileURLToPath(
   new URL("./codex-bob-phase-target.mjs", import.meta.url),
 );
@@ -314,12 +327,17 @@ function validateAuthenticationObservation(value) {
   ) {
     throw new Error("authentication observation is not the bounded ChatGPT status");
   }
-  const expectedStdout = Buffer.from("Logged in using ChatGPT\n", "utf8");
   if (
-    value.stdout.bytes !== expectedStdout.length ||
-    value.stdout.sha256 !== sha256(expectedStdout)
+    value.stdout.bytes !== 0 ||
+    value.stdout.sha256 !== sha256(Buffer.alloc(0)) ||
+    !CHATGPT_LOGIN_STDERR_VARIANTS.some((expected) =>
+      value.stderr.bytes === expected.length &&
+      value.stderr.sha256 === sha256(expected)
+    )
   ) {
-    throw new Error("authentication observation stdout does not match ChatGPT status");
+    throw new Error(
+      "authentication observation streams do not match ChatGPT status",
+    );
   }
   return value;
 }
