@@ -482,5 +482,10 @@ test("ships closed bounded output schemas for all three phases", async () => {
       false,
       `${filename} must use the OpenAI Structured Outputs schema subset`,
     );
+    if (filename === "codex-bob-task-execution-draft-v1.schema.json") {
+      const laneProperties = schema.properties.lane_result.properties;
+      assert.equal(laneProperties.blocking_evidence.maxItems, 0);
+      assert.equal(laneProperties.checklist.maxItems, 0);
+    }
   }
 });

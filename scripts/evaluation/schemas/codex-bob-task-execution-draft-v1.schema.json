@@ -36,7 +36,7 @@
           "items": {
             "$ref": "#/$defs/evidence"
           },
-          "maxItems": 256,
+          "maxItems": 0,
           "type": "array"
         },
         "checklist": {
@@ -71,7 +71,7 @@
             ],
             "type": "object"
           },
-          "maxItems": 256,
+          "maxItems": 0,
           "type": "array"
         },
         "findings": {
