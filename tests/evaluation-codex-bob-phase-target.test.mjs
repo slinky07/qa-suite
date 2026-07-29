@@ -447,6 +447,19 @@ test("validates the non-evidence atomic phase record and its joins", () => {
 });
 
 test("ships closed bounded output schemas for all three phases", async () => {
+  const assertTypedEnumAndConstNodes = (node, path = "$") => {
+    if (node === null || typeof node !== "object") return;
+    if (Object.hasOwn(node, "enum") || Object.hasOwn(node, "const")) {
+      assert.equal(
+        Object.hasOwn(node, "type"),
+        true,
+        `${path} enum and const nodes must declare an explicit type`,
+      );
+    }
+    for (const [key, value] of Object.entries(node)) {
+      assertTypedEnumAndConstNodes(value, `${path}.${key}`);
+    }
+  };
   const schemaRoot = join(
     process.cwd(),
     "scripts/evaluation/schemas",
@@ -463,6 +476,7 @@ test("ships closed bounded output schemas for all three phases", async () => {
     assert.equal(schema.additionalProperties, false);
     assert.ok(Array.isArray(schema.required));
     assert.ok(schema.required.length > 0);
+    assertTypedEnumAndConstNodes(schema);
     assert.equal(
       JSON.stringify(schema).includes('"uniqueItems"'),
       false,

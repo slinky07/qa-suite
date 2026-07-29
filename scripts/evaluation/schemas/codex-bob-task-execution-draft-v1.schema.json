@@ -11,7 +11,8 @@
             "report-reference",
             "request-response",
             "screenshot"
-          ]
+          ],
+          "type": "string"
         },
         "path": {
           "maxLength": 4096,
@@ -59,7 +60,8 @@
                   "Not tested",
                   "Observed only",
                   "Pass"
-                ]
+                ],
+                "type": "string"
               }
             },
             "required": [
@@ -77,7 +79,10 @@
             "additionalProperties": false,
             "properties": {
               "classification": {
-                "const": "governed"
+                "enum": [
+                  "governed"
+                ],
+                "type": "string"
               },
               "criteria": {
                 "items": {
@@ -107,7 +112,8 @@
                   "P1",
                   "P2",
                   "P3"
-                ]
+                ],
+                "type": "string"
               },
               "severity": {
                 "enum": [
@@ -115,7 +121,8 @@
                   "S2",
                   "S3",
                   "S4"
-                ]
+                ],
+                "type": "string"
               },
               "surface_id": {
                 "pattern": "^surface_[a-z0-9]+(?:_[a-z0-9]+)*$",
@@ -175,7 +182,8 @@
                   "Not tested",
                   "Observed only",
                   "Pass"
-                ]
+                ],
+                "type": "string"
               }
             },
             "required": [
@@ -274,7 +282,8 @@
                 "Go",
                 "Go with findings",
                 "No-Go"
-              ]
+              ],
+              "type": "string"
             }
           },
           "required": [
@@ -318,7 +327,8 @@
               "exercised",
               "not-tested",
               "observed-only"
-            ]
+            ],
+            "type": "string"
           },
           "flow_id": {
             "pattern": "^flow_[a-z0-9]+(?:_[a-z0-9]+)*$",
