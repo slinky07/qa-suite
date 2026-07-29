@@ -76,9 +76,11 @@ distributed skill without changing it:
   bounded raw artifacts below the phase's `QA/evidence/` directory. The
   diagnostic is not the dispatched process's context, and neither observation
   authenticates the provider, model, effective tool inventory, managed
-  instructions, or sandbox. Task execution states the controller-selected
-  flow and surface IDs, modeled task order, and core-fail verdict rule without
-  supplying an expected fixture outcome.
+  instructions, or sandbox. Expected-use modeling creates at least one
+  distinct task per declared core flow while covering every inventoried
+  control. Task execution states the controller-selected flow and surface IDs,
+  modeled task order, and core-fail verdict rule without supplying an expected
+  fixture outcome.
 - `scripts/evaluation/codex-bob-live-controller.mjs` accepts only the real
   measured Node executable, the exact phase target, and the complete hashed
   target support set: its transitive evaluation sources, three output schemas,
@@ -150,12 +152,14 @@ distributed skill without changing it:
   terminal hash-chained journal below `QA/evidence/`. A detached same-source
   Node supervisor owns the browser process group, launches Chrome in that
   group, passes the CDP descriptors directly, and watches a gateway-only
-  liveness pipe. Select snapshots expose the same bounded exact option values
-  that `set_control` accepts. Gateway loss force-kills the group. Its temporary
-  Chrome profile is never evidence. A normal closure requires the supervised
-  browser group to be empty before removing the profile. Ambiguous or failed
-  process cleanup retains the profile and makes the closure invalid. Platforms
-  without POSIX process-group signaling fail before Chrome launch.
+  liveness pipe. Select snapshots expose bounded exact current option values;
+  `set_control` rescans them before each select action and replaces the current
+  contents of supported text controls, including an empty value. Gateway loss
+  force-kills the group. Its temporary Chrome profile is never evidence. A
+  normal closure requires the supervised browser group to be empty before
+  removing the profile. Ambiguous or failed process cleanup retains the
+  profile and makes the closure invalid. Platforms without POSIX process-group
+  signaling fail before Chrome launch.
 - Bob suite cases declare globally unique, role-neutral report surface and
   core-flow IDs from independent opaque tokens that cannot be derived from the
   earlier case disclosure. They remain controller-only until task execution,

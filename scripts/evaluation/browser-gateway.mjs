@@ -1366,11 +1366,19 @@ export class BrowserGateway {
       await this.send("DOM.focus", { nodeId: internal.nodeId });
       await this.#key({
         code: "KeyA",
+        commands: ["selectAll"],
         key: "a",
         modifiers: process.platform === "darwin" ? 4 : 2,
         windowsVirtualKeyCode: 65,
       });
-      await this.send("Input.insertText", { text: value });
+      await this.#key({
+        code: "Backspace",
+        key: "Backspace",
+        windowsVirtualKeyCode: 8,
+      });
+      if (value.length > 0) {
+        await this.send("Input.insertText", { text: value });
+      }
     } else {
       throw new Error("set_control does not support this control type");
     }
@@ -1586,6 +1594,7 @@ export class BrowserGateway {
 
   async #key({
     code,
+    commands,
     key,
     modifiers = 0,
     windowsVirtualKeyCode,
@@ -1598,6 +1607,7 @@ export class BrowserGateway {
     };
     await this.send("Input.dispatchKeyEvent", {
       ...base,
+      ...(commands === undefined ? {} : { commands }),
       type: "rawKeyDown",
     });
     await this.send("Input.dispatchKeyEvent", {
@@ -1626,9 +1636,10 @@ export class BrowserGateway {
         nodeId: optionNodeId,
         pierce: false,
       });
-      optionValues.push(
-        attributesMap(described.node?.attributes).value ?? "",
-      );
+      const optionValue =
+        attributesMap(described.node?.attributes).value ?? "";
+      assertSetControlValue(optionValue);
+      optionValues.push(optionValue);
     }
     return optionValues;
   }

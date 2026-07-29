@@ -343,14 +343,43 @@ test("task prompt states the controller-enforced output contract", () => {
   );
 
   for (const required of [
-    "use only a value advertised in the latest observe_page control.options array",
-    `Use exactly these controller-selected core flow IDs in order, each with core true: ${REPORT_IDENTIFIERS.core_flow_ids[0]}.`,
+    "choose only from control.options; the gateway accepts only values still present when the action runs",
+    `Use exactly these controller-selected core flow IDs, each with core true: ${REPORT_IDENTIFIERS.core_flow_ids[0]}.`,
     `Use ${REPORT_IDENTIFIERS.surface_id} for every finding and observation surface_id`,
     "Return results in this exact modeled task order: task_primary, task_secondary.",
     "If any selected core flow state is Fail, verdict.state must be No-Go.",
   ]) {
     assert.equal(prompt.includes(required), true, required);
   }
+});
+
+test("expected-use prompt models every declared core flow", () => {
+  const prompt = buildCodexBobPhasePrompt(
+    config(),
+    {
+      ...inventoryRequest(),
+      phase: "expected_use_model",
+    },
+    [{
+      content: "# QA Context\n\n## Core flows\n1. Filter projects\n2. Restore projects\n",
+      path: "qa-context.md",
+    }],
+    {
+      relative_path:
+        `QA/evidence/${RUN_ID}/${DISPATCH_ID}/expected_use_model`,
+    },
+  );
+
+  assert.equal(
+    prompt.includes(
+      "Create at least one distinct modeled task for each core flow declared in qa-context.md; tasks may reuse inventoried controls when flows overlap.",
+    ),
+    true,
+  );
+  assert.equal(
+    prompt.includes("Still cover every inventoried control."),
+    true,
+  );
 });
 
 test("accepts only canonical, closed target configuration", () => {

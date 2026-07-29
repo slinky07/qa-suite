@@ -1024,6 +1024,30 @@ test("one action binds one retained before snapshot to its receipt", async () =>
   );
 });
 
+test("text control replacement deletes the selected value before insertion", async () => {
+  const { cdp, gateway } = gatewayWith();
+
+  await gateway.callTool("set_control", {
+    control_id: "control_query",
+    value: "",
+  });
+
+  const inputCalls = cdp.calls.filter(({ method }) =>
+    ["Input.dispatchKeyEvent", "Input.insertText"].includes(method)
+  );
+  assert.deepEqual(
+    inputCalls.map(({ method, params }) => [method, params.type, params.key]),
+    [
+      ["Input.dispatchKeyEvent", "rawKeyDown", "a"],
+      ["Input.dispatchKeyEvent", "keyUp", "a"],
+      ["Input.dispatchKeyEvent", "rawKeyDown", "Backspace"],
+      ["Input.dispatchKeyEvent", "keyUp", "Backspace"],
+    ],
+  );
+  assert.deepEqual(inputCalls[0].params.commands, ["selectAll"]);
+  assert.equal(Object.hasOwn(inputCalls[1].params, "commands"), false);
+});
+
 test("select snapshots advertise the exact accepted option values", async () => {
   const selectControl = control({
     id: "control_status",
@@ -1070,6 +1094,11 @@ test("select snapshots advertise the exact accepted option values", async () => 
         value: "Active",
       }),
     /not a declared select option/u,
+  );
+  optionValues.set(102, "x".repeat(257));
+  await assert.rejects(
+    () => gateway.observePage(),
+    /set_control\.value is invalid/u,
   );
 });
 

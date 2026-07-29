@@ -269,8 +269,10 @@ Observed-only and Not-tested flows require matching task dispositions. The
 protocol also rejects a Go-family result when every selected core flow is Not
 tested. The task prompt names the selected flow and surface IDs, the modeled
 task order, and the core-Fail `No-Go` rule without supplying an expected
-fixture outcome. The adapter asserts the finalized report SHA-256. The
-controller hashes the accepted output into the transcript; only
+fixture outcome. Expected-use modeling creates at least one distinct task per
+declared core flow while still covering every inventoried control. The adapter
+asserts the finalized report SHA-256. The controller hashes the accepted output
+into the transcript; only
 `adaptClosedBobHostResult()` later compares the report assertion and evidence
 paths with the closed artifact inventory. These adapter assertions are not
 proof by themselves.
@@ -487,8 +489,9 @@ three Bob phases. Interface inventory and expected-use modeling receive only
 URL, script, CDP method, executable, or filesystem path. Actions resolve a
 visible `data-control-id` immediately before input and retain one before
 snapshot, one after snapshot, and an action receipt. A select snapshot exposes
-the bounded exact option values accepted by `set_control`; the gateway
-rescans the same values before each select action.
+bounded exact current option values; `set_control` rescans them before each
+select action. For supported text controls, `set_control` replaces the current
+contents and can clear them to an empty value.
 
 The controller supplies one canonical policy that binds the phase, request,
 numeric-loopback target and allowed paths, fresh evidence directory, viewport,

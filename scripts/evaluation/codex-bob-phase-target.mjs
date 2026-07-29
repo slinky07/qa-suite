@@ -786,6 +786,7 @@ export function buildCodexBobPhasePrompt(
   evidencePath,
 ) {
   const task = request.phase === "task_execution";
+  const expectedUse = request.phase === "expected_use_model";
   const instructionText = inputs.map(({ content, path }) =>
     `--- ${path} ---\n${content}`
   ).join("\n");
@@ -806,8 +807,8 @@ export function buildCodexBobPhasePrompt(
           `Retained browser evidence is below ${evidencePath.relative_path}/browser/.`,
           "Put the complete Bob report text in report_markdown; do not write the report.",
           "Execute and account for every modeled task exactly once.",
-          "For select controls, use only a value advertised in the latest observe_page control.options array.",
-          `Use exactly these controller-selected core flow IDs in order, each with core true: ${request.report_identifiers.core_flow_ids.join(", ")}.`,
+          "For select controls, choose only from control.options; the gateway accepts only values still present when the action runs.",
+          `Use exactly these controller-selected core flow IDs, each with core true: ${request.report_identifiers.core_flow_ids.join(", ")}.`,
           "Bind every modeled task to one selected core flow; do not create another flow ID.",
           `Use ${request.report_identifiers.surface_id} for every finding and observation surface_id; do not use an inventory surface ID.`,
           `Return results in this exact modeled task order: ${taskIds.join(", ")}.`,
@@ -816,6 +817,12 @@ export function buildCodexBobPhasePrompt(
         ]
       : [
           "Do not produce or infer report identifiers, report paths, findings, verdicts, or later-phase output.",
+          ...(expectedUse
+            ? [
+                "Create at least one distinct modeled task for each core flow declared in qa-context.md; tasks may reuse inventoried controls when flows overlap.",
+                "Still cover every inventoried control.",
+              ]
+            : []),
         ]),
     "",
     "Distributed instruction inputs:",
