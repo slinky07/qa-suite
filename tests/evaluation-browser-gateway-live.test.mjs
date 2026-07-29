@@ -463,6 +463,12 @@ test("live gateway inventories and exercises Project Finder controls", {
         "control_search_help",
       ],
     );
+    assert.deepEqual(
+      initial.controls.find(
+        ({ id }) => id === "control_project_status",
+      ).options,
+      ["all", "active", "planning", "complete"],
+    );
     toolResult(
       await client.request("tools/call", {
         arguments: { control_id: "control_search_help" },
@@ -486,6 +492,36 @@ test("live gateway inventories and exercises Project Finder controls", {
       ],
     );
 
+    toolResult(
+      await client.request("tools/call", {
+        arguments: {
+          control_id: "control_project_query",
+          value: "atlas",
+        },
+        name: "set_control",
+      }),
+    );
+    toolResult(
+      await client.request("tools/call", {
+        arguments: {
+          control_id: "control_project_query",
+          value: "",
+        },
+        name: "set_control",
+      }),
+    );
+    const cleared = toolResult(
+      await client.request("tools/call", {
+        arguments: {},
+        name: "observe_page",
+      }),
+    );
+    assert.equal(
+      cleared.controls.find(
+        ({ id }) => id === "control_project_query",
+      ).value,
+      null,
+    );
     toolResult(
       await client.request("tools/call", {
         arguments: {

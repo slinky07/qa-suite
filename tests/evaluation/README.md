@@ -267,8 +267,12 @@ order. Each task result names exactly one selected core flow and hashes that
 flow's ordered evidence-pointer set. Pass/Fail flows require exercised tasks;
 Observed-only and Not-tested flows require matching task dispositions. The
 protocol also rejects a Go-family result when every selected core flow is Not
-tested. The adapter asserts the finalized report SHA-256. The controller
-hashes the accepted output into the transcript; only
+tested. The task prompt names the selected flow and surface IDs, the modeled
+task order, and the core-Fail `No-Go` rule without supplying an expected
+fixture outcome. Expected-use modeling creates at least one distinct task per
+declared core flow while still covering every inventoried control. The adapter
+asserts the finalized report SHA-256. The controller hashes the accepted output
+into the transcript; only
 `adaptClosedBobHostResult()` later compares the report assertion and evidence
 paths with the closed artifact inventory. These adapter assertions are not
 proof by themselves.
@@ -484,7 +488,10 @@ three Bob phases. Interface inventory and expected-use modeling receive only
 `set_control` and `activate_control`. Tool arguments cannot supply a selector,
 URL, script, CDP method, executable, or filesystem path. Actions resolve a
 visible `data-control-id` immediately before input and retain one before
-snapshot, one after snapshot, and an action receipt.
+snapshot, one after snapshot, and an action receipt. A select snapshot exposes
+bounded exact current option values; `set_control` rescans them before each
+select action. For supported text controls, `set_control` replaces the current
+contents and can clear them to an empty value.
 
 The controller supplies one canonical policy that binds the phase, request,
 numeric-loopback target and allowed paths, fresh evidence directory, viewport,
@@ -885,6 +892,35 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 `verification_status: "unverified"`, `qualification: "not-evidence"`, and
 `result: null`.
 
+## Closed Bob composition and proof protocol
+
+`composeClosedCodexBobEvaluation({ closedRun, liveSession, oracleSet,
+smokeGate, suite })` runs only after runner closure. The caller keeps the
+oracle sealed until that boundary. The composer rereads the retained closure,
+live-session and session-chain records and every declared closed artifact,
+validates their bindings and the report adaptation, joins the caller-supplied
+smoke gate into one normalized case, then produces the pure scoring preview.
+It scans those retained bytes and the smoke gate for every confidential oracle
+token and non-selected case ID. It does not attest smoke provenance, provider
+or controller-state authentication, sandbox qualification, report semantic
+parity, or semantic fixture opacity. Its output remains `unverified`,
+`not-evidence`, with `result: null`.
+
+The Bob baseline uses one frozen controller and the unchanged subject for four
+fresh runs:
+
+| Pair | Adversarial case | Control case |
+|---|---|---|
+| Pocket Notes | `fx_39e78c1246b2cf2952277010d5f5cedc` | `fx_ea9eb160a44e5e7f7acd520b92825800` |
+| Project Finder | `fx_cc4b61fbde593f6e101984583e5e9f88` | `fx_87a49bf089d33e76d6115d4aef954c01` |
+
+Retain each closed run and record detection, classification, scoped control
+findings, control-budget result, verdict, Severity, Priority, and flow
+coverage. `Blocked` is neither a detection nor a miss. Remediate only a
+reproduced Bob miss, change the smallest authoritative Bob behavior without
+changing the fixtures, oracle, scoring, or frozen controller, then rerun all
+four cases against the remediated subject and retain the before/after evidence.
+
 ## Deferred Issue #30 delivery
 
 The following remain deliberately outside the current non-qualifying
@@ -896,12 +932,8 @@ constituents:
   completion, and command-network isolation without conflating provider
   transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
-- composition of the partial Bob lane adaptation with the smoke gate into a
-  complete normalized case;
 - host-bound, authenticated evidence that a real Bob execution obeyed the
   controller's inventory/model-before-task protocol;
-- runner-controlled oracle opening and scanning of every closed output byte
-  against its complete confidential token set;
 - baseline runs and retained baseline evidence;
 - remediation, before/after comparison, and retained remediation evidence; and
 - CI scheduling for recurring or release-gated evaluation.

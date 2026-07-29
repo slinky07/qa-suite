@@ -1366,11 +1366,19 @@ export class BrowserGateway {
       await this.send("DOM.focus", { nodeId: internal.nodeId });
       await this.#key({
         code: "KeyA",
+        commands: ["selectAll"],
         key: "a",
         modifiers: process.platform === "darwin" ? 4 : 2,
         windowsVirtualKeyCode: 65,
       });
-      await this.send("Input.insertText", { text: value });
+      await this.#key({
+        code: "Backspace",
+        key: "Backspace",
+        windowsVirtualKeyCode: 8,
+      });
+      if (value.length > 0) {
+        await this.send("Input.insertText", { text: value });
+      }
     } else {
       throw new Error("set_control does not support this control type");
     }
@@ -1495,6 +1503,9 @@ export class BrowserGateway {
       bounds,
       id,
       name: boundedText(axValue(axNode.name), 512) ?? "",
+      ...(tag === "select"
+        ? { options: await this.#selectOptionValues(nodeId) }
+        : {}),
       role: boundedText(axValue(axNode.role), 64) ?? "",
       state: {
         checked: axBoolean(properties.checked, "checked"),
@@ -1583,6 +1594,7 @@ export class BrowserGateway {
 
   async #key({
     code,
+    commands,
     key,
     modifiers = 0,
     windowsVirtualKeyCode,
@@ -1595,6 +1607,7 @@ export class BrowserGateway {
     };
     await this.send("Input.dispatchKeyEvent", {
       ...base,
+      ...(commands === undefined ? {} : { commands }),
       type: "rawKeyDown",
     });
     await this.send("Input.dispatchKeyEvent", {
@@ -1603,9 +1616,9 @@ export class BrowserGateway {
     });
   }
 
-  async #setSelect(control, value) {
+  async #selectOptionValues(nodeId) {
     const options = await this.send("DOM.querySelectorAll", {
-      nodeId: control.nodeId,
+      nodeId,
       selector: "option",
     });
     const optionNodeIds = assertDenseArray(
@@ -1623,10 +1636,16 @@ export class BrowserGateway {
         nodeId: optionNodeId,
         pierce: false,
       });
-      optionValues.push(
-        attributesMap(described.node?.attributes).value ?? "",
-      );
+      const optionValue =
+        attributesMap(described.node?.attributes).value ?? "";
+      assertSetControlValue(optionValue);
+      optionValues.push(optionValue);
     }
+    return optionValues;
+  }
+
+  async #setSelect(control, value) {
+    const optionValues = await this.#selectOptionValues(control.nodeId);
     const selectedIndex = optionValues.indexOf(value);
     if (selectedIndex < 0) {
       throw new Error("set_control value is not a declared select option");

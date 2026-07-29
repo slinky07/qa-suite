@@ -779,11 +779,20 @@ async function measuredPromptInputs(config) {
   return inputs;
 }
 
-function phasePrompt(config, request, inputs, evidencePath) {
+export function buildCodexBobPhasePrompt(
+  config,
+  request,
+  inputs,
+  evidencePath,
+) {
   const task = request.phase === "task_execution";
+  const expectedUse = request.phase === "expected_use_model";
   const instructionText = inputs.map(({ content, path }) =>
     `--- ${path} ---\n${content}`
   ).join("\n");
+  const taskIds = task
+    ? request.prior_outputs.expected_use_model.tasks.map(({ id }) => id)
+    : [];
   const prompt = [
     "Execute exactly one non-qualifying Bob QA protocol phase.",
     "Use only the bob_browser tools enabled for this phase.",
@@ -798,9 +807,22 @@ function phasePrompt(config, request, inputs, evidencePath) {
           `Retained browser evidence is below ${evidencePath.relative_path}/browser/.`,
           "Put the complete Bob report text in report_markdown; do not write the report.",
           "Execute and account for every modeled task exactly once.",
+          "For select controls, choose only from control.options; the gateway accepts only values still present when the action runs.",
+          `Use exactly these controller-selected core flow IDs, each with core true: ${request.report_identifiers.core_flow_ids.join(", ")}.`,
+          "Bind every modeled task to one selected core flow; do not create another flow ID.",
+          `Use ${request.report_identifiers.surface_id} for every finding and observation surface_id; do not use an inventory surface ID.`,
+          `Return results in this exact modeled task order: ${taskIds.join(", ")}.`,
+          "Copy each modeled task_id exactly; do not reorder or rename task results.",
+          "If any selected core flow state is Fail, verdict.state must be No-Go.",
         ]
       : [
           "Do not produce or infer report identifiers, report paths, findings, verdicts, or later-phase output.",
+          ...(expectedUse
+            ? [
+                "Create at least one distinct modeled task for each core flow declared in qa-context.md; tasks may reuse inventoried controls when flows overlap.",
+                "Still cover every inventoried control.",
+              ]
+            : []),
         ]),
     "",
     "Distributed instruction inputs:",
@@ -1125,7 +1147,12 @@ export async function runCodexBobPhaseTarget({
     await inspectMeasuredFile(identity, label);
   }
   const inputs = await measuredPromptInputs(config);
-  const prompt = phasePrompt(config, request, inputs, evidencePath);
+  const prompt = buildCodexBobPhasePrompt(
+    config,
+    request,
+    inputs,
+    evidencePath,
+  );
 
   const authObservation = await observeAuthentication(config);
   await writeExclusive(
