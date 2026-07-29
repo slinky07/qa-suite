@@ -362,7 +362,7 @@ artifact exists, or qualify an execution.
 ### Non-qualifying direct-process boundary
 
 `scripts/evaluation/bob-host-executor.mjs` can supply the protocol with three
-one-shot direct children, one per phase. Its program path and expected
+one-shot supervised targets, one per phase. Its program path and expected
 SHA-256, fixed arguments, bounded support-file declarations, lane root,
 limits, and confidential values are controller-only inputs; no public fixture
 may select or alter them. Each support file has an absolute non-symbolic path
@@ -372,25 +372,42 @@ The list is dense, ordered, unique, capped at 32 files and 64 MiB
 total, and mandatory even when empty. Each launch uses the sealed lane root as
 its working directory, a newly constructed `LANG`/`LC_ALL`/`TZ` environment,
 `shell: false`, bounded stdin/stdout/stderr, and a controller-enforced
-deadline. The executor creates the dispatch identity; the child reads one
-complete canonical request to EOF, returns one canonical response bound to the
-phase and request digest, then exits.
+deadline. On POSIX, each phase runs under a controller-owned detached
+supervisor and process group. The executor creates the dispatch identity; the
+supervised target reads one complete canonical request to EOF and returns one
+canonical response bound to the phase and request digest.
+
+The supervisor reads a dedicated controller-liveness pipe on descriptor 4.
+The controller keeps its writable end open for the invocation. Pipe EOF or
+error, including controller loss, makes the supervisor send `SIGKILL` to its
+own inherited process group and exit. This loss path performs cleanup but
+cannot issue an emptiness receipt after the controller is gone. During normal
+settlement, the controller first terminates and probes the known-live group,
+then ends and drains the liveness pipe.
 
 The controller records the fixed-policy digest, program/argument digests, and
 aggregate support-file declaration digest, plus one receipt per successful
-direct child. It scans every support file and complete bounded stdout and
+supervised target. It scans every support file and complete bounded stdout and
 stderr for the evaluation contract's opaque confidential tokens. It rejects
 primary-executable, support-file, or lane-root drift, malformed framing,
 cross-execution response reuse, timeout, oversized output, or nonzero exit.
-The resulting record is still `unverified`, `not-evidence`, and `result:
-null`, and the protocol's claims remain `not-attested`.
+After the group is known live, every success or failure path force-terminates
+it and proves it empty before settling. A successful receipt records only the
+narrow process claim that the controller-owned group was observed empty. The
+resulting record is still `unverified`, `not-evidence`, and `result: null`, and
+the protocol's claims remain `not-attested`.
 
-This is process construction, not a sandbox. It does not confine a same-user
-process, authenticate controller state, wait for descendants, distinguish
-provider transport from tool egress, restrict absolute tools, create a fresh
-remote model context, or prove that a rendered interface was exercised. A
-real host adapter must fail before dispatch unless its separately reviewed
-platform prerequisites can prove those properties.
+This bounded cleanup covers only ordinary descendants that remain in the
+inherited process group; it is not general process-tree proof or a sandbox. It
+does not contain hostile `setsid`, `setpgid`, or detached-session escape,
+resist hostile same-user or PID interference, support Windows, authenticate
+controller state or the provider, attest a fresh model context or network
+isolation, distinguish provider transport from tool egress, restrict absolute
+tools, prove that a rendered interface was exercised or that any report or
+artifact exists, or produce qualifying evidence. The descriptor-4 loss path
+cannot reach a process that has left the inherited group. A real host adapter
+must fail before dispatch unless its separately reviewed platform prerequisites
+prove the required properties.
 The executor does not infer which arguments name files. A real host adapter
 must declare every interpreter payload, MCP server, output schema, and static
 configuration it consumes in `support_files`. Identity and content checks
@@ -742,8 +759,8 @@ constituents:
 - the other lane corpora required for campaign acceptance;
 - a reviewed sandbox and provider/Codex host that composes the direct-process
   and browser boundaries, then proves filesystem confinement, exact model-tool
-  inventory, fresh model context, process-tree completion, and network policy
-  without conflating provider transport with tool egress;
+  inventory, fresh model context, hostile process-tree completion, and network
+  policy without conflating provider transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
 - composition of the partial Bob lane adaptation with the smoke gate into a
   complete normalized case;

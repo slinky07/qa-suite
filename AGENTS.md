@@ -60,9 +60,14 @@ distributed skill without changing it:
   process boundary for that seam. It accepts only a controller-owned absolute
   executable with an expected SHA-256, fixed arguments, and a bounded list of
   independently hashed, single-link support files that are not group- or
-  world-writable. It launches one fresh shell-free child per phase with a
-  constructed environment and accepts one bounded canonical response before
-  exit.
+  world-writable. On POSIX, each phase runs under a controller-owned detached,
+  shell-free supervisor and process group. The supervisor reads a dedicated
+  controller-liveness pipe on descriptor 4. Controller loss closes the pipe,
+  so the supervisor sends `SIGKILL` to its inherited group and exits without a
+  receipt. While the controller remains live, every success or failure path
+  force-terminates the known-live group and proves it empty before settling.
+  A successful receipt records only the narrow process claim of owned-group
+  emptiness.
 - `scripts/evaluation/bob-report-adapter.mjs` binds exactly one canonical Bob
   report in a closed artifact inventory and joins that metadata to the
   controller-hashed structured lane result. It does not read or parse report
@@ -108,11 +113,12 @@ transcript proves only that an injected adapter returned structurally valid
 outputs across the required controller call order. A composer-built transcript
 proves only validated structural dependencies and digest/event ordering, not
 process chronology or method order. A completed host execution additionally
-records direct-child launch, bounded I/O, exit, and request/response binding.
-No such record proves filesystem, provider, network, tool, model-context,
-process-tree, or hostile same-user isolation, report semantic parity, or state
-authentication. Do not promote any record until a reviewed host and sandbox
-adapter proves every missing claim.
+records supervised-target launch, bounded I/O, exit, request/response binding,
+and controller-owned group emptiness. No such record proves filesystem,
+provider, network, tool, model-context, escaped or hostile process-tree, or
+hostile same-user isolation, report semantic parity, or state authentication.
+Do not promote any record until a reviewed host and sandbox adapter proves
+every missing claim.
 
 The browser gateway proves only its narrow controller-owned browser actions
 and retained receipts. It is not a sandbox or a Bob host, and it does not
@@ -126,6 +132,12 @@ interpreter source, MCP server, schema, or static configuration consumed by a
 real host must be declared there. Owner-writable controller files are allowed;
 file hashing and identity checks detect ordinary drift but do not remove the
 executor's explicit same-user and time-of-check/time-of-use limitations.
+Its process-group check and controller-loss cleanup cover only ordinary
+descendants that remain in the inherited group. They do not contain hostile
+`setsid`, `setpgid`, or detached-session escape, resist hostile same-user or
+PID interference, support Windows, attest a sandbox or
+provider/state/model-context/network isolation, prove artifact existence, or
+produce qualifying evidence.
 
 Closed-artifact consumers must read the controller-owned captured snapshot,
 never the mutable lane tree. Captured hashes and the unkeyed journal chain can

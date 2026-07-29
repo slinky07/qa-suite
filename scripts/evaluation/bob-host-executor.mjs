@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import {
   lstat,
   readFile,
@@ -25,6 +25,8 @@ const MAX_EXECUTABLE_BYTES = 256 * 1024 * 1024;
 const MAX_SUPPORT_FILE_BYTES = 16 * 1024 * 1024;
 const MAX_SUPPORT_FILES = 32;
 const MAX_SUPPORT_FILES_BYTES = 64 * 1024 * 1024;
+const MAX_SUPERVISOR_STATUS_BYTES = 1024;
+const PROCESS_GROUP_EMPTY_WAIT_MS = 500;
 const FIXED_ENVIRONMENT = Object.freeze({
   LANG: "C",
   LC_ALL: "C",
@@ -40,6 +42,90 @@ const LIMIT_CEILINGS = Object.freeze({
   output_bytes: 8 * 1024 * 1024,
   timeout_ms: 15 * 60 * 1000,
 });
+const SUPERVISOR_SOURCE = String.raw`
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { closeSync, createReadStream, writeSync } from "node:fs";
+
+const environment = {
+  LANG: "C",
+  LC_ALL: "C",
+  TZ: "UTC",
+};
+const keepAlive = setInterval(() => {}, 60_000);
+const [executable, ...arguments_] = process.argv.slice(1);
+const controllerLiveness = createReadStream("", {
+  autoClose: true,
+  fd: 4,
+});
+
+function terminateOnControllerLoss() {
+  try {
+    process.kill(-process.pid, "SIGKILL");
+  } finally {
+    process.exit(1);
+  }
+}
+
+controllerLiveness.once("end", terminateOnControllerLoss);
+controllerLiveness.once("error", terminateOnControllerLoss);
+controllerLiveness.resume();
+
+function forward(readable, writable) {
+  return (async () => {
+    for await (const chunk of readable) {
+      await new Promise((resolve, reject) => {
+        writable.write(chunk, (error) => error ? reject(error) : resolve());
+      });
+    }
+  })();
+}
+
+let target;
+let status;
+try {
+  target = spawn(executable, arguments_, {
+    cwd: process.cwd(),
+    detached: false,
+    env: environment,
+    shell: false,
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  target.stdin.on("error", () => {});
+  process.stdin.pipe(target.stdin);
+  const stdoutForward = forward(target.stdout, process.stdout);
+  const stderrForward = forward(target.stderr, process.stderr);
+  const exit = await Promise.race([
+    once(target, "exit").then(([exitCode, signal]) => ({
+      exit_code: exitCode,
+      schema_version: 1,
+      signal,
+      spawned: true,
+    })),
+    once(target, "error").then(() => ({
+      exit_code: null,
+      schema_version: 1,
+      signal: null,
+      spawned: false,
+    })),
+  ]);
+  await Promise.all([stdoutForward, stderrForward]);
+  status = exit;
+} catch {
+  status = {
+    exit_code: null,
+    schema_version: 1,
+    signal: null,
+    spawned: false,
+  };
+}
+
+const statusBytes = Buffer.from(JSON.stringify(status, null, 2) + "\n", "utf8");
+writeSync(3, statusBytes);
+closeSync(3);
+void keepAlive;
+`;
 
 function assertObject(value, label) {
   if (
@@ -394,6 +480,115 @@ function decodeUtf8(bytes, label) {
   }
 }
 
+export function assertBobHostProcessGroupSupport(
+  platform = process.platform,
+) {
+  if (platform === "win32") {
+    throw new Error(
+      "Bob host process-group cleanup is unsupported on win32",
+    );
+  }
+}
+
+function signalBobHostProcessGroup(pid, signal) {
+  try {
+    process.kill(-pid, signal);
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+}
+
+async function waitForEmptyBobHostProcessGroup(pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    try {
+      process.kill(-pid, 0);
+    } catch (error) {
+      if (error?.code === "ESRCH") return true;
+      if (error?.code !== "EPERM") throw error;
+    }
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    await new Promise((resolveWait) =>
+      setTimeout(resolveWait, Math.min(25, remaining))
+    );
+  }
+}
+
+const BOB_HOST_PROCESS_GROUP_CONTROL = Object.freeze({
+  platform: process.platform,
+  signal: signalBobHostProcessGroup,
+  waitForEmpty: waitForEmptyBobHostProcessGroup,
+});
+
+export async function terminateBobHostProcessGroup(
+  child,
+  processGroup = BOB_HOST_PROCESS_GROUP_CONTROL,
+) {
+  if (processGroup.platform !== undefined) {
+    assertBobHostProcessGroupSupport(processGroup.platform);
+  }
+  if (
+    child === null ||
+    typeof child !== "object" ||
+    !Number.isSafeInteger(child.pid) ||
+    child.pid < 1
+  ) {
+    throw new Error("Bob host supervisor process group ID is invalid");
+  }
+  if (child.exitCode !== null || child.signalCode != null) {
+    throw new Error(
+      "Bob host supervisor exited before process-group cleanup",
+    );
+  }
+  processGroup.signal(child.pid, "SIGKILL");
+  if (
+    await processGroup.waitForEmpty(
+      child.pid,
+      PROCESS_GROUP_EMPTY_WAIT_MS,
+    )
+  ) {
+    return true;
+  }
+  throw new Error("Bob host process group did not become empty");
+}
+
+function validateSupervisorStatus(bytes) {
+  const source = decodeUtf8(bytes, "Bob host supervisor status");
+  const status = parseContractJson(source, "Bob host supervisor status");
+  if (source !== canonicalJson(status)) {
+    throw new Error("Bob host supervisor status must use canonical JSON");
+  }
+  assertExactKeys(
+    status,
+    ["exit_code", "schema_version", "signal", "spawned"],
+    "Bob host supervisor status",
+  );
+  if (
+    status.schema_version !== 1 ||
+    typeof status.spawned !== "boolean" ||
+    (
+      status.exit_code !== null &&
+      (
+        !Number.isSafeInteger(status.exit_code) ||
+        status.exit_code < 0 ||
+        status.exit_code > 255
+      )
+    ) ||
+    (
+      status.signal !== null &&
+      (
+        typeof status.signal !== "string" ||
+        status.signal.length < 1 ||
+        status.signal.length > 32
+      )
+    )
+  ) {
+    throw new Error("Bob host supervisor status is invalid");
+  }
+  return status;
+}
+
 function validateResponse(bytes, request, requestDigest) {
   const source = decodeUtf8(bytes, "host response");
   const response = parseContractJson(source, "host response");
@@ -439,69 +634,179 @@ async function invokeProgram({
 
   const result = await new Promise((resolve, reject) => {
     let child;
-    let settled = false;
     let deadline;
-    const settle = (action) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(deadline);
-      action();
+    let settlement;
+    let stderrBytes = 0;
+    let stdoutBytes = 0;
+    let statusBytes = 0;
+    const stderr = [];
+    const stdout = [];
+    const status = [];
+    const waitForClosed = [];
+
+    const settle = (error, supervisorStatus = null) => {
+      if (settlement !== undefined) return settlement;
+      settlement = (async () => {
+        clearTimeout(deadline);
+        let cleanupError = null;
+        try {
+          await terminateBobHostProcessGroup(child);
+        } catch (caught) {
+          cleanupError = caught;
+        }
+        child?.stdio?.[4]?.resume?.();
+        if (child?.stdio?.[4]?.destroyed !== true) {
+          child?.stdio?.[4]?.end?.();
+        }
+        child?.stdin?.destroy?.();
+        await Promise.all(waitForClosed);
+        if (cleanupError !== null) {
+          reject(new Error("Bob host process-group cleanup was not proven", {
+            cause: cleanupError,
+          }));
+          return;
+        }
+        if (error !== null) {
+          reject(error);
+          return;
+        }
+        if (
+          supervisorStatus.spawned !== true ||
+          supervisorStatus.exit_code !== 0 ||
+          supervisorStatus.signal !== null
+        ) {
+          reject(new Error("Bob host process did not complete successfully"));
+          return;
+        }
+        resolve({
+          stderr: Buffer.concat(stderr, stderrBytes),
+          stdout: Buffer.concat(stdout, stdoutBytes),
+        });
+      })().catch(reject);
+      return settlement;
     };
-    const rejectProcess = (message) => {
-      child?.kill?.("SIGKILL");
-      child?.stdin?.destroy?.();
-      child?.stdout?.destroy?.();
-      child?.stderr?.destroy?.();
-      settle(() => reject(new Error(message)));
+
+    const collect = (stream, chunks, maximum, label, updateLength) => {
+      waitForClosed.push(new Promise((resolveClosed) => {
+        stream.once("close", resolveClosed);
+      }));
+      stream.on("data", (chunk) => {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        const nextLength = updateLength(bytes.length);
+        if (nextLength > maximum) {
+          void settle(new Error(`${label} exceeded its byte limit`));
+          return;
+        }
+        chunks.push(bytes);
+      });
+      stream.once("error", () => {
+        void settle(new Error(`${label} could not be captured`));
+      });
     };
+
     try {
-      child = execFile(
-        program.executable,
-        program.arguments,
+      child = spawn(
+        process.execPath,
+        [
+          "--input-type=module",
+          "--eval",
+          SUPERVISOR_SOURCE,
+          "--",
+          program.executable,
+          ...program.arguments,
+        ],
         {
           cwd: laneRoot.path,
-          encoding: null,
+          detached: true,
           env: { ...FIXED_ENVIRONMENT },
-          killSignal: "SIGKILL",
-          maxBuffer: limits.output_bytes,
           shell: false,
-          timeout: limits.timeout_ms,
+          stdio: ["pipe", "pipe", "pipe", "pipe", "pipe"],
           windowsHide: true,
-        },
-        (error, stdout, stderr) => {
-          if (error) {
-            rejectProcess("Bob host process did not complete successfully");
-            return;
-          }
-          settle(() =>
-            resolve({
-              stderr: Buffer.isBuffer(stderr) ? stderr : Buffer.from(stderr),
-              stdout: Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout),
-            }),
-          );
         },
       );
     } catch {
-      rejectProcess("Bob host process could not be launched");
-      return;
+      reject(new Error("Bob host supervisor could not be launched"));
+      return undefined;
     }
     if (
       child === null ||
       typeof child !== "object" ||
+      !Number.isSafeInteger(child.pid) ||
+      child.pid < 1 ||
       child.stdin === null ||
-      typeof child.stdin?.end !== "function"
+      typeof child.stdin?.end !== "function" ||
+      child.stdout === null ||
+      child.stderr === null ||
+      child.stdio?.[3] == null ||
+      child.stdio?.[4] == null ||
+      typeof child.stdio[4].end !== "function"
     ) {
-      rejectProcess("Bob host launcher returned an invalid child");
-      return;
+      void settle(new Error("Bob host launcher returned an invalid supervisor"));
+      return undefined;
     }
+
+    collect(
+      child.stdout,
+      stdout,
+      limits.output_bytes,
+      "Bob host stdout",
+      (length) => (stdoutBytes += length),
+    );
+    collect(
+      child.stderr,
+      stderr,
+      limits.output_bytes,
+      "Bob host stderr",
+      (length) => (stderrBytes += length),
+    );
+    collect(
+      child.stdio[3],
+      status,
+      MAX_SUPERVISOR_STATUS_BYTES,
+      "Bob host supervisor status",
+      (length) => (statusBytes += length),
+    );
+    waitForClosed.push(new Promise((resolveClosed) => {
+      child.stdio[4].once("close", resolveClosed);
+    }));
+    child.stdio[4].resume?.();
+    child.stdio[4].once("error", () => {
+      void settle(new Error("Bob host controller-liveness channel failed"));
+    });
+
+    child.stdio[3].once("end", () => {
+      let supervisorStatus;
+      try {
+        supervisorStatus = validateSupervisorStatus(
+          Buffer.concat(status, statusBytes),
+        );
+      } catch (error) {
+        void settle(error);
+        return;
+      }
+      void settle(null, supervisorStatus);
+    });
+    child.once("error", () => {
+      void settle(new Error("Bob host supervisor failed"));
+    });
+    child.once("exit", () => {
+      if (settlement === undefined) {
+        void settle(new Error("Bob host supervisor exited unexpectedly"));
+      }
+    });
     child.stdin.once("error", () => {
-      rejectProcess("Bob host process rejected its request");
+      void settle(new Error("Bob host process rejected its request"));
     });
     deadline = setTimeout(
-      () => rejectProcess("Bob host process exceeded its controller deadline"),
+      () => {
+        void settle(
+          new Error("Bob host process exceeded its controller deadline"),
+        );
+      },
       limits.timeout_ms,
     );
     child.stdin.end(input);
+    return undefined;
   });
 
   await assertProgramUnchanged(program);
@@ -516,6 +821,7 @@ async function invokeProgram({
   return {
     output: response.output,
     receipt: {
+      owned_process_group: "proven-empty",
       output_sha256: sha256(canonicalJson(response.output)),
       phase: request.phase,
       request_sha256: requestDigest,
@@ -555,7 +861,8 @@ export function validateBobHostExecution(value) {
     value.verification_status !== "unverified" ||
     value.qualification !== "not-evidence" ||
     value.result !== null ||
-    value.execution_observation !== "three-direct-processes-completed"
+    value.execution_observation !==
+      "three-supervised-process-groups-completed-and-emptied"
   ) {
     throw new Error("Bob host execution must remain explicitly non-qualifying");
   }
@@ -592,6 +899,7 @@ export function validateBobHostExecution(value) {
     assertExactKeys(
       receipt,
       [
+        "owned_process_group",
         "output_sha256",
         "phase",
         "request_sha256",
@@ -602,6 +910,11 @@ export function validateBobHostExecution(value) {
       ],
       `Bob host execution.process_receipts[${index}]`,
     );
+    if (receipt.owned_process_group !== "proven-empty") {
+      throw new Error(
+        `Bob host execution.process_receipts[${index}] must preserve its narrow process-group claim`,
+      );
+    }
     for (const name of [
       "output_sha256",
       "request_sha256",
@@ -654,6 +967,7 @@ export async function executePreparedBobHostProgram({
   program,
   suite,
 }) {
+  assertBobHostProcessGroupSupport();
   assertObject(preparation, "preparation");
   const selectedLimits = normalizedLimits(limits);
   const selectedConfidentialValues =
@@ -686,10 +1000,23 @@ export async function executePreparedBobHostProgram({
     child_environment: FIXED_ENVIRONMENT,
     cwd_sha256: sha256(Buffer.from(selectedLaneRoot.path, "utf8")),
     limits: selectedLimits,
+    process_group: {
+      cleanup_signal: "SIGKILL",
+      controller_liveness_fd: 4,
+      controller_loss_signal: "SIGKILL",
+      detached_supervisor: true,
+      empty_wait_ms: PROCESS_GROUP_EMPTY_WAIT_MS,
+      platform: "posix",
+      status_bytes: MAX_SUPERVISOR_STATUS_BYTES,
+      supervisor_source_sha256: sha256(
+        Buffer.from(SUPERVISOR_SOURCE, "utf8"),
+      ),
+    },
     shell: false,
   };
   const execution = {
-    execution_observation: "three-direct-processes-completed",
+    execution_observation:
+      "three-supervised-process-groups-completed-and-emptied",
     policy_sha256: sha256(canonicalJson(policy)),
     process_receipts: processReceipts,
     program: {
