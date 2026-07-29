@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "performance-evaluation-v1",
+  "lane": "performance-qa",
+  "cases": [
+    {
+      "id": "fx_634e43ad7ac1e5d707ffbd16b462ac2a",
+      "qa_context": "tests/evaluation/fixtures/fx_634e43ad7ac1e5d707ffbd16b462ac2a/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_634e43ad7ac1e5d707ffbd16b462ac2a/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0606060606060606060606060606060606060606060606060606060606060606",
+        "seal_0707070707070707070707070707070707070707070707070707070707070707"
+      ],
+      "smoke_checks": [
+        "check_service_startup"
+      ]
+    },
+    {
+      "id": "fx_c0e9228570c680889a10f00481daba72",
+      "qa_context": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0808080808080808080808080808080808080808080808080808080808080808",
+        "seal_0909090909090909090909090909090909090909090909090909090909090909"
+      ],
+      "smoke_checks": [
+        "check_service_startup"
+      ]
+    }
+  ]
+}

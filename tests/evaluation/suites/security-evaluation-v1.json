@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "security-evaluation-v1",
+  "lane": "security-qa",
+  "cases": [
+    {
+      "id": "fx_2facb8d5785c096aca738b8bfdf363a6",
+      "qa_context": "tests/evaluation/fixtures/fx_2facb8d5785c096aca738b8bfdf363a6/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_2facb8d5785c096aca738b8bfdf363a6/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "seal_0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+      ],
+      "smoke_checks": [
+        "check_service_startup"
+      ]
+    },
+    {
+      "id": "fx_206252d8bb7391075597d8b52bdefdf1",
+      "qa_context": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_206252d8bb7391075597d8b52bdefdf1/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
+        "seal_0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e"
+      ],
+      "smoke_checks": [
+        "check_service_startup"
+      ]
+    }
+  ]
+}

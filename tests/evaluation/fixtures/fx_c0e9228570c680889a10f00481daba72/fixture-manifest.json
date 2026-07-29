@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_c0e9228570c680889a10f00481daba72",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/public/performance-budget.md",
+      "mode": "100644",
+      "sha256": "3dba8ccea43e0a14fa6e73570577396a675698e95a364f754c10f80beebbb2ea"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/public/server.mjs",
+      "mode": "100644",
+      "sha256": "e448a2d8dfd7084b0714e8d2057a91d63e2c422183c102a83357002421de0b7e"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/public/workflow.mjs",
+      "mode": "100644",
+      "sha256": "b9892861d5ef6c15a6259fa931ceda822788ebffb8fc82ed1b410a22f5c5aeab"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_c0e9228570c680889a10f00481daba72/qa-context.md",
+      "mode": "100644",
+      "sha256": "b92196709fcbc11d425da4605fece163ebf076fee5ae6ae2e311d2427faf514b"
+    }
+  ]
+}
