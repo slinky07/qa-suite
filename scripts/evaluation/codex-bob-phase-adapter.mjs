@@ -233,7 +233,7 @@ function validateGatewayBindingEnvelope(
   return value;
 }
 
-function parseCanonicalFinalMessage(turn) {
+function parseFinalMessage(turn) {
   let output;
   try {
     output = parseContractJson(
@@ -246,14 +246,6 @@ function parseCanonicalFinalMessage(turn) {
     );
   }
   assertObject(output, "Codex final Bob phase message");
-  const canonicalSource = canonicalJson(output);
-  const sourceWithoutTerminalLf = canonicalSource.slice(0, -1);
-  if (
-    turn.final_message.text !== canonicalSource &&
-    turn.final_message.text !== sourceWithoutTerminalLf
-  ) {
-    throw new Error("Codex final Bob phase message must use canonical JSON");
-  }
   return structuredClone(output);
 }
 
@@ -379,7 +371,7 @@ export function adaptCodexBobPhaseTurn({
     selectedRequest.phase,
     requestSha256,
   );
-  const finalMessage = parseCanonicalFinalMessage(turn);
+  const finalMessage = parseFinalMessage(turn);
   const { output, reportCandidate } = phaseOutput(
     finalMessage,
     selectedRequest,
