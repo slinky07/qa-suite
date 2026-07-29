@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import {
   chmod,
   lstat,
@@ -21,7 +23,9 @@ import {
   sha256,
 } from "../scripts/evaluation/contracts.mjs";
 import {
+  assertBobHostProcessGroupSupport,
   executePreparedBobHostProgram,
+  terminateBobHostProcessGroup,
   validateBobHostExecution,
 } from "../scripts/evaluation/bob-host-executor.mjs";
 
@@ -217,14 +221,176 @@ ${responseStatement}
 `;
 }
 
+function withDescendantSentinel(source, markerPaths, token) {
+  const requestStatement = "const request = JSON.parse(source);";
+  assert.ok(source.includes(requestStatement));
+  const sentinelSource = String.raw`
+import { writeFile } from "node:fs/promises";
+const [markerPath, expectedToken] = process.argv.slice(1);
+if (!expectedToken.startsWith("qa-suite-process-group-sentinel-")) {
+  process.exit(97);
+}
+await writeFile(markerPath, String(process.pid) + "\n", {
+  flag: "wx",
+  mode: 0o600,
+});
+setTimeout(() => process.exit(0), 12_000);
+`;
+  const markerByPhase = JSON.stringify(markerPaths);
+  const sentinelToken = JSON.stringify(
+    `qa-suite-process-group-sentinel-${token}`,
+  );
+  return source.replace(
+    requestStatement,
+    String.raw`${requestStatement}
+const { spawn: spawnSentinel } = await import("node:child_process");
+const { readFile: readSentinelMarker } = await import("node:fs/promises");
+const markerPath = ${markerByPhase}[request.phase];
+const sentinel = spawnSentinel(
+  process.execPath,
+  [
+    "--input-type=module",
+    "--eval",
+    ${JSON.stringify(sentinelSource)},
+    markerPath,
+    ${sentinelToken},
+  ],
+  { detached: false, stdio: "ignore" },
+);
+sentinel.unref();
+let sentinelStarted = false;
+for (let attempt = 0; attempt < 200; attempt += 1) {
+  try {
+    await readSentinelMarker(markerPath, "utf8");
+    sentinelStarted = true;
+    break;
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+if (!sentinelStarted) throw new Error("sentinel did not start");`,
+  );
+}
+
+function markerPid(source) {
+  assert.match(source, /^[1-9][0-9]*\n$/u);
+  const pid = Number.parseInt(source, 10);
+  assert.ok(Number.isSafeInteger(pid));
+  return pid;
+}
+
+function pidIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    throw error;
+  }
+}
+
+async function waitForPidExit(pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (pidIsAlive(pid)) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(25, remaining))
+    );
+  }
+  return true;
+}
+
+function processGroupIsAlive(pid) {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    if (error?.code === "EPERM") return true;
+    throw error;
+  }
+}
+
+async function waitForProcessGroupExit(pid, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (processGroupIsAlive(pid)) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(25, remaining))
+    );
+  }
+  return true;
+}
+
+async function waitForControllerLossMarker(
+  markerPath,
+  controller,
+  stderr,
+  timeoutMs,
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    try {
+      return JSON.parse(await readFile(markerPath, "utf8"));
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (controller.exitCode !== null || controller.signalCode !== null) {
+      throw new Error(
+        `nested controller exited before its host started: ${stderr()}`,
+      );
+    }
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      throw new Error(
+        `nested controller did not start its host: ${stderr()}`,
+      );
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(25, remaining))
+    );
+  }
+}
+
+async function assertSentinelsAbsent(markerPaths) {
+  for (const markerPath of markerPaths) {
+    const pid = markerPid(await readFile(markerPath, "utf8"));
+    assert.equal(
+      pidIsAlive(pid),
+      false,
+      `sentinel PID ${pid} remained alive after host execution settled`,
+    );
+  }
+}
+
 async function harness(t) {
   const parent = await realpath(
     await mkdtemp(join(tmpdir(), "qa-suite-host-executor-")),
   );
   const laneRoot = join(parent, RUN_ID);
+  const sentinelMarkers = [];
   await mkdir(laneRoot, { mode: 0o700 });
   await chmod(laneRoot, 0o555);
   t.after(async () => {
+    for (const markerPath of sentinelMarkers) {
+      let pid;
+      try {
+        pid = markerPid(await readFile(markerPath, "utf8"));
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
+      if (pidIsAlive(pid)) {
+        assert.equal(
+          await waitForPidExit(pid, 15_000),
+          true,
+          `sentinel PID ${pid} outlived its self-destruct deadline`,
+        );
+      }
+    }
     await chmod(laneRoot, 0o700).catch(() => {});
     await rm(parent, { force: true, recursive: true });
   });
@@ -232,6 +398,12 @@ async function harness(t) {
     executable: testExecutable,
     executableSha256: testExecutableSha256,
     laneRoot,
+    sentinelMarker(label) {
+      assert.match(label, /^[a-z0-9-]+$/u);
+      const markerPath = join(parent, `${label}.pid`);
+      sentinelMarkers.push(markerPath);
+      return markerPath;
+    },
     program(source = successfulAdapter) {
       return {
         arguments: ["--input-type=module", "--eval", source],
@@ -253,13 +425,260 @@ async function execute(harnessValue, overrides = {}) {
   });
 }
 
-test("runs each Bob phase in a fresh, policy-locked direct child", async (t) => {
-  const setup = await harness(t);
+test("process-group seams fail closed and terminate only a live supervisor", async () => {
+  assert.throws(
+    () => assertBobHostProcessGroupSupport("win32"),
+    /unsupported|POSIX process groups/iu,
+  );
 
-  const execution = await execute(setup);
+  const calls = [];
+  const control = {
+    signal(pid, signal) {
+      calls.push(["signal", pid, signal]);
+    },
+    async waitForEmpty(pid, timeoutMs) {
+      calls.push(["waitForEmpty", pid, timeoutMs]);
+      return true;
+    },
+  };
+  for (const child of [
+    null,
+    {},
+    { exitCode: null, pid: 0 },
+    { exitCode: null, pid: -7 },
+    { exitCode: 0, pid: 4321 },
+  ]) {
+    await assert.rejects(
+      () => terminateBobHostProcessGroup(child, control),
+    );
+  }
+  assert.deepEqual(calls, []);
+
+  await terminateBobHostProcessGroup(
+    { exitCode: null, pid: 4321 },
+    control,
+  );
+  assert.deepEqual(calls, [
+    ["signal", 4321, "SIGKILL"],
+    ["waitForEmpty", 4321, 500],
+  ]);
+
+  const signalError = new Error("signal failed");
+  await assert.rejects(
+    () =>
+      terminateBobHostProcessGroup(
+        { exitCode: null, pid: 4321 },
+        {
+          signal() {
+            throw signalError;
+          },
+          async waitForEmpty() {
+            assert.fail("must not check emptiness after signaling fails");
+          },
+        },
+      ),
+    (error) => {
+      assert.equal(error, signalError);
+      return true;
+    },
+  );
+  await assert.rejects(
+    () =>
+      terminateBobHostProcessGroup(
+        { exitCode: null, pid: 4321 },
+        {
+          signal() {},
+          async waitForEmpty() {
+            return false;
+          },
+        },
+      ),
+  );
+});
+
+test(
+  "controller loss terminates its active host process group",
+  { skip: process.platform === "win32" },
+  async (t) => {
+    const setup = await harness(t);
+    const markerPath = join(
+      programParent,
+      `controller-loss-${process.pid}-${Date.now()}.json`,
+    );
+    const token =
+      `qa-suite-controller-loss-${process.pid}-${Date.now()}`;
+    const descendantSource = String.raw`
+const expectedToken = process.argv[1];
+if (!expectedToken.startsWith("qa-suite-controller-loss-")) process.exit(97);
+setInterval(() => {}, 60_000);
+`;
+    const targetSource = String.raw`
+import { spawn } from "node:child_process";
+import { rename, writeFile } from "node:fs/promises";
+
+const [markerPath, expectedToken] = process.argv.slice(1);
+if (!expectedToken.startsWith("qa-suite-controller-loss-")) process.exit(97);
+const descendant = spawn(
+  process.execPath,
+  [
+    "--input-type=module",
+    "--eval",
+    ${JSON.stringify(descendantSource)},
+    expectedToken,
+  ],
+  { detached: false, stdio: "ignore" },
+);
+if (!Number.isSafeInteger(descendant.pid) || descendant.pid < 1) {
+  throw new Error("descendant did not start");
+}
+descendant.unref();
+const pendingMarkerPath = markerPath + ".pending";
+await writeFile(
+  pendingMarkerPath,
+  JSON.stringify({
+    descendant_pid: descendant.pid,
+    supervisor_pid: process.ppid,
+    target_pid: process.pid,
+    token: expectedToken,
+  }) + "\n",
+  { flag: "wx", mode: 0o600 },
+);
+await rename(pendingMarkerPath, markerPath);
+setInterval(() => {}, 60_000);
+`;
+    const program = setup.program();
+    program.arguments = [
+      "--input-type=module",
+      "--eval",
+      targetSource,
+      markerPath,
+      token,
+    ];
+    const executorModuleUrl = new URL(
+      "../scripts/evaluation/bob-host-executor.mjs",
+      import.meta.url,
+    ).href;
+    const controllerSource = String.raw`
+const { executePreparedBobHostProgram } =
+  await import(${JSON.stringify(executorModuleUrl)});
+await executePreparedBobHostProgram({
+  laneRoot: ${JSON.stringify(setup.laneRoot)},
+  preparation: ${JSON.stringify(preparation())},
+  program: ${JSON.stringify(program)},
+  suite: ${JSON.stringify(suite())},
+});
+`;
+    const controller = spawn(
+      process.execPath,
+      ["--input-type=module", "--eval", controllerSource],
+      { stdio: ["ignore", "ignore", "pipe"] },
+    );
+    let controllerStderr = "";
+    controller.stderr.setEncoding("utf8");
+    controller.stderr.on("data", (chunk) => {
+      controllerStderr += chunk;
+    });
+    let marker;
+    t.after(async () => {
+      if (controller.exitCode === null && controller.signalCode === null) {
+        controller.kill("SIGKILL");
+        await once(controller, "exit");
+      }
+      if (
+        marker !== undefined &&
+        pidIsAlive(marker.supervisor_pid) &&
+        processGroupIsAlive(marker.supervisor_pid)
+      ) {
+        // The target recorded its direct parent, and the detached-supervisor
+        // contract makes that still-live parent this group's leader. A live
+        // leader keeps its PID allocated, so it cannot be reused here.
+        process.kill(-marker.supervisor_pid, "SIGKILL");
+        assert.equal(
+          await waitForProcessGroupExit(marker.supervisor_pid, 5_000),
+          true,
+        );
+      }
+      await rm(markerPath, { force: true });
+      await rm(`${markerPath}.pending`, { force: true });
+    });
+
+    marker = await waitForControllerLossMarker(
+      markerPath,
+      controller,
+      () => controllerStderr,
+      5_000,
+    );
+    assert.deepEqual(
+      Object.keys(marker).sort(),
+      [
+        "descendant_pid",
+        "supervisor_pid",
+        "target_pid",
+        "token",
+      ],
+    );
+    assert.equal(marker.token, token);
+    for (const field of [
+      "descendant_pid",
+      "supervisor_pid",
+      "target_pid",
+    ]) {
+      assert.ok(Number.isSafeInteger(marker[field]));
+      assert.ok(marker[field] > 0);
+    }
+    assert.notEqual(marker.supervisor_pid, marker.target_pid);
+    assert.notEqual(marker.target_pid, marker.descendant_pid);
+    assert.equal(processGroupIsAlive(marker.supervisor_pid), true);
+    assert.equal(pidIsAlive(marker.target_pid), true);
+    assert.equal(pidIsAlive(marker.descendant_pid), true);
+
+    const controllerExit = once(controller, "exit");
+    assert.equal(controller.kill("SIGKILL"), true);
+    const [exitCode, signal] = await controllerExit;
+    assert.equal(exitCode, null);
+    assert.equal(signal, "SIGKILL");
+
+    assert.equal(
+      await waitForProcessGroupExit(marker.supervisor_pid, 5_000),
+      true,
+      "controller loss left its supervisor process group alive",
+    );
+    assert.equal(
+      await waitForPidExit(marker.target_pid, 5_000),
+      true,
+      "controller loss left its target alive",
+    );
+    assert.equal(
+      await waitForPidExit(marker.descendant_pid, 5_000),
+      true,
+      "controller loss left its ordinary descendant alive",
+    );
+  },
+);
+
+test("runs each Bob phase in a fresh, emptied process group", async (t) => {
+  const setup = await harness(t);
+  const markerPaths = {
+    expected_use_model: setup.sentinelMarker("successful-expected-use"),
+    interface_inventory: setup.sentinelMarker("successful-interface"),
+    task_execution: setup.sentinelMarker("successful-task"),
+  };
+
+  const execution = await execute(setup, {
+    program: setup.program(
+      withDescendantSentinel(
+        successfulAdapter,
+        markerPaths,
+        "successful-execution",
+      ),
+    ),
+  });
 
   assert.equal(validateBobHostExecution(execution), execution);
-  assert.equal(execution.execution_observation, "three-direct-processes-completed");
+  assert.equal(
+    execution.execution_observation,
+    "three-supervised-process-groups-completed-and-emptied",
+  );
   assert.equal(execution.verification_status, "unverified");
   assert.equal(execution.qualification, "not-evidence");
   assert.equal(execution.result, null);
@@ -271,6 +690,13 @@ test("runs each Bob phase in a fresh, policy-locked direct child", async (t) => 
       "task_execution",
     ],
   );
+  assert.deepEqual(
+    execution.process_receipts.map(({ owned_process_group }) =>
+      owned_process_group
+    ),
+    ["proven-empty", "proven-empty", "proven-empty"],
+  );
+  await assertSentinelsAbsent(Object.values(markerPaths));
   for (const claim of Object.values(execution.transcript.claims)) {
     assert.equal(claim, "not-attested");
   }
@@ -542,32 +968,36 @@ test("rejects malformed, cross-request, and non-canonical responses", async (t) 
 
 test("fails closed on timeout, nonzero exit, and bounded output", async (t) => {
   const setup = await harness(t);
-  const inheritedPipeSource = adapterSource(`
-const { spawn } = await import("node:child_process");
-spawn(
-  process.execPath,
-  ["--eval", "setTimeout(() => {}, 750)"],
-  { stdio: ["ignore", "inherit", "inherit"] },
-);
-setTimeout(() => {}, 10_000);
-`);
+  const timeoutMarker = setup.sentinelMarker("timeout");
+  const timeoutSource = withDescendantSentinel(
+    adapterSource("setTimeout(() => {}, 10_000);"),
+    { interface_inventory: timeoutMarker },
+    "timeout",
+  );
   const startedAt = Date.now();
   await assert.rejects(
     () =>
       execute(setup, {
-        limits: { timeout_ms: 200 },
-        program: setup.program(inheritedPipeSource),
+        limits: { timeout_ms: 500 },
+        program: setup.program(timeoutSource),
       }),
     /controller deadline/u,
   );
-  assert.ok(Date.now() - startedAt < 700);
+  assert.ok(Date.now() - startedAt < 1_500);
+  await assertSentinelsAbsent([timeoutMarker]);
 
   const failures = [
     {
+      marker: setup.sentinelMarker("nonzero-exit"),
+      name: "nonzero-exit",
+      rejection: /did not complete successfully/u,
       source: adapterSource("process.exit(7);"),
     },
     {
       limits: { output_bytes: 4096 },
+      marker: setup.sentinelMarker("output-overflow"),
+      name: "output-overflow",
+      rejection: /stdout exceeded its byte limit/u,
       source: adapterSource('process.stdout.write("x".repeat(16 * 1024));'),
     },
   ];
@@ -577,10 +1007,17 @@ setTimeout(() => {}, 10_000);
       () =>
         execute(setup, {
           limits: failure.limits,
-          program: setup.program(failure.source),
+          program: setup.program(
+            withDescendantSentinel(
+              failure.source,
+              { interface_inventory: failure.marker },
+              failure.name,
+            ),
+          ),
         }),
-      /did not complete successfully/u,
+      failure.rejection,
     );
+    await assertSentinelsAbsent([failure.marker]);
   }
 });
 
