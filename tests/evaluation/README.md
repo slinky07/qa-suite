@@ -885,6 +885,35 @@ averaging percentages. Regardless of the arithmetic, foundation output retains
 `verification_status: "unverified"`, `qualification: "not-evidence"`, and
 `result: null`.
 
+## Closed Bob composition and proof protocol
+
+`composeClosedCodexBobEvaluation({ closedRun, liveSession, oracleSet,
+smokeGate, suite })` runs only after runner closure. The caller keeps the
+oracle sealed until that boundary. The composer rereads the retained closure,
+live-session and session-chain records and every declared closed artifact,
+validates their bindings and the report adaptation, joins the caller-supplied
+smoke gate into one normalized case, then produces the pure scoring preview.
+It scans those retained bytes and the smoke gate for every confidential oracle
+token and non-selected case ID. It does not attest smoke provenance, provider
+or controller-state authentication, sandbox qualification, report semantic
+parity, or semantic fixture opacity. Its output remains `unverified`,
+`not-evidence`, with `result: null`.
+
+The Bob baseline uses one frozen controller and the unchanged subject for four
+fresh runs:
+
+| Pair | Adversarial case | Control case |
+|---|---|---|
+| Pocket Notes | `fx_39e78c1246b2cf2952277010d5f5cedc` | `fx_ea9eb160a44e5e7f7acd520b92825800` |
+| Project Finder | `fx_cc4b61fbde593f6e101984583e5e9f88` | `fx_87a49bf089d33e76d6115d4aef954c01` |
+
+Retain each closed run and record detection, classification, scoped control
+findings, control-budget result, verdict, Severity, Priority, and flow
+coverage. `Blocked` is neither a detection nor a miss. Remediate only a
+reproduced Bob miss, change the smallest authoritative Bob behavior without
+changing the fixtures, oracle, scoring, or frozen controller, then rerun all
+four cases against the remediated subject and retain the before/after evidence.
+
 ## Deferred Issue #30 delivery
 
 The following remain deliberately outside the current non-qualifying
@@ -896,12 +925,8 @@ constituents:
   completion, and command-network isolation without conflating provider
   transport with tool egress;
 - smoke-first dispatch and deeper-lane gating;
-- composition of the partial Bob lane adaptation with the smoke gate into a
-  complete normalized case;
 - host-bound, authenticated evidence that a real Bob execution obeyed the
   controller's inventory/model-before-task protocol;
-- runner-controlled oracle opening and scanning of every closed output byte
-  against its complete confidential token set;
 - baseline runs and retained baseline evidence;
 - remediation, before/after comparison, and retained remediation evidence; and
 - CI scheduling for recurring or release-gated evaluation.

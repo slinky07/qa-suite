@@ -123,6 +123,20 @@ distributed skill without changing it:
   controller-hashed structured lane result. It does not read or parse report
   content, create a complete normalized case, open the sealed oracle, or
   score a result.
+- `composeClosedCodexBobEvaluation()` in
+  `scripts/evaluation/bob-qualification-composer.mjs` accepts a closed runner
+  result, live session, public suite, caller-supplied smoke gate, and sealed
+  oracle set only after closure. It rereads the retained closure, live-session
+  and session-chain records plus every declared closed artifact, binds the
+  report adaptation into one validated normalized case, runs the
+  non-qualifying preview, and scans those retained bytes and the smoke gate
+  for the complete confidential token set. Its narrow claims cover only those
+  rereads, validated structures, controller-observed phase order, signed
+  digest references, owned process-group emptiness, and literal token absence.
+  Smoke-gate provenance, provider and controller-state authentication, sandbox
+  qualification, report semantic parity, and semantic fixture opacity remain
+  explicitly `not-attested`; output stays `unverified`, `not-evidence`, with
+  `result: null`.
 - `scripts/evaluation/browser-gateway.mjs` is the non-qualifying rendered-page
   boundary and the machine authority for its gateway-local policy, tool, and
   closure contracts. It exposes only phase-scoped observation and control-ID
