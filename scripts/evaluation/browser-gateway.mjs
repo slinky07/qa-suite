@@ -2611,9 +2611,14 @@ function validatedMcpRequest(value) {
   };
 }
 
-function validateIgnoredMcpMeta(params, label) {
-  if (Object.keys(params).length === 0) return;
-  assertExactKeys(params, ["_meta"], label);
+function validateMcpParamsWithIgnoredMeta(params, expectedKeys, label) {
+  const hasMeta = Object.hasOwn(params, "_meta");
+  assertExactKeys(
+    params,
+    [...expectedKeys, ...(hasMeta ? ["_meta"] : [])],
+    label,
+  );
+  if (!hasMeta) return;
   assertObject(params._meta, `${label}._meta`);
   if (Buffer.byteLength(canonicalJson(params._meta), "utf8") > 16 * 1024) {
     throw new Error(`${label}._meta exceeds its byte limit`);
@@ -2687,11 +2692,15 @@ async function handleMcpMessage(message, state, gateway) {
   }
   if (!state.ready) throw new Error("MCP request arrived before initialization");
   if (request.method === "tools/list") {
-    validateIgnoredMcpMeta(request.params, "tools/list.params");
+    validateMcpParamsWithIgnoredMeta(
+      request.params,
+      [],
+      "tools/list.params",
+    );
     return jsonRpcResult(request.id, { tools: gateway.listTools() });
   }
   if (request.method === "tools/call") {
-    assertExactKeys(
+    validateMcpParamsWithIgnoredMeta(
       request.params,
       ["arguments", "name"],
       "tools/call.params",

@@ -725,7 +725,13 @@ test("MCP lifecycle exposes exact tools and canonical tool output", async () => 
     id: 4,
     jsonrpc: "2.0",
     method: "tools/call",
-    params: { arguments: {}, name: "observe_page" },
+    params: {
+      _meta: {
+        progressToken: "tools-call",
+      },
+      arguments: {},
+      name: "observe_page",
+    },
   })}\n`);
   input.end();
   await serving;
