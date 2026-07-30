@@ -114,18 +114,23 @@ this sequence from rendered behavior and the project-visible oracles allowed
 by **Isolation**:
 
 1. **Interface inventory:** identify the surface, visible groups, controls,
-   status, help, and recovery entry points. Account for every visible
-   interactive function and group controls by the user job they appear to
-   serve. Do not test the controls yet.
+   status, help, and recovery entry points. Record their visible order, then
+   account for every visible interactive function and group controls by the
+   user job they appear to serve. Do not test the controls yet.
 2. **Expected-use model:** state the surface's apparent primary job and the
-   logical action hierarchy. For every action eligible for IA-04, record what
-   the UI says it will add, remove, replace, preserve, and make reversible.
-   For visible failure or not-found paths, record the apparent recovery step
-   and the knowledge needed to complete it. Write `Unknown from UI` instead
-   of filling a gap from source, memory, or orchestrator context.
+   logical action hierarchy. For each apparent primary job, mark the visible
+   span from its first required input or starting control through its commit
+   action as `Separated` or `Interleaved`. Use `Interleaved` when controls for
+   a distinct secondary job appear inside that span and the user must filter
+   them out to reach the commit action. For every action eligible for IA-04,
+   record what the UI says it will add, remove, replace, preserve, and make
+   reversible. For visible failure or not-found paths, record the apparent
+   recovery step and the knowledge needed to complete it. Write `Unknown from
+   UI` instead of filling a gap from source, memory, or orchestrator context.
 3. **Task execution:** exercise the logical hierarchy and compare the
-   expected-use model with the rendered outcome. A successful action does not
-   erase a pre-action comprehension or predictability failure. A visible
+   expected-use model with the rendered outcome. Carry an `Interleaved` span
+   forward as a failed IA-01 probe before task execution. Later task
+   completion cannot convert that pre-action failure into a pass. A visible
    recovery link does not pass when its next step still requires unexplained
    technical knowledge.
 
@@ -216,7 +221,7 @@ standalone criterion.
 
 | ID | Probe and decision rule | Required evidence / citation |
 |---|---|---|
-| IA-01 | Before interaction, compare the surface's apparent primary job with the complete control-to-job inventory. This is always evidence, but becomes a finding only if the user must separate or combine unrelated jobs to find or predict the primary path: unrelated work precedes or interleaves with it, pushes its action outside the initial viewport, or causes IA-02 to fail. Individually working controls do not disprove task-boundary interference. | Before-action screenshot, apparent primary job, complete control-to-job inventory, failed-interference condition; H8 where filed. |
+| IA-01 | Before interaction, compare the surface's apparent primary job with the complete control-to-job inventory. This is always evidence, but becomes a finding only if the user must separate or combine unrelated jobs to find or predict the primary path: unrelated work precedes or interleaves with it, pushes its action outside the initial viewport, or causes IA-02 to fail. An `Interleaved` span recorded by the fresh-user reasoning sequence is the failed-interference condition; individually working controls, a commit action inside the initial viewport, and later successful task completion do not disprove it. | Before-action screenshot, apparent primary job, complete control-to-job inventory, failed-interference condition; H8 where filed. |
 | IA-02 | For each visible group, write one sentence using on-screen text only that describes what a first-time user believes it is for. File only when that sentence cannot be written or is later disproven by the UI's behavior. | Screenshot, attempted interpretation, contradictory or absent evidence; H6 and/or H2. |
 | IA-03 | Check whether labels, placeholders, and required formats are understandable to the documented Intended audience. When absent, use the contract-defined "general end user" fallback and state it in the report. | Exact UI text and audience basis; H2. |
 | IA-04 | Before activation, record what each bulk, destructive, difficult-to-reverse, and primary action will add, remove, replace, preserve, and make reversible. Do not apply this test to every routine toggle. Record `Unknown from UI` for any consequence the interface does not explain; later execution success does not convert that pre-action failure into a pass. | Mandatory before-action screenshot and consequence record; H1/H3/H5 if material consequences are unknown or contradictory. When safely executable, include after-state evidence and file H1 for a prediction/outcome mismatch. |

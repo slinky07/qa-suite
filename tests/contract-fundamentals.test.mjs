@@ -190,6 +190,26 @@ test("every shipped lane declares a numeric time box", async () => {
   );
 });
 
+test("Bob preserves an IA-01 task-boundary failure through execution", async () => {
+  const bob = await readRepositoryFile(
+    "qa-suite/references/agents/bob-qa.md",
+  );
+  const reasoning = extractSection(
+    bob,
+    "### Fresh-user reasoning sequence",
+  );
+  const iaPass = extractSection(
+    bob,
+    "### Information architecture and comprehension pass",
+  );
+  const taskBoundaryContract = `${reasoning}\n${iaPass}`.replace(/\s+/g, " ");
+
+  assert.match(
+    taskBoundaryContract,
+    /visible order[\s\S]+first required input or starting control[\s\S]+`Separated` or `Interleaved`[\s\S]+distinct secondary job[\s\S]+failed IA-01 probe before task execution[\s\S]+Later task completion cannot convert that pre-action failure into a pass[\s\S]+`Interleaved` span[\s\S]+commit action inside the initial viewport[\s\S]+later successful task completion do not disprove it/,
+  );
+});
+
 test("broad triggers are impact-scoped and mirrored publicly", async () => {
   const [skill, readme, releaseCommand, qaContext] = await Promise.all([
     readRepositoryFile("qa-suite/SKILL.md"),
