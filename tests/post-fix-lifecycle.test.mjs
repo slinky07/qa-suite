@@ -79,6 +79,79 @@ test("candidate identity is configured and visible in every lane report", async 
   });
 });
 
+test("lane reports propose ledger rows without reading the ledger", async () => {
+  const lanes = await Promise.all(lanePaths.map(readRepositoryFile));
+
+  lanes.forEach((lane, index) => {
+    const reports = extractSection(lane, "## Reports");
+    const normalized = reports.replace(/\s+/g, " ");
+
+    for (const field of [
+      "report-local proposal ID",
+      "component",
+      "location",
+      "oracle",
+      "severity",
+      "priority",
+      "sanitized ordered repro steps",
+      "expected result",
+      "actual result",
+      "environment",
+      "safe evidence reference",
+      "sensitivity classification proposal",
+    ]) {
+      assert.match(normalized, new RegExp(field), lanePaths[index]);
+    }
+
+    assert.match(normalized, /supplied ledger ID/, lanePaths[index]);
+    assert.match(
+      normalized,
+      /confirmation missions.*Confirmation dispositions/,
+      lanePaths[index],
+    );
+    assert.match(
+      normalized,
+      /Apply `Blocked` as defined there, including its mutation-dependent rule/,
+      lanePaths[index],
+    );
+    assert.doesNotMatch(normalized, /Blocked` only/, lanePaths[index]);
+    assert.match(
+      normalized,
+      /regression missions: supplied ledger ID \| candidate \| lane result \| evidence/,
+      lanePaths[index],
+    );
+    assert.match(normalized, /N\/A — discovery mission/, lanePaths[index]);
+    assert.match(
+      normalized,
+      /recurrence.*finding proposal linked to the supplied ledger ID.*orchestrator matches it.*`regressed` transition/,
+      lanePaths[index],
+    );
+    assert.match(
+      normalized,
+      /Only newly observed different behavior is a separate finding proposal/,
+      lanePaths[index],
+    );
+    assert.match(
+      normalized,
+      /does not read or write the finding ledger/,
+      lanePaths[index],
+    );
+    assert.match(
+      normalized,
+      /orchestrator validates and matches proposals, assigns stable IDs and statuses, and reconciles the ledger/,
+      lanePaths[index],
+    );
+    assert.match(normalized, /\*\*Not tested\*\*/, lanePaths[index]);
+  });
+
+  const smokeReports = extractSection(lanes.at(-1), "## Reports");
+  assert.doesNotMatch(smokeReports, /no severity\/priority matrix/);
+  assert.match(
+    smokeReports.replace(/\s+/g, " "),
+    /confirmed product failure.*references\/severity-priority-matrix\.md/,
+  );
+});
+
 test("mission modes preserve discovery isolation and lifecycle visibility", async () => {
   const skill = await readRepositoryFile("qa-suite/SKILL.md");
   const lifecycle = extractSection(skill, "## Post-fix lifecycle");

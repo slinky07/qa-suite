@@ -281,6 +281,14 @@ Structure (quick mode uses only sections marked ●):
   test target, Intended audience, tooling, form factor(s), runtime state.
 - ● **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
+- ● **Verification results** — in confirmation missions: supplied ledger ID |
+  candidate | disposition as defined by `SKILL.md`'s **Confirmation
+  dispositions** | evidence. Apply `Blocked` as defined there, including its
+  mutation-dependent rule. In regression missions: supplied ledger ID |
+  candidate | lane result | evidence. A recurrence is a finding proposal linked
+  to the supplied ledger ID; the orchestrator matches it and applies the
+  `regressed` transition. Only newly observed different behavior is a separate
+  finding proposal. Write `N/A — discovery mission` in discovery.
 - ● **Fresh-user reasoning record** — surface | interface inventory evidence |
   expected-use model | logical task hierarchy | comparison evidence.
 - ● **Onboarding result** — flow | brief result | evidence reference |
@@ -294,19 +302,29 @@ Structure (quick mode uses only sections marked ●):
   reference.
 - **Task-level usability** — flow | effectiveness (Y/N) | steps vs.
   expected | finding or evidence reference.
-- ● **Findings** — ID | title | severity | priority | criterion citation |
-  repro steps | before-action screenshot | rendered evidence | novice
-  interpretation/task failure | unmet user need | optional suggestion |
-  likely owning area if obvious.
+- ● **Findings** — proposals for orchestrator reconciliation: report-local
+  proposal ID | title | component | location | oracle | severity | priority |
+  sanitized ordered repro steps | expected result | actual result | environment
+  | safe evidence reference | sensitivity classification proposal | criterion
+  citation | before-action screenshot | rendered evidence | novice
+  interpretation/task failure | unmet user need | optional suggestion. Use
+  `None` when there is no proposal.
 - ● **Fresh-user observations** — what was seen or attempted | what
   happened | screenshot evidence. No severity, priority, or verdict effect.
 - ● **Functional QA** — flow | Pass/Fail/Blocked/Observed only/Not tested |
   finding or evidence reference for a non-pass result.
 - ● **Not tested** — what this run intentionally did not cover.
 
-Supporting tables reference finding IDs or evidence files instead of
-repeating evidence. `Findings` and `Fresh-user observations` own the
-supporting detail.
+The canonical report identity supplies the lane and provenance, and
+**Environment** supplies the candidate. This lane does not read or write the
+finding ledger. It uses only the lifecycle manifest supplied by the orchestrator
+for this mission. The orchestrator validates and matches proposals, assigns
+stable IDs and statuses, and reconciles the ledger, including timestamps,
+occurrences, sensitivity storage, and lifecycle state.
+
+Supporting tables reference finding IDs (the report finding IDs above) or
+evidence files instead of repeating evidence. `Findings` and
+`Fresh-user observations` own the supporting detail.
 
 ## Voice
 
