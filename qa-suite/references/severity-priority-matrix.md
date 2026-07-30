@@ -64,6 +64,25 @@ weighting when it isn't obvious:
   require demonstrated core-flow failure or data risk; IA framing alone
   cannot elevate a finding.
 
+## Failure class → severity
+
+Failure class, Severity, and verdict are separate decisions. First record the
+observed class and evidence. Then assign Severity from demonstrated impact in
+the declared deployment context. Finally apply the fixed Severity-to-verdict
+table above. Do not choose Severity to reach an expected verdict.
+
+| Lane or class | Classification rule | Severity anchors |
+|---|---|---|
+| Regression | `Regression`, `New failure`, and `Flaky` describe history or repeatability only. They do not raise or lower impact. | Use the reproduced impact: core flow unusable, data loss, or crash → S1; major flow broken with no workaround → S2; degraded flow with a workaround or limited context → S3; cosmetic, edge, or low-risk effect → S4. |
+| Security | Record the concrete security condition and the current threat-model evidence. A category name, checklist failure, or theoretical exploit path is not proof of exposure. | Exposed secret or demonstrated auth bypass → S1; demonstrated significant exposure with no workaround → S2; a contextual best-practice gap with limited impact → S3; a hygiene or edge issue with low real-world risk → S4. |
+| Compatibility | Scope the finding to the exact engine, viewport, OS, or device combination exercised. Emulated or single-axis evidence does not establish an untested engine or real device. | On a supported combination: core flow unusable → S1; major flow broken with no workaround → S2; degraded flow with a workaround → S3; cosmetic or edge-only difference → S4. |
+
+Do not classify missing coverage as a product finding. Put an unexercised area
+in `Not tested`; use `Blocked` only when environment or tooling prevented the
+declared scope; use `Observed only` when safety prevented a mutation-dependent
+completing action. A confirmed S1/S2 remains S1/S2 even when only one supported
+combination or one lane reproduced it.
+
 ## Failure classification (regression-qa)
 
 In addition to severity/priority, regression findings are classified as:

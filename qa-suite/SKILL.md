@@ -648,6 +648,22 @@ Four verdict states plus one qualifier, defined here once — no lane file
 redefines them. Severity drives the verdict; priority drives scheduling
 only.
 
+Classify before deriving the verdict. A finding's lane or failure class
+describes what was observed; it does not set Severity. Assign Severity from
+the demonstrated impact in the current deployment context, then derive the
+verdict from the confirmed in-scope Severities below:
+
+- regression, new-failure, and flaky labels describe history or repeatability,
+  not impact;
+- a security category or theoretical worst case does not by itself justify
+  S1/S2; use the observed exposure and threat-model impact;
+- a compatibility finding is scoped to the exact engine, viewport, OS, or
+  device combination exercised; emulation or one matrix point does not prove
+  impact on untested combinations; and
+- uncertainty, missing coverage, and unsupported impact claims belong in
+  `Assumptions`, `Not tested`, `Blocked`, or `Observed only`, as applicable.
+  Never increase or decrease Severity to match an expected verdict.
+
 - **No-Go** — at least one confirmed S1/S2 finding in scope, or a core
   flow demonstrably cannot be completed.
 - **Go with findings** — scope exercised; only S3/S4 findings. The verdict
