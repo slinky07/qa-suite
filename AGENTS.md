@@ -48,9 +48,15 @@ Every mutating unit follows:
 - Build the dependency graph before implementation. Each node declares its
   outcome, dependencies, acceptance criteria, write scope, verification,
   evidence destination, and owner.
-- Run only dependency-ready nodes. Default to at most three concurrent worker
-  nodes, and use fewer when files, runtime state, tests, or integration seams
-  overlap.
+- Run only dependency-ready nodes; analyze parallel width right after
+  building the graph and dispatch all proven-disjoint Ready nodes
+  concurrently — serializing them without a recorded reason is a scheduling
+  defect. At most four concurrent worker nodes (worktree-bound writers with
+  disjoint seams), three recommended; fewer on any file, runtime, test, or
+  seam overlap. Helper agents (planners, auditors, reviewers, report
+  writers, watchdogs, QA-lane dispatch), spawnable by the orchestrator or a
+  node within its scope, own no worktree or seam and sit outside the node
+  ceiling. Owner gates are unchanged.
 - Read-only exploration, tests, and review may run in parallel. Parallel
   writers require separate branches/worktrees and disjoint ownership. Only one
   writer owns a file or integration seam at a time.

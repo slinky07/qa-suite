@@ -73,6 +73,15 @@ Use these states:
 - **Human gate**: all automated gates are settled; owner action is required.
 - **Done**: the PR is merged, required evidence is durable, and cleanup is safe.
 
+**Parallelism is the default, not the exception.** On receiving any scope,
+plan, or goal, the orchestrator's first analysis is the dependency graph and
+its parallel width: enumerate every Ready node, prove which scopes are
+disjoint, and dispatch them concurrently — worker nodes up to the ceiling,
+helper agents alongside. Serial execution of independent Ready nodes is a
+scheduling defect unless a shared file, seam, runtime, or capacity limit is
+recorded at dispatch time. The single-worker habit of ordinary sessions must
+not leak into graph campaigns.
+
 Only Ready nodes may start. Reject dependency cycles. Independent nodes may be
 authored concurrently, but dependent nodes merge in graph order. Prefer a fresh
 branch from refreshed `origin/main` after each dependency merges, or from the
@@ -109,13 +118,38 @@ when their outputs, dependencies, or review boundaries are genuinely distinct.
 
 ## Orchestrator and workers
 
-The main agent is the formal orchestrator. It owns:
+The main agent is the formal orchestrator. It operates as the project's
+delivery manager and senior architect: it plans, sequences, dispatches, and
+reconciles the work of a worker team, and it enforces the plan, the
+architecture, and this governance on every result. It owns:
 
 - the interpretation of owner and issue authority;
 - graph construction and readiness decisions;
 - worker scopes and concurrency;
 - integration, candidate freeze, and authoritative status;
 - PR composition and the final human handoff.
+
+The orchestrator holds standing authorization to use two distinct kinds of
+parallel capacity, without per-wave owner approval. They are not the same
+resource and are not counted together:
+
+- **Worker nodes** are the unit of mutation. Each owns one graph node, one
+  isolated worktree and branch, and one disjoint file or integration seam.
+  One orchestrator can run several at once when the plan is large, their
+  scopes cannot impact each other, and the disjointness was planned before
+  dispatch — never as an accident of enthusiasm.
+- **Helper agents** are spawned assistants: planners, auditors, reviewers,
+  report writers, watchdogs, and dispatch of the distributed `qa-suite/`
+  lanes against candidate work as QA evidence under the skill's own
+  isolation rules. The orchestrator may spawn them, and a worker node may
+  spawn its own within its declared scope. A helper never owns a worktree,
+  seam, or graph node, writes nothing outside its parent node's worktree,
+  and does not count against the worker-node ceiling; it is bounded by
+  platform capacity and its parent's scope, and its results reconcile
+  through whoever spawned it.
+
+Spawning never transfers the owner gates: PR merge, issue closure, graph
+reordering, releases, and safety-gated external calls stay with the human.
 
 Workers receive a bounded objective, relevant authority, allowed tools, write
 scope, acceptance criteria, and a precise done condition. They do not merge,
@@ -128,10 +162,17 @@ and disjoint file or seam ownership. Only one writer may own a file or
 integration seam at a time. The orchestrator reconciles all results and returns
 one decision.
 
-Default to at most three concurrent worker nodes. Use fewer when work shares
-files, runtime state, test infrastructure, or an integration boundary. Raising
-the limit requires an explicit campaign plan showing independent scopes and
-available capacity.
+At most four worker nodes may run concurrently. Three is the recommended
+default; choose the number from the workflow. Use four only when every
+active node has fully disjoint files, runtime state, tests, and integration
+seams. Use fewer than three when work shares any of them. Helper agents are
+outside this ceiling.
+
+Project authority is unchanged by orchestration: the original passive
+fresh-user philosophy and the distributed `qa-suite/` lane contracts remain
+the source of truth for what the product is and how candidate work is
+judged. Worker output that conflicts with them is a defect, whatever the
+concurrency.
 
 ## Harness contract
 
