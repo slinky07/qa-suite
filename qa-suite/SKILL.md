@@ -360,7 +360,8 @@ through the orchestrator.
 Do not confuse the two mechanisms; they are host-specific:
 
 - **Claude Code.** The qa-suite plugin ships one generic subagent per QA
-  lane from the plugin's `agents/` directory (lowest lookup priority).
+  lane from the plugin's `.claude/agents/` directory (lowest lookup
+  priority).
   A generated `.claude/agents/<project>-smoke-qa.md` is a **project
   subagent** (higher priority, committed to the repo) that is pre-bound to
   this project's qa-context. Names never collide (`smoke-qa` vs

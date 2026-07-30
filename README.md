@@ -63,10 +63,10 @@ Install qa-suite once in your agent platform. Do **not** copy it into every proj
 
 | Platform | Install |
 |---|---|
-| Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then install `qa-suite` with `/plugin install qa-suite@qa-suite`. For local-only use, copying `qa-suite/` into `~/.claude/skills/` also works. |
+| Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then install `qa-suite` with `/plugin install qa-suite@qa-suite`. For local-only use, copy the repository's `qa-suite/` directory so its `SKILL.md` is at `$HOME/.claude/skills/qa-suite/SKILL.md`. |
 | Claude.ai | Download `qa-suite.skill` from this repository's Releases page and upload it as a skill. |
-| Codex | Add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and verify the installation with `codex plugin list | rg qa-suite`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If command codex is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli  |
-| Codex local skill fallback | Copy `qa-suite/` into `$HOME/.agents/skills/qa-suite` if you want the skill without using the plugin marketplace. |
+| Codex | Add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and verify the installation with `codex plugin list --marketplace qa-suite --json`; the `qa-suite` entry must appear under `installed` with `"installed": true`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If command codex is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli  |
+| Codex local skill fallback | Copy the repository's `qa-suite/` directory so its `SKILL.md` is at `$HOME/.agents/skills/qa-suite/SKILL.md` if you want the skill without using the plugin marketplace. |
 
 The Claude Code plugin also includes thin slash commands: `/qa-smoke` (smoke pass), `/qa-regression` (smoke then regression), and `/qa-release` (full release audit).
 
@@ -208,7 +208,7 @@ qa-suite involves two different agent mechanisms per host. Don't confuse them.
 
 | | Plugin-shipped (installed with qa-suite) | Repo-local (generated at project init) |
 |---|---|---|
-| Claude Code | Generic lane subagents from the plugin's `agents/` directory (`smoke-qa`, `regression-qa`, ...). Lowest lookup priority; project-agnostic; get their project binding from the orchestrator's dispatch prompt. | `.claude/agents/<project>-smoke-qa.md` — a project subagent (Markdown + YAML frontmatter, higher priority than plugin agents), pre-bound to this repo's `qa-context.md` and committed with the repo. |
+| Claude Code | Generic lane subagents from the plugin's `.claude/agents/` directory (`smoke-qa`, `regression-qa`, ...). Lowest lookup priority; project-agnostic; get their project binding from the orchestrator's dispatch prompt. | `.claude/agents/<project>-smoke-qa.md` — a project subagent (Markdown + YAML frontmatter, higher priority than plugin agents), pre-bound to this repo's `qa-context.md` and committed with the repo. |
 | Codex | qa-suite is a plugin **skill** — prompt instructions the main task follows and delegates from. Skills are not agent definitions. | `.codex/agents/<project>-smoke-qa.toml` — a Codex **custom agent** (TOML with `name`, `description`, `developer_instructions`), directly spawnable and committed with the repo. |
 
 Use plugin-shipped agents for orchestrated qa-suite runs — they update with the plugin and cover every lane. Use the generated repo-local agents when you want to invoke the smoke lane directly without orchestration, share the project's QA entry point with the team through git, or work in a session where the plugin isn't installed.
