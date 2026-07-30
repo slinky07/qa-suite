@@ -18,6 +18,9 @@
 - [`docs/releasing.md`](docs/releasing.md) owns release construction,
   validation, publication, and recovery procedure. Read it before changing or
   operating any release surface.
+- [`docs/external-references.md`](docs/external-references.md) and its register
+  control external reference intake. Never treat a source binary as authority
+  or commit/distribute it without verified rights and explicit allowlisting.
 - If authorities conflict, stop and report the exact conflict. Do not silently
   choose or weaken one.
 
