@@ -5,6 +5,19 @@ description: Professional multi-agent QA testing framework covering smoke, regre
 
 # QA Suite
 
+QA Suite validates a built or running product through scoped, independent QA
+lanes and reports evidence from the exercised target. It complements unit and
+integration tests: those tests verify code-level contracts, while QA Suite
+checks the assembled product across user and system boundaries. It never edits
+the implementation to make a QA result pass.
+
+Bob QA provides passive fresh-user testing. It follows onboarding and visible
+behavior like a careful non-owner, without the development conversation or an
+implementation explanation, and checks whether the intended audience can
+understand, complete, and recover from declared flows. Passive does not mean
+clickless; it means safe product interaction without source-based compensation
+or source changes.
+
 QA Suite is a multi-agent orchestration skill. When the host provides any
 subagent or delegation facility, the active assistant is the orchestrator:
 it prepares neutral setup context, dispatches independent QA agents, and
