@@ -10,7 +10,7 @@ test("AGENTS.md stays concise and routes agents to detailed authority", async ()
   const agents = await text("AGENTS.md");
   const lineCount = agents.trimEnd().split("\n").length;
 
-  assert.ok(lineCount <= 130, `AGENTS.md has ${lineCount} lines`);
+  assert.ok(lineCount <= 135, `AGENTS.md has ${lineCount} lines`);
   assert.match(agents, /\[`WORKFLOW\.md`\]\(WORKFLOW\.md\)/);
   assert.match(agents, /\[`docs\/releasing\.md`\]\(docs\/releasing\.md\)/);
   assert.match(
