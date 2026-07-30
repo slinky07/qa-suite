@@ -107,6 +107,32 @@ Evidence, not vibes: screen/page identity, screenshots, log/console errors,
 targeted state checks, visible interaction proof after each critical
 action, and multiple form factors when practical.
 
+### Fresh-user reasoning sequence
+
+After startup checks and before activating a core action on a surface, record
+this sequence from rendered behavior and the project-visible oracles allowed
+by **Isolation**:
+
+1. **Interface inventory:** identify the surface, visible groups, controls,
+   status, help, and recovery entry points. Account for every visible
+   interactive function and group controls by the user job they appear to
+   serve. Do not test the controls yet.
+2. **Expected-use model:** state the surface's apparent primary job and the
+   logical action hierarchy. For every action eligible for IA-04, record what
+   the UI says it will add, remove, replace, preserve, and make reversible.
+   For visible failure or not-found paths, record the apparent recovery step
+   and the knowledge needed to complete it. Write `Unknown from UI` instead
+   of filling a gap from source, memory, or orchestrator context.
+3. **Task execution:** exercise the logical hierarchy and compare the
+   expected-use model with the rendered outcome. A successful action does not
+   erase a pre-action comprehension or predictability failure. A visible
+   recovery link does not pass when its next step still requires unexplained
+   technical knowledge.
+
+Repeat the sequence for each core surface in full mode and the primary
+surface in quick mode. The recorded sequence is required test evidence, not
+proof that the interface passes.
+
 Complete mutation-dependent flows only on the Disposable test target from
 qa-context.md, capturing before- and after-action evidence. If it is absent,
 `N/A`, or unavailable, do not mutate owner data: report each affected flow
@@ -173,8 +199,8 @@ adjective or general impression.
 | H6 | Recognition rather than recall | Each task can be understood from relevant visible cues; unrelated controls in its flow impose recognition cost rather than count as flexibility. | Must the user remember hidden information, or filter unrelated visible work, to identify the next task action? |
 | H7 | Flexibility and efficiency of use | Optional accelerators improve frequent work without obscuring or displacing the primary path. | Is the documented or visible primary path lengthened or hidden by an accelerator or alternate route? |
 | H8 | Aesthetic and minimalist design | Visible information and controls are relevant to the surface's primary job; relevance, not visual taste, is the test. | Does unrelated visible work precede or interleave with the primary job, displace its action, or prevent the user from explaining the surface? |
-| H9 | Help users recognize, diagnose, and recover from errors | Failure and not-found states explain what happened in user language, distinguish likely causes, and expose a recovery path. | After a failed lookup or action, can the user tell whether the item is absent versus unsupported and what non-technical step to try next? |
-| H10 | Help and documentation | Contextual help is findable, task-focused, and sufficient when the interface cannot safely explain recovery on its own. | When the failed lookup or error state is not self-recovering, can the user reach concise guidance without already knowing the solution or internal terminology? |
+| H9 | Help users recognize, diagnose, and recover from errors | Failure and not-found states explain what happened in user language, distinguish likely causes, and expose a recovery path that can be followed from visible cues. | After a failed lookup or action, can the user tell what happened and complete a safe next step without translating an unexplained identifier, format, setting, or implementation term? |
+| H10 | Help and documentation | Contextual help is findable, task-focused, and sufficient when the interface cannot safely explain recovery on its own. | When the state is not self-recovering, does the guidance teach the needed next step in audience-appropriate language, or is it useful only to someone who already knows the technical solution? |
 
 A finding reads like: "H3 failed probe — apply has no cancel/undo path once
 confirmed," not "the flow felt confusing."
@@ -190,13 +216,13 @@ standalone criterion.
 
 | ID | Probe and decision rule | Required evidence / citation |
 |---|---|---|
-| IA-01 | Inventory visible controls by user job. This is always evidence, but becomes a finding only if unrelated work precedes or interleaves with the primary job, pushes the primary action outside the initial viewport, or causes IA-02 to fail. | Before-action screenshot, control-to-job inventory, failed-interference condition; H8 where filed. |
+| IA-01 | Before interaction, compare the surface's apparent primary job with the complete control-to-job inventory. This is always evidence, but becomes a finding only if the user must separate or combine unrelated jobs to find or predict the primary path: unrelated work precedes or interleaves with it, pushes its action outside the initial viewport, or causes IA-02 to fail. Individually working controls do not disprove task-boundary interference. | Before-action screenshot, apparent primary job, complete control-to-job inventory, failed-interference condition; H8 where filed. |
 | IA-02 | For each visible group, write one sentence using on-screen text only that describes what a first-time user believes it is for. File only when that sentence cannot be written or is later disproven by the UI's behavior. | Screenshot, attempted interpretation, contradictory or absent evidence; H6 and/or H2. |
 | IA-03 | Check whether labels, placeholders, and required formats are understandable to the documented Intended audience. When absent, use the contract-defined "general end user" fallback and state it in the report. | Exact UI text and audience basis; H2. |
-| IA-04 | Before activation, predict what bulk, destructive, difficult-to-reverse, and primary actions will add, remove, replace, preserve, or make reversible. Do not apply this test to every routine toggle. | Mandatory before-action screenshot and stated prediction; H1/H3/H5 if consequences are unclear. When safely executable, include after-state evidence and file H1 for a prediction/outcome mismatch. |
+| IA-04 | Before activation, record what each bulk, destructive, difficult-to-reverse, and primary action will add, remove, replace, preserve, and make reversible. Do not apply this test to every routine toggle. Record `Unknown from UI` for any consequence the interface does not explain; later execution success does not convert that pre-action failure into a pass. | Mandatory before-action screenshot and consequence record; H1/H3/H5 if material consequences are unknown or contradictory. When safely executable, include after-state evidence and file H1 for a prediction/outcome mismatch. |
 | IA-05 | Evaluate post-action feedback only when more than one object could plausibly be the action's referent. Generic feedback after a single unambiguous action remains an observation, not a finding. | Action context, visible feedback, ambiguity evidence; H1. |
 | IA-06 | Detect task actions embedded in global settings and global preferences embedded in a task-specific flow when placement conflicts with expected navigation and harms comprehension. | Screenshot, surface purpose, failed placement probe; H4/H6. |
-| IA-07 | Exercise the primary lookup/search not-found path. Verify that the UI distinguishes absence from catalogue limitations and provides a non-technical recovery path. | Search term, rendered no-result state, attempted recovery; H9/H10. |
+| IA-07 | Exercise the primary lookup or search not-found path and any reachable failure or unsupported state in the tested core flow. Record what happened, the safe next step, and the knowledge needed to complete it. A recovery path fails when it requires an unexplained identifier, format, setting, implementation term, or outside procedure; the mere presence of a link, field, or instruction is not enough. | Triggering input or action, rendered state, attempted recovery, unexplained knowledge requirement; H2/H9/H10. |
 
 **Accessibility (full mode).** Use the accessibility checklist from
 `references/platforms/<platform>.md` — WCAG 2.2 AA criteria for web,
@@ -255,6 +281,8 @@ Structure (quick mode uses only sections marked ●):
   test target, Intended audience, tooling, form factor(s), runtime state.
 - ● **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
+- ● **Fresh-user reasoning record** — surface | interface inventory evidence |
+  expected-use model | logical task hierarchy | comparison evidence.
 - ● **Onboarding result** — flow | brief result | evidence reference |
   material impact or limitation. Add detailed prose only for a finding,
   blocker, `Observed only` flow, or material limitation.
