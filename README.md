@@ -262,14 +262,20 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.4.0`:
+
+* Strengthens Bob's passive fresh-user review, clarifies cross-lane verdict classification, and binds smoke claims to screenshot evidence.
+* Extends orchestrator-reconcilable finding proposals to all seven lanes while preserving each lane's blindness to the finding ledger.
+* Corrects install and agent paths, defines Codex catalog and manifest ownership, keeps local runtime state out of Git, documents generated-agent ownership, and adds fail-closed controlled-reference validation to exact-ref releases.
+
+Repository package version: `v1.4.0`. The GitHub Releases page is the
+authority for whether that version has been published.
+
 `v1.3.0`:
 
 * Adds a committed finding ledger with stable defect identity, lifecycle state, conservative cross-lane matching, and a documented three-tier evidence model.
 * Adds strict schema, path, visibility, redaction, and compare-and-swap protections so ledger validation and concurrent writes fail loudly.
 * Repairs draft-release discovery and lets reviewed release automation resume a frozen tag without moving the tag or changing its package payload.
-
-Repository package version: `v1.3.0`. The GitHub Releases page is the
-authority for whether that version has been published.
 
 `v1.2.0`:
 
