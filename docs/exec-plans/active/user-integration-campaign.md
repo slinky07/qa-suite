@@ -96,7 +96,7 @@ filing each one.
   missing before filing.
 
 Then file one umbrella campaign issue containing the dependency graph below
-and linking: #29, #28, #24, #19, #22, #23, and R1–R6. Promote this document
+and linking: #29, #28, #24, #19, #22, #23, #50, and R1–R6. Promote this document
 via a planning PR (it may already exist on branch
 `claude/evaluation-foundation`; reuse that PR if open).
 
@@ -120,8 +120,9 @@ uses `Closes #<umbrella>`.
 | N8 | Rerun regression/security/compatibility pairs | N2 merged | `tests/evaluation/` rerun record | Classification now matches sealed expectations; no control false positive |
 | N9 | Rerun smoke pair | N3 merged | `tests/evaluation/` rerun record | Screenshot-bound evidence present; no control false positive |
 | N10 | API pair resolution (R3) | — | `tests/evaluation/` | Pair completed and rerun, or retired with a recorded reason |
-| N11 | Release v1.4.0 per `docs/releasing.md` | N1–N6 merged | `VERSION`, plugin manifests, `README.md` version line | Deterministic byte-identical archives; release-integrity green; N7–N9 evidence linked in the PR body |
-| N12 | Campaign closure | all above resolved or explicitly Blocked | umbrella issue, `docs/exec-plans/` | Graph reconciled; deferred findings named (R4 disposition, recurring runs, R5); plan moved to `docs/exec-plans/completed/` |
+| N13 | Controlled external-reference handling (#50) | N1–N5 merged | `docs/` (reference register, ADR), `AGENTS.md` pointer, `scripts/release/` + tests for the binary-rejection gate | #50's acceptance criteria, per its own sequencing: after the functional P1 and evaluation work, before the release chain. The motivating PDF now lives untracked at the repository root as `Graph-Engineering-Anthropic-Playbook.pdf` (moved out of `qa-suite/references/` on 2026-07-29); no publisher attribution is inferred from the filename |
+| N11 | Release v1.4.0 per `docs/releasing.md` | N1–N6 and N13 merged | `VERSION`, plugin manifests, `README.md` version line | Deterministic byte-identical archives; release-integrity green; the N13 uncontrolled-binary gate passes; N7–N9 evidence linked in the PR body |
+| N12 | Campaign closure | all above resolved or explicitly Blocked | umbrella issue, `docs/exec-plans/` | Graph reconciled; deferred findings named (R4 disposition, recurring runs, R5); plan moved to `docs/exec-plans/completed/`; `git worktree list` shows only the primary checkout and `qa-suite/` contains no untracked files |
 
 ## Parallelism schedule
 
@@ -135,8 +136,9 @@ exploration, test runs, and reviews parallelize freely.
 - Wave 2: N7 starts the moment N1 merges (do not wait for other nodes —
   pipeline, no barrier). N8 after N2; N9 after N3. Remaining N6 children fill
   free writer slots.
-- Wave 3: N4 (needs N1+N2+N3 merged), N5 (needs N2 merged).
-- Wave 4: N11, then N12. Sequential, single writer.
+- Wave 3: N4 (needs N1+N2+N3 merged), N5 (needs N2 merged), then N13 (needs
+  N1–N5 merged; it gates the release).
+- Wave 4: N11 (needs N13), then N12. Sequential, single writer.
 
 Seam ownership: `qa-suite/SKILL.md` belongs to N2 until merged, then N5, then
 N4 rebases on the result. Only one writer owns a file at a time.
@@ -156,6 +158,9 @@ N4 rebases on the result. Only one writer owns a file at a time.
 - Non-blocking imperfections become linked follow-up issues, never PR growth.
 - Workers do not merge, close issues, reorder the graph, or widen scope. The
   orchestrator reconciles all results and stops at the human merge gate.
+- After a node's PR merges and its evidence is durable, remove the node's
+  worktree and prune stale registrations (AGENTS.md worktree rule). Leaving
+  merged worktrees behind is a defect; N12 verifies none remain.
 
 ## Definition of done
 
