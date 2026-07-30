@@ -81,6 +81,47 @@ test("every supported distribution channel has a checked contract", async () => 
   assert.match(releaseGuide, /\| Codex \|/);
 });
 
+test("Codex catalog and plugin manifest keep distinct metadata ownership", async () => {
+  const marketplace = await json(".agents/plugins/marketplace.json");
+  const plugin = await json(".codex-plugin/plugin.json");
+  const entry = marketplace.plugins[0];
+
+  assert.equal(marketplace.name, plugin.name);
+  assert.equal(entry.name, plugin.name);
+  assert.deepEqual(
+    Object.keys(entry).sort(),
+    ["category", "name", "policy", "source"],
+  );
+  assert.equal(entry.source.source, "local");
+  assert.equal(entry.source.path, "./");
+  assert.deepEqual(entry.policy, {
+    authentication: "ON_INSTALL",
+    installation: "AVAILABLE",
+  });
+  assert.equal(typeof entry.category, "string");
+
+  for (const field of [
+    "version",
+    "description",
+    "author",
+    "license",
+    "displayName",
+    "homepage",
+    "repository",
+    "keywords",
+    "interface",
+  ]) {
+    assert.equal(Object.hasOwn(entry, field), false);
+  }
+
+  assert.equal(typeof plugin.version, "string");
+  assert.equal(typeof plugin.description, "string");
+  assert.equal(typeof plugin.author?.name, "string");
+  assert.equal(typeof plugin.license, "string");
+  assert.equal(typeof plugin.interface?.displayName, "string");
+  assert.equal(typeof plugin.interface?.developerName, "string");
+});
+
 test("workflows pin actions and separate validation from release authority", async () => {
   const integrity = await text(".github/workflows/release-integrity.yml");
   const draftRelease = await text(".github/workflows/draft-release.yml");
