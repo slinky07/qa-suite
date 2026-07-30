@@ -54,6 +54,28 @@ The release check validates every manifest-referenced path and the complete
 shipped Claude agent/command sets. A channel path may not disappear or drift
 without failing CI.
 
+### External-reference binary gate
+
+The controlled-reference policy and canonical register live at
+`docs/external-references.md` and `docs/external-reference-register.json`.
+Release validation reads both from the exact Git ref and scans the complete
+tree, not the working copy or only `qa-suite/`. This whole-tree check matters
+because Claude Code and Codex consume tagged repository paths.
+
+Document binaries fail closed unless one register entry identifies the exact
+path and SHA-256, proves provenance and redistribution rights, and allowlists
+every channel that would carry it. Repository storage is Git LFS only; a raw
+binary is rejected even if registered. Every tracked reference requires the
+`tagged-repository` channel. A reference below `qa-suite/` also requires
+`claude-ai` and `source-archive`, covering both byte-identical generated
+assets. Pending, unlicensed, duplicate, mismatched, or unregistered references
+stop release construction.
+
+The current `REF-0001` record is metadata-only and distribution-excluded. Its
+local PDF is not a release input and must remain outside Git. An untracked or
+ignored working-copy file cannot enter the exact-ref build, but that local fact
+is not a substitute for the controlled register and deny-by-default guard.
+
 Run the local release integrity check with:
 
 ```sh
@@ -63,10 +85,11 @@ node scripts/release/check.mjs --ref HEAD
 The check must:
 
 1. validate version parity;
-2. build twice in separate temporary directories;
-3. require byte-identical results across both builds and both asset names;
-4. extract both assets and compare them with `qa-suite/` at the same Git ref;
-5. fail on missing, extra, stale, or renamed content.
+2. validate controlled external references across the exact Git tree;
+3. build twice in separate temporary directories;
+4. require byte-identical results across both builds and both asset names;
+5. extract both assets and compare them with `qa-suite/` at the same Git ref;
+6. fail on missing, extra, stale, renamed, or uncontrolled binary content.
 
 Generated archives and evidence are ignored. Never commit them.
 

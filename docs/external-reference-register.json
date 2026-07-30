@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "references": [
+    {
+      "id": "REF-0001",
+      "title": "Knowledge Graph Engineering for Multi-Agentic Systems: The Anthropic Playbook",
+      "author": null,
+      "publisher": null,
+      "original_source_url": null,
+      "publication_or_version_date": "2026-07",
+      "publication_or_version_date_basis": "Self-described on the title page; not independently verified.",
+      "acquisition_date": null,
+      "control_owner": "slinky07",
+      "classification": "restricted",
+      "provenance_status": "pending",
+      "license": {
+        "identifier": null,
+        "evidence": null,
+        "redistribution": "not-approved"
+      },
+      "sha256": "913c589293fad6ad6dee687bc5850206417250f0b27ccab15fdb55a45a2738c6",
+      "review_date": "2026-07-29",
+      "retention": {
+        "decision": "retain-metadata",
+        "review_due": "2027-07-29",
+        "term": "Review annually. Retain the metadata and digest until a reviewed promotion, rejection, supersession, or disposal decision."
+      },
+      "current_status": "provenance-and-rights-pending",
+      "storage": {
+        "kind": "metadata-only",
+        "locator": null,
+        "repository_path": null
+      },
+      "distribution": {
+        "decision": "excluded",
+        "channels": []
+      },
+      "derived_authorities": [],
+      "supersession_history": [],
+      "disposition": {
+        "decision": "retain-metadata-exclude-binary",
+        "date": "2026-07-29",
+        "approver": "repository-owner",
+        "reason": "The reviewed local copy has no verified acquisition source, author, publisher, or redistribution grant. Retain its identity and digest, but keep the binary out of Git and every distribution channel."
+      }
+    }
+  ]
+}
