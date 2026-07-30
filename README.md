@@ -1,12 +1,53 @@
-In real QA, testers are not always developers, and that is intentional. A good tester looks at what the software actually does, not what the person who built it expects it to do. QA-Suite follows the same principle for agent-based testing: each QA run is isolated from the development conversation. Independence of testing, as formal QA calls it (ISTQB).
-
 # qa-suite
 
-A structured multi-agent QA framework for AI coding assistants.
+Evidence-led QA for the built product, run through independent specialist
+lanes.
 
-QA-Suite is a reusable, AI-powered, multi-agent QA framework built on established software quality assurance principles and modern AI workflows. It orchestrates specialized QA agents to deliver structured, evidence-based software validation, adapting from focused change verification to comprehensive release readiness assessments.
+## What it tests, how it tests, and why it helps
 
-It gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
+| What it tests | How it tests | Why it helps |
+|---|---|---|
+| The built app, declared user flows, supported interfaces, and release candidate | Independent lanes exercise the scoped target through rendered UI, requests, measurements, logs, and screenshots | It finds integration, usability, safety, and compatibility failures that isolated code checks can miss |
+
+QA-Suite complements unit and integration tests. Those tests verify code-level
+contracts quickly and repeatably. QA-Suite exercises the assembled product
+through scoped user and system boundaries, then reports evidence. It does not
+edit the implementation to make a result pass.
+
+### Fresh-user QA
+
+Bob QA follows onboarding and the visible interface like a careful non-owner.
+It starts without the development conversation or implementation explanation,
+then asks whether the intended audience can understand, complete, and recover
+from the declared flows. "Passive" means the tester does not compensate for
+unclear product behavior with source knowledge or source changes; it can still
+perform safe interactions on the scoped test target.
+
+### Safe by default
+
+QA lanes read, observe, and test only the scoped app. They write only their
+reports and evidence under the configured QA folder. They do not edit source,
+tests, configuration, or git history; delete or reset data; use real
+credentials or private files; or test production or public endpoints without
+explicit scope and confirmed authorization. Mutation-dependent flows run only
+on a declared disposable target; otherwise they are marked `Observed only`. A
+QA run never mutates an external tracker. Any later tracker action requires a
+separate, explicit user request.
+
+### Common workflows
+
+| Need | Ask | What runs |
+|---|---|---|
+| Routine confidence after a build or change | `run smoke QA` or `did this change break anything` | Smoke first, then impact-scoped regression when shipped behavior can change |
+| UI or fresh-user review | `run Bob QA quick mode on the changed UI` | Smoke first, then Bob on the primary user flow; request full mode for a broader audit |
+| Release readiness | `full release audit` | Smoke first, then every lane applicable to the product's real surfaces |
+
+See [Usage](#usage) for the full trigger matrix and
+[Orchestration Model](#orchestration-model) for dispatch mechanics.
+
+## What every run gives you
+
+QA-Suite gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
 
 * scoped agents
 * one question per agent
