@@ -77,9 +77,11 @@ identity never changes its visibility.
 
 ## Reports
 
-Short by design — no severity/priority matrix, no frameworks. Write to the
-report folder, filename `YYYY-MM-DD-HHMM-smoke-<short-scope>.md` (run's
-local start date and time — reruns always create a new file):
+Short by design — when a confirmed product failure needs a finding proposal,
+read the shared matrix in `references/severity-priority-matrix.md`; do not repeat
+the matrix or add framework prose. Write to the report folder, filename
+`YYYY-MM-DD-HHMM-smoke-<short-scope>.md` (run's local start date and time —
+reruns always create a new file):
 
 - **Verdict** — one state from the canonical vocabulary in `SKILL.md`,
   first line, one sentence. Smoke normally yields `Go` or `No-Go`; use
@@ -91,12 +93,34 @@ local start date and time — reruns always create a new file):
   result, target, platform file, and runtime or artifact state.
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
+- **Verification results** — in confirmation missions: supplied ledger ID |
+  candidate | disposition as defined by `SKILL.md`'s **Confirmation
+  dispositions** | evidence. Apply `Blocked` as defined there, including its
+  mutation-dependent rule. In regression missions: supplied ledger ID |
+  candidate | lane result | evidence. A recurrence is a finding proposal linked
+  to the supplied ledger ID; the orchestrator matches it and applies the
+  `regressed` transition. Only newly observed different behavior is a separate
+  finding proposal. Write `N/A — discovery mission` in discovery.
 - **Checklist results** — check or flow | pass/fail/observed-only | evidence
   reference. Rendered-state claims cite screenshots; non-visual claims cite
   the relevant command, log, response, or artifact. Note the stop point if
   you didn't finish.
+- **Findings** — proposals for orchestrator reconciliation, one per confirmed
+  product failure: report-local proposal ID | title | component | location |
+  oracle | severity | priority | sanitized ordered repro steps | expected
+  result | actual result | environment | safe evidence reference | sensitivity
+  classification proposal. Use `None` when there is no proposal. An
+  environment/tooling blocker is not a product finding.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or
   error that caused the stop.
+- **Not tested** — checks or flows outside this smoke run and why.
+
+The canonical report identity supplies the lane and provenance, and
+**Environment** supplies the candidate. This lane does not read or write the
+finding ledger. It uses only the lifecycle manifest supplied by the orchestrator
+for this mission. The orchestrator validates and matches proposals, assigns
+stable IDs and statuses, and reconciles the ledger, including timestamps,
+occurrences, sensitivity storage, and lifecycle state.
 
 A passing smoke report should be readable in ten seconds. Do not pad it
 with observations — anything worth flagging beyond "does it start" gets

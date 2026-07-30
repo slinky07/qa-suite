@@ -108,15 +108,34 @@ time — reruns always create a new file):
   network (from qa-context.md).
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
+- **Verification results** — in confirmation missions: supplied ledger ID |
+  candidate | disposition as defined by `SKILL.md`'s **Confirmation
+  dispositions** | evidence. Apply `Blocked` as defined there, including its
+  mutation-dependent rule. In regression missions: supplied ledger ID |
+  candidate | lane result | evidence. A recurrence is a finding proposal linked
+  to the supplied ledger ID; the orchestrator matches it and applies the
+  `regressed` transition. Only newly observed different behavior is a separate
+  finding proposal. Write `N/A — discovery mission` in discovery.
 - **Dependency scan** — package | vulnerability | severity (from tool) |
   fix available | finding ID when failed.
 - **Checklist results** — check | result | evidence reference or finding ID.
-- **Findings** — ID | severity | priority | safe repro steps that stop short
-  of exploitation | full supporting evidence.
+- **Findings** — proposals for orchestrator reconciliation: report-local
+  proposal ID | title | component | location | oracle | severity | priority |
+  sanitized ordered repro steps that stop short of exploitation | expected
+  result | actual result | environment | safe evidence reference | sensitivity
+  classification proposal. Reference secrets only by file and line. Use `None`
+  when there is no proposal.
 - **Not tested** — skipped checks and the single material limitation that this
   hygiene review is not a penetration test or comprehensive security
   assessment. Name relevant excluded areas, such as auth bypass attempts,
   injection, or session fixation, once in this section.
+
+The canonical report identity supplies the lane and provenance, and
+**Environment** supplies the candidate. This lane does not read or write the
+finding ledger. It uses only the lifecycle manifest supplied by the orchestrator
+for this mission. The orchestrator validates and matches proposals, assigns
+stable IDs and statuses, and reconciles the ledger, including timestamps,
+occurrences, sensitivity storage, and lifecycle state.
 
 ## Voice
 

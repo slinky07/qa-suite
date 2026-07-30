@@ -118,13 +118,32 @@ reruns always create a new file):
 - **Assumptions** — inferred contract terms or other unverified inputs; write
   `None` when empty. Assumptions are not findings and do not affect the
   verdict.
+- **Verification results** — in confirmation missions: supplied ledger ID |
+  candidate | disposition as defined by `SKILL.md`'s **Confirmation
+  dispositions** | evidence. Apply `Blocked` as defined there, including its
+  mutation-dependent rule. In regression missions: supplied ledger ID |
+  candidate | lane result | evidence. A recurrence is a finding proposal linked
+  to the supplied ledger ID; the orchestrator matches it and applies the
+  `regressed` transition. Only newly observed different behavior is a separate
+  finding proposal. Write `N/A — discovery mission` in discovery.
 - **Contract source** — spec file, or "inferred from frontend usage."
 - **Endpoint coverage** — endpoint | method | tested cases |
   pass/fail/observed-only.
-- **Findings** — ID | endpoint | case | expected | actual | severity |
-  priority | citation | evidence (the literal sanitized request/response
-  pair, with prohibited values replaced by `<redacted>`).
+- **Findings** — proposals for orchestrator reconciliation: report-local
+  proposal ID | title | component | location | oracle | severity | priority |
+  sanitized ordered repro steps | expected result | actual result | environment
+  | safe evidence reference | sensitivity classification proposal | endpoint |
+  case | citation. Evidence includes the literal sanitized request/response
+  pair, with prohibited values replaced by `<redacted>`. Use `None` when there
+  is no proposal.
 - **Not tested** — endpoints or cases skipped and why.
+
+The canonical report identity supplies the lane and provenance, and
+**Environment** supplies the candidate. This lane does not read or write the
+finding ledger. It uses only the lifecycle manifest supplied by the orchestrator
+for this mission. The orchestrator validates and matches proposals, assigns
+stable IDs and statuses, and reconciles the ledger, including timestamps,
+occurrences, sensitivity storage, and lifecycle state.
 
 ## Voice
 
