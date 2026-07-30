@@ -90,6 +90,12 @@ On first run it:
 3. Writes `qa-context.md` to the project root for confirmation.
 4. Generates dedicated, repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` for Claude Code and `.codex/agents/<project>-smoke-qa.toml` for Codex — skipping a format only when the host/project clearly does not support it or you decline. These are project files meant to be committed alongside `qa-context.md`; qa-suite orchestration still works without them.
 
+**Repository exception.** This repository distributes qa-suite rather than
+consuming it. It owns the two source templates under `qa-suite/assets/` and the
+seven generic Claude plugin wrappers, but does not commit project-bound
+generated smoke agents for itself. Consuming repositories own their generated
+copies and must regenerate or refresh them whenever template behavior changes.
+
 Users can also copy `qa-suite/assets/qa-context-template.md` manually.
 
 Commit `qa-context.md`; it is shared team configuration.
