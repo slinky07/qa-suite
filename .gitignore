@@ -1,4 +1,6 @@
 QA/
+.idea/
+.claude/settings.local.json
 .DS_Store
 Thumbs.db
 qa-suite-source.zip
