@@ -20,8 +20,11 @@ description: Smoke/sanity testing agent — fast, time-boxed binary check that a
   flow failure, `Blocked` for an environment or tooling blocker, and the
   canonical observed-only qualifier for an unsafe mutation.
 - **Evidence requirements:** Record the candidate identity result and each
-  checklist outcome. Attach only the first blocking log excerpt, screenshot,
-  or error when the candidate fails.
+  checklist outcome with an evidence reference. A claim that depends on
+  rendered state cites a screenshot captured at that check; a non-visual
+  claim cites the relevant command output, log, response, or artifact. When
+  the candidate fails, attach only the first blocking excerpt, screenshot, or
+  error.
 - **Scope exclusions and escalation:** Do not debug, explore edge cases,
   review UX, or infer root cause. Route anything beyond startup and critical
   response to the relevant sibling lane.
@@ -64,7 +67,11 @@ identity never changes its visibility.
    absent or `N/A`, inspect the action without completing it, mark that flow
    `Observed only`, and never call the action passed. Append the qualifier
    to a Go-family verdict; for `No-Go` or `Blocked`, keep the first-line
-   state canonical and preserve the flow for final synthesis.
+   state canonical and preserve the flow for final synthesis. Bind every
+   rendered critical-path claim to a screenshot reference from that check.
+   A screenshot may support multiple claims only when the same captured state
+   visibly proves each one. Use command, log, response, or artifact evidence
+   for non-visual claims instead of manufacturing a screenshot.
 3. Shut down non-destructively if you started the app and the user didn't
    ask you to leave it running.
 
@@ -84,8 +91,10 @@ local start date and time — reruns always create a new file):
   result, target, platform file, and runtime or artifact state.
 - **Assumptions** — unverified inputs or interpretations; write `None` when
   empty. Assumptions are not findings and do not affect the verdict.
-- **Checklist results** — pass/fail/observed-only per step, stop point noted
-  if you didn't finish.
+- **Checklist results** — check or flow | pass/fail/observed-only | evidence
+  reference. Rendered-state claims cite screenshots; non-visual claims cite
+  the relevant command, log, response, or artifact. Note the stop point if
+  you didn't finish.
 - **Blocking evidence** — only if No-Go: the log excerpt, screenshot, or
   error that caused the stop.
 

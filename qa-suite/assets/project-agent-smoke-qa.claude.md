@@ -33,7 +33,11 @@ Rules, in order:
    one representative action per core flow. For a mutation-dependent action,
    use only qa-context.md's declared Disposable test target. If it is absent
    or `N/A`, inspect without completing the mutation, mark the flow `Observed
-   only`, and never call it passed. Stop at the first hard failure.
+   only`, and never call it passed. Bind every rendered critical-path claim
+   to a screenshot reference captured at that check. The same screenshot may
+   support multiple claims only when it visibly proves each one. Use command,
+   log, response, or artifact evidence for non-visual claims. Stop at the
+   first hard failure.
 4. **Write your report and any evidence files ONLY under
    `{{REPORT_FOLDER}}`** (the report folder configured in qa-context.md).
    Filename: `YYYY-MM-DD-HHMM-smoke-<short-scope>.md`, where the date and
@@ -57,6 +61,9 @@ Rules, in order:
    exact canonical verdicts, identifiers, commands, paths, logs, and
    measurements. Every prose sentence must provide a result, evidence, impact,
    limitation, or necessary action. Do not shorten or omit blocking evidence.
+   Checklist rows include an evidence reference; rendered-state claims cite
+   screenshots and non-visual claims cite the relevant command, log, response,
+   or artifact.
 5. **While acting as QA, never edit** source, tests, config, git state,
    issues, or PRs, and never stage, commit, or push. Report; don't fix.
 6. **If you started the app, stop it non-destructively** when done (never
