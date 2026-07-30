@@ -25,6 +25,31 @@ Supported channels intentionally differ:
 | Claude Code | Tagged repository with `qa-suite/`, `.claude-plugin/`, `.claude/agents/`, and `.claude/commands/` |
 | Codex | Tagged repository with `qa-suite/`, `.codex-plugin/`, and `.agents/plugins/marketplace.json` |
 
+### Codex metadata ownership
+
+Codex reads two schemas with different responsibilities:
+
+- `.agents/plugins/marketplace.json` is the catalog. Its top-level `name` and
+  `interface.displayName` label the catalog source; each plugin entry owns the
+  catalog `name`, `source`, installation and authentication `policy`, and
+  `category`.
+- `.codex-plugin/plugin.json` is the plugin manifest. It owns the plugin
+  version, description, publisher (`author` and `interface.developerName`),
+  license, component paths, and install-surface `interface` metadata.
+
+The Codex catalog intentionally does not repeat the manifest's version,
+description, author, license, or other package metadata. Do not copy those
+Claude marketplace fields into the Codex plugin entry. Metadata parity across
+the two hosts means that each schema points to consistent package information;
+it does not mean that `.agents/plugins/marketplace.json` mirrors
+`.claude-plugin/marketplace.json`.
+
+Inspect the resolved Codex listing without changing installation state:
+
+```sh
+codex plugin list --marketplace qa-suite --json
+```
+
 The release check validates every manifest-referenced path and the complete
 shipped Claude agent/command sets. A channel path may not disappear or drift
 without failing CI.
