@@ -126,7 +126,11 @@ uses `Closes #<umbrella>`.
 
 ## Parallelism schedule
 
-Maximum three concurrent writer nodes; fewer when scopes touch. Read-only
+Up to four concurrent worker nodes, three recommended (WORKFLOW.md owns the
+ceiling); fewer when scopes touch. Helper agents — planners, auditors,
+reviewers, report writers, watchdogs, QA-lane dispatch, spawned by the
+orchestrator or by a node within its scope — are a separate class outside
+that ceiling, and read-only
 exploration, test runs, and reviews parallelize freely.
 
 - Wave 1 (start immediately, in parallel): N1, N3, and one N6 child.
