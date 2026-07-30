@@ -19,6 +19,19 @@ outcome. This appendix can never be the finding's sole justification.
 | Fitts's law | When measured misses, repeated pointer travel, or target acquisition problems impede a task, target size and distance can help explain the demonstrated interaction cost. | Scroll depth alone is not a Fitts's-law violation. Cite the relevant platform target check or measured task outcome. |
 | Jakob's law | When IA-06 demonstrates that unexpected placement or behavior caused a wrong turn, established project or platform patterns can explain the user's expectation. | Familiarity is not a universal design rule; cite the actual project/platform convention and the failed placement probe. |
 
+When a defined probe has already failed, use three questions to select the
+most useful interpretation:
+
+- **Task boundary:** Which visible jobs did the user have to separate or
+  combine before the primary action became understandable?
+- **Prospective consequence:** Which state change could not be predicted from
+  visible cues before commitment?
+- **Recovery knowledge:** Which next step depended on knowledge that the
+  interface did not teach in audience-appropriate language?
+
+These questions organize demonstrated evidence. They are not extra criteria,
+and an answer without a failed probe cannot create a finding.
+
 Use these concepts to sharpen an evidence-backed explanation, never to turn
 a control count, visual impression, or named principle into a finding by
 itself.
