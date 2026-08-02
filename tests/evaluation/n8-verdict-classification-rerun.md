@@ -3,7 +3,7 @@
 Status date: 2026-07-30
 
 This is the bounded maintainer-evaluation record for N8 in the
-[user integration campaign](../../docs/exec-plans/active/user-integration-campaign.md).
+[user integration campaign](../../docs/exec-plans/completed/user-integration-campaign.md).
 The normative contracts remain in `tests/evaluation/README.md` and
 `scripts/evaluation/`. This record does not define another contract and does
 not change the distributed `qa-suite/`.

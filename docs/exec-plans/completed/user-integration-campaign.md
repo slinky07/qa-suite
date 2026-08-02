@@ -122,7 +122,7 @@ uses `Closes #<umbrella>`.
 | N10 | API pair resolution (R3) | — | `tests/evaluation/` | Pair completed and rerun, or retired with a recorded reason |
 | N13 | Controlled external-reference handling (#50) | N1–N5 merged | `docs/` (reference register, ADR), `AGENTS.md` pointer, `scripts/release/` + tests for the binary-rejection gate | #50's acceptance criteria, per its own sequencing: after the functional P1 and evaluation work, before the release chain. The motivating PDF now lives untracked at the repository root as `Graph-Engineering-Anthropic-Playbook.pdf` (moved out of `qa-suite/references/` on 2026-07-29); no publisher attribution is inferred from the filename |
 | N11 | Release v1.4.0 per `docs/releasing.md` | N1–N6 and N13 merged | `VERSION`, plugin manifests, `README.md` version line | Deterministic byte-identical archives; release-integrity green; the N13 uncontrolled-binary gate passes; N7–N9 evidence linked in the PR body |
-| N12 | Campaign closure | all above resolved or explicitly Blocked | umbrella issue, `docs/exec-plans/` | Graph reconciled; deferred findings named (R4 disposition, recurring runs, R5); plan moved to `docs/exec-plans/completed/`; `git worktree list` shows only the primary checkout and `qa-suite/` contains no untracked files |
+| N12 | Campaign closure | all above resolved or explicitly Blocked | umbrella issue, `docs/exec-plans/`, plus the four tracked evaluation-record links named in the Issue #87 scope reconciliation | Graph reconciled; deferred findings named (R4 disposition, recurring runs, R5); plan moved to `docs/exec-plans/completed/`; no goal-created worktree remains after N12 post-merge cleanup; the two owner-protected pre-goal Issue #30 worktrees remain untouched; `qa-suite/` contains no untracked files |
 
 ## Parallelism schedule
 
@@ -164,10 +164,99 @@ N4 rebases on the result. Only one writer owns a file at a time.
   orchestrator reconciles all results and stops at the human merge gate.
 - After a node's PR merges and its evidence is durable, remove the node's
   worktree and prune stale registrations (AGENTS.md worktree rule). Leaving
-  merged worktrees behind is a defect; N12 verifies none remain.
+  merged campaign worktrees behind is a defect; N12 verifies no
+  campaign-created worktree remains. The two owner-protected pre-goal Issue
+  #30 worktrees are outside this campaign's cleanup scope.
 
 ## Definition of done
 
-v1.4.0 is published from a human-merged main containing N1–N6; rerun records
-N7–N9 exist with preserved non-claims; every residual is either resolved or
-tracked in a filed issue; the umbrella issue closes with the reconciled graph.
+v1.4.0 is published from a human-merged main containing N1–N6 and N13; rerun
+records N7–N9 exist with preserved non-claims; every residual is either
+resolved or tracked in a filed issue; the umbrella issue closes with the
+reconciled graph.
+
+## Closure reconciliation
+
+N12 moves this plan to `completed/`. Its merge is the campaign's terminal
+action and closes Issue #87.
+
+| Node | Terminal result |
+|---|---|
+| N1 | Done — [PR #88](https://github.com/slinky07/qa-suite/pull/88) |
+| N2 | Done — [Issue #82](https://github.com/slinky07/qa-suite/issues/82), [PR #90](https://github.com/slinky07/qa-suite/pull/90) |
+| N3 | Done — [Issue #83](https://github.com/slinky07/qa-suite/issues/83), [PR #89](https://github.com/slinky07/qa-suite/pull/89) |
+| N4 | Done — [PR #94](https://github.com/slinky07/qa-suite/pull/94) |
+| N5 | Done — [Issue #28](https://github.com/slinky07/qa-suite/issues/28), [PR #91](https://github.com/slinky07/qa-suite/pull/91) |
+| N6 | Done — [Issue #22](https://github.com/slinky07/qa-suite/issues/22) / [PR #92](https://github.com/slinky07/qa-suite/pull/92), [Issue #24](https://github.com/slinky07/qa-suite/issues/24) / [PR #93](https://github.com/slinky07/qa-suite/pull/93), [Issue #19](https://github.com/slinky07/qa-suite/issues/19) / [PR #95](https://github.com/slinky07/qa-suite/pull/95), and [Issue #23](https://github.com/slinky07/qa-suite/issues/23) / [PR #96](https://github.com/slinky07/qa-suite/pull/96) |
+| N7 | Explicitly `Blocked` — [PR #101](https://github.com/slinky07/qa-suite/pull/101), final behavior iteration [PR #102](https://github.com/slinky07/qa-suite/pull/102), terminal record [PR #103](https://github.com/slinky07/qa-suite/pull/103); residual remains [Issue #29](https://github.com/slinky07/qa-suite/issues/29) |
+| N8 | Explicitly `Blocked` — [PR #104](https://github.com/slinky07/qa-suite/pull/104); successor [Issue #105](https://github.com/slinky07/qa-suite/issues/105) |
+| N9 | Done — [PR #100](https://github.com/slinky07/qa-suite/pull/100) |
+| N10 | Done — [Issue #84](https://github.com/slinky07/qa-suite/issues/84), [PR #107](https://github.com/slinky07/qa-suite/pull/107); non-blocking classification residual [Issue #106](https://github.com/slinky07/qa-suite/issues/106) |
+| N13 | Done — [Issue #50](https://github.com/slinky07/qa-suite/issues/50), [PR #97](https://github.com/slinky07/qa-suite/pull/97) |
+| N11 | Done — [PR #108](https://github.com/slinky07/qa-suite/pull/108) and published v1.4.0 |
+| N12 | This final closure PR; its merge closes [Issue #87](https://github.com/slinky07/qa-suite/issues/87) |
+
+Campaign-supporting governance changes also merged through
+[PR #98](https://github.com/slinky07/qa-suite/pull/98) and
+[PR #99](https://github.com/slinky07/qa-suite/pull/99). The post-tag
+[PR #109](https://github.com/slinky07/qa-suite/pull/109) changed only the
+draft-release attestation action. Its merge
+`a5ca7385bdbb260bc39b0586335836ee876065ad` is current `main`, the N12
+base, and the publication-run head. The publication workflow remained
+identical to the tagged copy; the immutable release identity remains
+`25769d26168bec7ba680b4f271ca11d4670c3670` and passed final verification.
+
+### Release and installed-user proof
+
+The immutable [v1.4.0 release](https://github.com/slinky07/qa-suite/releases/tag/v1.4.0)
+was published on 2026-08-02 by
+[run 30764060831](https://github.com/slinky07/qa-suite/actions/runs/30764060831).
+`gh release verify v1.4.0` passed. The annotated tag object
+`bad5a6525a91c2ddac61af326daca81db2e90290` resolves to release commit
+`25769d26168bec7ba680b4f271ca11d4670c3670`.
+
+The release is neither a draft nor a prerelease and is immutable. Its only
+assets are `qa-suite.skill` and `qa-suite-source.zip`; each is 248,484
+bytes and both have SHA-256
+`a4b9f4d8c4cfaec6f33a2d78911b685279d727693dd4a053e2d91ef84e89aac7`.
+The workflow retained
+[publication evidence](https://github.com/slinky07/qa-suite/actions/runs/30764060831/artifacts/8838375460)
+and
+[final release evidence](https://github.com/slinky07/qa-suite/actions/runs/30764060831/artifacts/8838380695).
+
+Fresh Codex verification refreshed the Git marketplace, removed and re-added
+`qa-suite@qa-suite`, and confirmed it installed and enabled at version
+1.4.0. The durable owner update is
+[Issue #87 comment 5160053607](https://github.com/slinky07/qa-suite/issues/87#issuecomment-5160053607).
+
+### Deferred work
+
+The exact open campaign-residual set is:
+
+- [Issue #29](https://github.com/slinky07/qa-suite/issues/29) retains the
+  terminal Bob residual from N7.
+- [Issue #85](https://github.com/slinky07/qa-suite/issues/85) owns the Tier-F
+  harness disposition and recurring-run decision.
+- [Issue #86](https://github.com/slinky07/qa-suite/issues/86) owns real engine
+  and device compatibility coverage.
+- [Issue #105](https://github.com/slinky07/qa-suite/issues/105) owns the
+  post-N8 verdict-classification authority conflict.
+- [Issue #106](https://github.com/slinky07/qa-suite/issues/106) owns the
+  post-N10 API classification authority conflict.
+- R6 required no new issue: the
+  [Issue #37 owner reconciliation](https://github.com/slinky07/qa-suite/issues/37#issuecomment-5074098301)
+  records the ledger and contract-fundamentals filing set as complete.
+
+These are explicit deferred or `Blocked` dispositions. They are not
+silently promoted into v1.4.0 release failures.
+
+### Workspace reconciliation
+
+`qa-suite/` contains no untracked files. All completed campaign-node
+worktrees were removed. The N12 worktree is removed only after its PR merges
+and its evidence is durable.
+
+The owner explicitly exempted the pre-goal `issue-30-codex-0145-events` and
+`issue-30-codex-host-sandbox` worktrees from campaign cleanup. They remain
+untouched, are not campaign leftovers, and do not weaken the requirement that
+no goal-created worktree remain after N12 cleanup.
