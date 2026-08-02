@@ -46,6 +46,52 @@ The preview can reveal schema or arithmetic defects. It cannot establish that
 a lane saw the intended candidate, ran in isolation, produced the normalized
 claims, or detected a practical defect.
 
+## Maintainer evaluation harness disposition
+
+Issue #85 records this maintained/frozen boundary:
+
+- **Tier A remains active and maintained.** The lane-agnostic contracts,
+  snapshot runner, scoring preview, Git snapshot support, corpus, and
+  structural tests follow the normal issue-to-PR node loop.
+- **Tier F is a frozen reference.** The Codex-0.145-pinned Bob live stack is
+  not a maintained compatibility surface. Only the repository owner may
+  authorize an invocation or change, and only under a filed issue with the
+  exact evidence contract below. Invocation is as-is and does not authorize
+  repair. If the frozen path no longer runs, record `Blocked` with the failure
+  evidence and unblock condition instead of patching it opportunistically.
+
+A Tier F authorization is exact only when the filed issue names:
+
+1. whether the owner authorizes one bounded invocation as-is or a specific
+   code change;
+2. the immutable controller and candidate subject commit SHAs, selected cases,
+   and permitted runtime scope;
+3. the required host, provider/model/tool identity, and sandbox-adapter
+   qualifications;
+4. the report, evidence, and candidate bindings to retain, including semantic
+   report parity and fixture-opacity checks; and
+5. the non-claims, stop rules, `Blocked` evidence, and human review gate.
+
+Permission to invoke Tier F never implies permission to change it. Permission
+to make one named change never creates general maintenance authority.
+
+Recurring semantic runs are explicitly de-scoped. No scheduler, release gate,
+or recurring semantic automation is authorized until a separately reviewed
+qualifying host and sandbox-adapter path proves, rather than merely requests:
+
+- provider/model/tool identity and the effective fresh context;
+- sandbox qualification and the command/network boundary;
+- exact candidate and controller identity;
+- closed report binding and semantic parity;
+- semantic fixture and oracle opacity;
+- hostile same-user, escaped-session, and process-tree containment; and
+- every other qualifying limitation recorded in this authority and the Issue
+  #30 closure record.
+
+Until every claim is satisfied, one-off owner-authorized Tier F activity and
+all Tier A outputs remain `verification_status: "unverified"`,
+`qualification: "not-evidence"`, and `result: null`.
+
 ## Question under test
 
 The completed Issue #30 system will answer:
@@ -980,10 +1026,11 @@ the non-qualifying maintainer infrastructure:
   results; and
 - CI scheduling for recurring or release-gated semantic lane execution.
 
-No recurring semantic evaluation is added while those claims remain
-unattested. Contracts, fixtures, previews, preparations, protocol transcripts,
-closures, and compact ignored `QA/` records remain maintainer verification
-aids, not QA findings, release certification, issue proposals, or proof that a
-lane passes its evaluation. They remain explicitly
+Recurring semantic runs remain explicitly de-scoped under the maintainer
+harness disposition while those claims are unattested. Contracts, fixtures,
+previews, preparations, protocol transcripts, closures, and compact ignored
+`QA/` records remain maintainer verification aids, not QA findings, release
+certification, issue proposals, or proof that a lane passes its evaluation.
+They remain explicitly
 `verification_status: "unverified"`, `qualification: "not-evidence"`, and
 `result: null`.

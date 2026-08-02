@@ -18,13 +18,15 @@ only what its node needs and cite real lines.
 
 ## Tiers
 
-- **Tier A — active.** Lane-agnostic evaluation core. Maintained; changes
+- **Tier A — active and maintained.** Lane-agnostic evaluation core. Changes
   follow the normal node loop and must keep `node --test` green.
 - **Tier F — frozen reference.** The Bob live-execution stack, pinned to
-  Codex CLI 0.145 transport behavior. Do not extend, refactor, or repair it
-  unless a filed issue (harness-disposition R4 or successor) explicitly
-  authorizes that work. It may be *invoked as-is* for Bob reruns; if it no
-  longer runs, record Blocked with evidence instead of patching it.
+  Codex CLI 0.145 transport behavior. It is not a maintained compatibility
+  surface. Only the repository owner may authorize an invocation or change,
+  under a filed issue and the exact evidence contract defined in
+  `tests/evaluation/README.md`. Invocation is as-is and grants no repair
+  authority; if it no longer runs, record `Blocked` with evidence instead of
+  patching it.
 
 ## Tier A — active core
 
@@ -61,7 +63,9 @@ lane pair.
 | `schemas/*.schema.json` | — | Bob phase output schemas (interface inventory, expected-use model, task-execution draft) | via adapter/composition tests |
 
 Known bounded limitations of tier F are recorded in the closure record's P1
-residuals (provider identity, sandbox qualification, containment, latency).
+residuals and the evaluation authority. They include provider identity,
+sandbox qualification, report binding and semantic parity, fixture opacity,
+candidate identity, hostile same-user and process containment, and latency.
 They are tracked there and in filed issues — not fixed opportunistically.
 
 ## Rules for any change in this directory
@@ -77,8 +81,10 @@ They are tracked there and in filed issues — not fixed opportunistically.
    claim (see `tests/evaluation/README.md`).
 4. Oracle opacity. Sealed oracle content never reaches a lane, an adapter, or
    a remediation author's prompt.
-5. Tier F is read-only by default. Authorization to modify it comes from a
-   filed issue, not from convenience.
+5. Tier F is frozen. Only the repository owner may authorize its invocation
+   or modification under a filed issue and exact evidence contract. An
+   authorized invocation stays as-is; failure becomes evidenced `Blocked`,
+   not an implied repair task.
 6. Verification before handoff: `node --test` from the repository root, then
    `node scripts/release/check.mjs --ref HEAD` (evaluation files are inside
    the release-integrity CI path filter), then
