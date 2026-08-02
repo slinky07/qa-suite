@@ -124,8 +124,8 @@ function laneResult(role) {
             },
           ],
           id: "REG-01",
-          priority: "P1",
-          severity: "S3",
+          priority: "P0",
+          severity: "S2",
           surface_id: "surface_cancellation_window",
         },
       ]
@@ -141,11 +141,11 @@ function laneResult(role) {
       blocker: null,
       severity_counts: {
         S1: 0,
-        S2: 0,
-        S3: findings.length,
+        S2: findings.length,
+        S3: 0,
         S4: 0,
       },
-      state: findings.length === 0 ? "Go" : "Go with findings",
+      state: findings.length === 0 ? "Go" : "No-Go",
     },
   };
 }

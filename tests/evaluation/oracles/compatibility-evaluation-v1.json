@@ -17,7 +17,7 @@
             "COMPAT-01"
           ],
           "allowed_severities": [
-            "S2"
+            "S1"
           ],
           "allowed_priorities": [
             "P0"
