@@ -3,7 +3,7 @@
 Date: 2026-07-30
 
 This record closes the final Bob behavior-loop rerun authorized by the
-[user integration campaign](../../docs/exec-plans/active/user-integration-campaign.md).
+[user integration campaign](../../docs/exec-plans/completed/user-integration-campaign.md).
 The normative contracts remain in `tests/evaluation/README.md` and
 `scripts/evaluation/`. This record does not define another contract, change
 the distributed `qa-suite/`, or maintain the frozen Tier-F controller.
