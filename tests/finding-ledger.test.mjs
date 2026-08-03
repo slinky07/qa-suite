@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
@@ -15,12 +16,15 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   parseJsonStrict,
+  migrateLedger,
   replaceLedger,
+  preflightLane,
   selectManifest,
   validateFindingRows,
   validateProject,
   validateSchemaContract,
 } from "../qa-suite/scripts/finding-ledger.mjs";
+import { createSpecialistEntry } from "../qa-suite/scripts/specialist-registry.mjs";
 
 const repositoryRoot = new URL("../", import.meta.url);
 const fixtureComponents = new Set([
@@ -61,6 +65,27 @@ function fixtureContext(repoVisibility = "public") {
 
 function clone(value) {
   return structuredClone(value);
+}
+
+function digest(source) {
+  return createHash("sha256").update(source).digest("hex");
+}
+
+function temporaryDefinition() {
+  return {
+    slug: "cache-failover",
+    specialist_perspective: "Cache failover QA engineer",
+    primary_question:
+      "Does cache failover preserve the documented recovery objective?",
+    specialist_mission: "Exercise bounded cache failover on disposable state.",
+    priorities: ["Recovery objective"],
+    decision_rules: ["Require exercised runtime evidence."],
+    evidence_requirements: ["Retain failure and recovery timestamps."],
+    scope_exclusions: ["Do not use production or shared state."],
+    selection_criteria: ["No shipped lane owns the cache-specific risk."],
+    definition_rationale: "The risk is application-specific cache recovery.",
+    time_box_minutes: 60,
+  };
 }
 
 function syntheticDashToken(prefix) {
@@ -122,6 +147,23 @@ async function createTestRepository() {
   return repository;
 }
 
+async function configureTemporaryRegistry(repository, specialists) {
+  const contextPath = join(repository, "qa-context.md");
+  const context = await readFile(contextPath, "utf8");
+  await writeFile(
+    contextPath,
+    context.replace(
+      "- **Report output folder:** QA/",
+      "- **Report output folder:** QA/\n- **Temporary specialist registry:** qa-specialists.json",
+    ),
+  );
+  await writeFile(
+    join(repository, "qa-specialists.json"),
+    `${JSON.stringify({ schema_version: 1, specialists }, null, 2)}\n`,
+  );
+  runGit(repository, "add", "qa-context.md", "qa-specialists.json");
+}
+
 test("strict parser rejects duplicate JSON object keys", () => {
   assert.throws(
     () => parseJsonStrict('{"id":"one","id":"two"}', "duplicate.json"),
@@ -131,7 +173,7 @@ test("strict parser rejects duplicate JSON object keys", () => {
 
 test("schema and fixtures enforce every version-1 row", async () => {
   const [schema, rows] = await Promise.all([
-    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
     readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
   ]);
 
@@ -156,7 +198,7 @@ test("schema and fixtures enforce every version-1 row", async () => {
 
 test("invalid schema, row, version, and duplicate ID fail loudly", async () => {
   const [schema, rows] = await Promise.all([
-    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
     readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
   ]);
 
@@ -287,7 +329,7 @@ test("lifecycle visibility yields confirmation and regression inputs", async () 
 
 test("context-aware redaction rejects unsafe public and private rows", async () => {
   const [schema, rows] = await Promise.all([
-    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
     readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
   ]);
   const securityRow = rows.find(({ severity }) => severity === "S1");
@@ -341,7 +383,7 @@ test("context-aware redaction rejects unsafe public and private rows", async () 
 
 test("whitespace-only strings and invalid calendar timestamps fail", async () => {
   const [schema, rows] = await Promise.all([
-    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
     readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
   ]);
 
@@ -420,7 +462,7 @@ test("whitespace-only strings and invalid calendar timestamps fail", async () =>
 
 test("secret-like material and credential URLs are rejected", async () => {
   const [schema, rows] = await Promise.all([
-    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
     readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
   ]);
   const unsafePointers = [
@@ -546,6 +588,7 @@ test("configured ledger is canonical, tracked, empty, and non-ignored", async ()
     context: "qa-context.md",
   });
   assert.equal(project.ledgerGitPath, "findings.jsonl");
+  assert.equal(project.schemaVersion, 2);
   assert.equal(project.rows.length, 0);
   assert.deepEqual(project.unknownComponents, []);
 });
@@ -630,6 +673,8 @@ test("exclusive CAS prevents competing writers from losing findings", async (t) 
   const secondCandidate = join(repository, "candidate-second.jsonl");
   const firstRow = clone(rows[0]);
   const secondRow = clone(rows[0]);
+  firstRow.schema_version = 2;
+  secondRow.schema_version = 2;
   firstRow.component = "authentication";
   secondRow.id = "FND-competing-writer";
   secondRow.component = "authentication";
@@ -676,6 +721,7 @@ test("write preserves stable IDs, immutable identity, and provenance", async (t)
   t.after(() => rm(repository, { recursive: true, force: true }));
   const rows = await readJsonl("tests/fixtures/finding-ledger-valid.jsonl");
   const original = clone(rows[0]);
+  original.schema_version = 2;
   original.component = "authentication";
   original.occurrences = 1;
   const initialCandidate = join(repository, "candidate-initial.jsonl");
@@ -868,6 +914,258 @@ test("write preserves stable IDs, immutable identity, and provenance", async (t)
       expectedDigest: nextCycleProject.digest,
     }),
     /report provenance cannot be removed/,
+  );
+});
+
+test("version 2 accepts ten shipped lanes and registry-shaped identities", async () => {
+  const [v1Schema, v2Schema, rows] = await Promise.all([
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
+    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
+  ]);
+  const base = clone(rows[0]);
+  base.schema_version = 2;
+  for (const lane of ["reliability-qa", "deployment-qa", "data-integrity-qa"]) {
+    const row = clone(base);
+    row.lane = lane;
+    row.reports[0].lane = lane;
+    assert.doesNotThrow(() =>
+      validateFindingRows([row], v2Schema, fixtureContext()),
+    );
+    assert.throws(
+      () => validateFindingRows([row], v1Schema, fixtureContext()),
+      /schema_version must equal 1|schema alternative/,
+    );
+  }
+
+  const temporary = createSpecialistEntry(temporaryDefinition());
+  const temporaryRow = clone(base);
+  temporaryRow.lane = temporary.id;
+  temporaryRow.reports[0].lane = temporary.id;
+  temporaryRow.defect_record = "redacted";
+  temporaryRow.sensitivity = {
+    classification: "uncertain",
+    storage: "redacted",
+    clearance: null,
+  };
+  assert.doesNotThrow(() =>
+    validateFindingRows([temporaryRow], v2Schema, fixtureContext()),
+  );
+  const unsafe = clone(temporaryRow);
+  unsafe.defect_record = clone(base.defect_record);
+  unsafe.sensitivity = {
+    classification: "standard",
+    storage: "committed",
+    clearance: null,
+  };
+  assert.throws(
+    () => validateFindingRows([unsafe], v2Schema, fixtureContext()),
+    /temporary specialist finding requires uncertain or human-cleared sensitivity/,
+  );
+});
+
+test("explicit migration changes only version and gates new lane dispatch", async (t) => {
+  const repository = await createTestRepository();
+  const emptyRepository = await createTestRepository();
+  const mixedRepository = await createTestRepository();
+  t.after(() => rm(repository, { recursive: true, force: true }));
+  t.after(() => rm(emptyRepository, { recursive: true, force: true }));
+  t.after(() => rm(mixedRepository, { recursive: true, force: true }));
+  const rows = await readJsonl("tests/fixtures/finding-ledger-valid.jsonl");
+  const v1Row = clone(rows[0]);
+  v1Row.component = "authentication";
+  const v1Source = `${JSON.stringify(v1Row)}\n`;
+  await writeFile(join(repository, "findings.jsonl"), v1Source);
+
+  const before = await validateProject({ repository });
+  assert.equal(before.schemaVersion, 1);
+  assert.equal((await preflightLane({ repository, lane: "smoke-qa" })).lane, "smoke-qa");
+  await assert.rejects(
+    preflightLane({ repository, lane: "reliability-qa" }),
+    new RegExp(`migrate.*--to 2.*${before.digest}`),
+  );
+  await assert.rejects(
+    preflightLane({ repository, lane: "reliabilty-qa" }),
+    (error) =>
+      /dispatch lane/.test(error.message) &&
+      !error.message.includes("migrate"),
+  );
+  const temporary = createSpecialistEntry(temporaryDefinition());
+  await configureTemporaryRegistry(repository, [temporary]);
+  await assert.rejects(
+    preflightLane({ repository, lane: temporary.id }),
+    new RegExp(`migrate.*--to 2.*${before.digest}`),
+  );
+
+  const migrated = await migrateLedger({
+    repository,
+    toVersion: 2,
+    expectedDigest: before.digest,
+  });
+  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.rows[0].schema_version, 2);
+  const semanticV1 = clone(v1Row);
+  const semanticV2 = clone(migrated.rows[0]);
+  delete semanticV1.schema_version;
+  delete semanticV2.schema_version;
+  assert.deepEqual(semanticV2, semanticV1);
+  assert.equal(
+    (await preflightLane({ repository, lane: "reliability-qa" })).lane,
+    "reliability-qa",
+  );
+  await assert.rejects(
+    migrateLedger({
+      repository,
+      toVersion: 2,
+      expectedDigest: migrated.digest,
+    }),
+    /already schema version 2/,
+  );
+  await assert.rejects(
+    migrateLedger({
+      repository: emptyRepository,
+      toVersion: 2,
+      expectedDigest:
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    }),
+    /empty finding ledger starts at schema version 2/,
+  );
+
+  const mixedRows = [v1Row, { ...clone(v1Row), id: "FND-v2", schema_version: 2 }];
+  await writeFile(
+    join(mixedRepository, "findings.jsonl"),
+    `${mixedRows.map((row) => JSON.stringify(row)).join("\n")}\n`,
+  );
+  await assert.rejects(
+    validateProject({ repository: mixedRepository }),
+    /cannot mix schema versions/,
+  );
+});
+
+test("version-1 ledgers remain writable by legacy lanes and reject ordinary version changes", async (t) => {
+  const repository = await createTestRepository();
+  t.after(() => rm(repository, { recursive: true, force: true }));
+  const rows = await readJsonl("tests/fixtures/finding-ledger-valid.jsonl");
+  const original = clone(rows[0]);
+  original.component = "authentication";
+  await writeFile(
+    join(repository, "findings.jsonl"),
+    `${JSON.stringify(original)}\n`,
+  );
+  const project = await validateProject({ repository });
+
+  const appended = clone(original);
+  appended.id = "FND-legacy-api-contract";
+  appended.lane = "api-qa";
+  appended.reports = [
+    {
+      lane: "api-qa",
+      pointer: "QA/2026-08-03-legacy-api.md",
+      candidate: appended.candidate_first_seen,
+    },
+  ];
+  const candidatePath = join(repository, "candidate-v1.jsonl");
+  await writeFile(
+    candidatePath,
+    `${[original, appended].map((row) => JSON.stringify(row)).join("\n")}\n`,
+  );
+  const written = await replaceLedger({
+    repository,
+    candidatePath,
+    expectedDigest: project.digest,
+  });
+  assert.equal(written.schemaVersion, 1);
+  assert.equal(written.rows.length, 2);
+
+  const ordinaryUpgradePath = join(repository, "candidate-v2.jsonl");
+  await writeFile(
+    ordinaryUpgradePath,
+    `${written.rows
+      .map((row) => JSON.stringify({ ...row, schema_version: 2 }))
+      .join("\n")}\n`,
+  );
+  await assert.rejects(
+    replaceLedger({
+      repository,
+      candidatePath: ordinaryUpgradePath,
+      expectedDigest: written.digest,
+    }),
+    /schema_version must equal 1|schema alternative/,
+  );
+
+  const migrated = await migrateLedger({
+    repository,
+    toVersion: 2,
+    expectedDigest: written.digest,
+  });
+  await assert.rejects(
+    replaceLedger({
+      repository,
+      candidatePath,
+      expectedDigest: migrated.digest,
+    }),
+    /schema_version must equal 2|schema alternative/,
+  );
+});
+
+test("temporary ledger provenance resolves exactly and blocks missing confirmation", async (t) => {
+  const repository = await createTestRepository();
+  t.after(() => rm(repository, { recursive: true, force: true }));
+  const entry = createSpecialistEntry(temporaryDefinition());
+  await configureTemporaryRegistry(repository, [entry]);
+  const rows = await readJsonl("tests/fixtures/finding-ledger-valid.jsonl");
+  const row = clone(rows[0]);
+  row.schema_version = 2;
+  row.component = "authentication";
+  row.lane = entry.id;
+  row.reports[0].lane = entry.id;
+  row.defect_record = "redacted";
+  row.sensitivity = {
+    classification: "uncertain",
+    storage: "redacted",
+    clearance: null,
+  };
+  await writeFile(join(repository, "findings.jsonl"), `${JSON.stringify(row)}\n`);
+
+  const valid = await validateProject({ repository });
+  assert.equal(valid.schemaVersion, 2);
+  assert.deepEqual(valid.missingTemporarySpecialists, []);
+  assert.equal(
+    (await preflightLane({ repository, lane: entry.id })).lane,
+    entry.id,
+  );
+
+  await writeFile(
+    join(repository, "qa-specialists.json"),
+    `${JSON.stringify({ schema_version: 1, specialists: [] }, null, 2)}\n`,
+  );
+  await assert.rejects(
+    validateProject({ repository }),
+    /temporary specialist identities are not registered/,
+  );
+  const relaxed = await validateProject({
+    repository,
+    allowMissingTemporary: true,
+  });
+  assert.deepEqual(relaxed.missingTemporarySpecialists, [entry.id]);
+
+  const helper = fileURLToPath(
+    new URL("qa-suite/scripts/finding-ledger.mjs", repositoryRoot),
+  );
+  const output = execFileSync(
+    process.execPath,
+    [helper, "manifest", "--repo", repository, "--mode", "confirmation"],
+    { encoding: "utf8" },
+  ).trim();
+  const blocked = JSON.parse(output);
+  assert.equal(blocked.type, "blocked");
+  assert.equal(blocked.disposition, "Blocked");
+  assert.equal(blocked.finding_id, row.id);
+  assert.equal(blocked.lane, entry.id);
+  assert.match(blocked.blocker, new RegExp(entry.id));
+  assert.equal(
+    digest(await readFile(join(repository, "findings.jsonl"), "utf8")),
+    relaxed.digest,
   );
 });
 

@@ -10,6 +10,7 @@ scope instead of inventing an app surface.
 - **Project name:** qa-suite
 - **Repository docs to read first:** README.md, qa-suite/SKILL.md, .claude-plugin/plugin.json, .codex-plugin/plugin.json
 - **Report output folder:** QA/
+- **Temporary specialist registry:** qa-specialists.json
 
 ## Finding ledger
 
