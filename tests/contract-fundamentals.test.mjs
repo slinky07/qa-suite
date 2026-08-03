@@ -94,6 +94,74 @@ test("P3 never grants risk acceptance", async () => {
   assert.match(matrix, /never excludes a finding from verdict computation/);
 });
 
+test("regression history labels never override impact-based Severity", async () => {
+  const [skill, matrix] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("qa-suite/references/severity-priority-matrix.md"),
+  ]);
+  const verdictVocabulary = extractSection(skill, "### Verdict vocabulary");
+  const failureClasses = extractSection(matrix, "## Failure class → severity");
+
+  assert.match(
+    verdictVocabulary,
+    /failure class\s+describes what was observed; it does not set Severity/,
+  );
+  assert.match(
+    verdictVocabulary,
+    /regression, new-failure, and flaky labels describe history or repeatability,\s+not impact/,
+  );
+  assert.match(
+    failureClasses,
+    /Regression.*history or repeatability only\. They do not raise or lower impact/s,
+  );
+  assert.match(
+    failureClasses,
+    /core flow unusable, data loss, or crash → S1; major flow broken with no workaround → S2; degraded flow with a workaround or limited context → S3/,
+  );
+});
+
+test("priority remains independent scheduling metadata", async () => {
+  const [skill, matrix] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("qa-suite/references/severity-priority-matrix.md"),
+  ]);
+  const verdictVocabulary = extractSection(skill, "### Verdict vocabulary");
+  const severityVerdict = extractSection(matrix, "## Severity → verdict");
+
+  assert.match(matrix, /They are independent axes/u);
+  assert.match(
+    severityVerdict,
+    /Severity drives the verdict; priority drives scheduling only/u,
+  );
+  assert.match(
+    verdictVocabulary,
+    /Severity drives the verdict; priority drives scheduling\s+only/su,
+  );
+});
+
+test("supported compatibility core-flow failure uses canonical No-Go", async () => {
+  const [skill, matrix] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("qa-suite/references/severity-priority-matrix.md"),
+  ]);
+  const verdictVocabulary = extractSection(skill, "### Verdict vocabulary");
+  const failureClasses = extractSection(matrix, "## Failure class → severity");
+  const severityVerdict = extractSection(matrix, "## Severity → verdict");
+
+  assert.match(
+    failureClasses,
+    /Compatibility.*On a supported combination: core flow unusable → S1/s,
+  );
+  assert.match(
+    severityVerdict,
+    /Any confirmed S1\/S2, or a core flow demonstrably cannot be completed \| No-Go/,
+  );
+  assert.match(
+    verdictVocabulary,
+    /No-Go.*at least one confirmed S1\/S2 finding in scope, or a core\s+flow demonstrably cannot be completed/s,
+  );
+});
+
 test("verbatim dispatch has one canonical definition", async () => {
   const skill = await readRepositoryFile("qa-suite/SKILL.md");
   const headingCount = skill

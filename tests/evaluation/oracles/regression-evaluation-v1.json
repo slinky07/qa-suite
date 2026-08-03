@@ -7,7 +7,7 @@
     "canary_token": "seal_0303030303030303030303030303030303030303030303030303030303030303",
     "assertions": {
       "allowed_verdicts": [
-        "Go with findings"
+        "No-Go"
       ],
       "expected_defects": [
         {
@@ -17,10 +17,13 @@
             "regression"
           ],
           "allowed_severities": [
-            "S3"
+            "S2"
           ],
           "allowed_priorities": [
-            "P1"
+            "P0",
+            "P1",
+            "P2",
+            "P3"
           ],
           "required_evidence_kinds": [
             "report-reference"

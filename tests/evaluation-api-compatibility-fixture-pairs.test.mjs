@@ -236,7 +236,7 @@ const laneExpectations = {
     findingId: "COMPAT-01-FINDING",
     flowId: "flow_message_send",
     priority: "P0",
-    severity: "S2",
+    severity: "S1",
     surfaceId: "surface_message_composer",
   },
 };
@@ -257,6 +257,8 @@ function laneResult(lane, role) {
         },
       ]
     : [];
+  const severityCounts = { S1: 0, S2: 0, S3: 0, S4: 0 };
+  if (failed) severityCounts[expected.severity] = 1;
   return {
     blocking_evidence: [],
     checklist: [],
@@ -275,12 +277,7 @@ function laneResult(lane, role) {
     observations: [],
     verdict: {
       blocker: null,
-      severity_counts: {
-        S1: 0,
-        S2: findings.length,
-        S3: 0,
-        S4: 0,
-      },
+      severity_counts: severityCounts,
       state: failed ? "No-Go" : "Go",
     },
   };
