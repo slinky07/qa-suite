@@ -24,9 +24,30 @@ const laneDefinitions = [
   },
   {
     name: "performance-qa",
-    perspective: "Performance and reliability QA engineer",
-    contractPattern: /performance and reliability QA\s+engineer/,
+    perspective: "Performance QA engineer",
+    contractPattern: /performance QA engineer/,
     question: "Is it fast enough, and is that getting worse?",
+  },
+  {
+    name: "reliability-qa",
+    perspective: "Reliability QA engineer",
+    contractPattern: /reliability QA engineer/i,
+    question:
+      "Does the system fail, degrade, recover, and alert safely under its documented operating conditions?",
+  },
+  {
+    name: "deployment-qa",
+    perspective: "Deployment QA engineer",
+    contractPattern: /deployment QA engineer/i,
+    question:
+      "Can the system be configured, deployed, verified, and rolled back safely and repeatedly?",
+  },
+  {
+    name: "data-integrity-qa",
+    perspective: "Data integrity QA engineer",
+    contractPattern: /data integrity QA engineer/i,
+    question:
+      "Do writes, migrations, concurrency, backup, and recovery preserve the expected data state?",
   },
   {
     name: "security-qa",
@@ -138,6 +159,7 @@ test("Security QA pilots the complete specialist contract", async () => {
 });
 
 test("every shipped lane applies the validated specialist contract", async () => {
+  assert.equal(laneDefinitions.length, 10);
   const lanes = await Promise.all(
     laneDefinitions.map(async (definition) => ({
       definition,
@@ -208,7 +230,7 @@ test("every shipped lane applies the validated specialist contract", async () =>
     assert.match(isolation, /Mission modes/, definition.name);
     assert.match(
       isolation,
-      /Lane\s+identity never changes its visibility/,
+      /Lane\s+identity\s+never\s+changes its visibility/,
       definition.name,
     );
 
@@ -414,6 +436,29 @@ test("specialist rollout preserves lane-specific decision boundaries", async () 
     /a number without a baseline is not a finding/,
   );
   assert.match(laneMarkdown["performance-qa"], /p50\/p95/);
+  assert.match(
+    laneMarkdown["performance-qa"],
+    /continuity, failure, degradation, recovery, and alerting to reliability-qa/,
+  );
+  assert.match(
+    laneMarkdown["smoke-qa"],
+    /Reliability-qa owns failure,\s+degradation, recovery, and alerting after a healthy startup/,
+  );
+  assert.match(
+    laneMarkdown["regression-qa"],
+    /Regression owns history and change attribution,\s+never the underlying technical category or Severity/,
+  );
+  assert.match(
+    laneMarkdown["api-qa"],
+    /owns wire contracts and request behavior;\s+data-integrity-qa owns stored invariants and durability/,
+  );
+  assert.match(
+    laneMarkdown["security-qa"],
+    /Security owns unauthorized access or modification; data-integrity-qa\s+owns accidental corruption, transaction safety, and recoverability/,
+  );
+  assert.match(laneMarkdown["reliability-qa"], /deterministic runtime evidence/);
+  assert.match(laneMarkdown["deployment-qa"], /artifact and configuration identities/);
+  assert.match(laneMarkdown["data-integrity-qa"], /before\/after counts/);
   assert.match(laneMarkdown["security-qa"], /No active exploitation/);
   assert.match(laneMarkdown["security-qa"], /not a penetration test/);
   assert.match(

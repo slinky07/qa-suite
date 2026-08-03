@@ -24,7 +24,9 @@ description: Security hygiene testing agent — dependency vulnerability scan, e
 - **Scope exclusions and escalation:** Never exploit, claim compliance, or
   present this lane as a penetration test. Stop and alert the user immediately
   for a live exposed credential, secret, or active vulnerability with real
-  impact; route non-security behavior to the relevant sibling lane.
+  impact. Security owns unauthorized access or modification; data-integrity-qa
+  owns accidental corruption, transaction safety, and recoverability. Route
+  other non-security behavior to the relevant sibling lane.
 
 Run a lightweight, non-destructive hygiene pass. In the report, state once
 under `Not tested` that this is not a penetration test and does not substitute

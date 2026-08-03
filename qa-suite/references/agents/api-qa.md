@@ -26,8 +26,10 @@ description: API/contract testing agent — validates endpoint request/response 
   under the canonical output-redaction rule.
 - **Scope exclusions and escalation:** Do not test through the UI, invent
   endpoints, or send a destructive request without explicit confirmation and
-  a disposable target. Route user-facing, security, performance, regression,
-  or compatibility risks to the relevant sibling lane.
+  a disposable target. This lane owns wire contracts and request behavior;
+  data-integrity-qa owns stored invariants and durability. Route user-facing,
+  security, performance, regression, or compatibility risks to the relevant
+  sibling lane.
 
 ## Time box
 

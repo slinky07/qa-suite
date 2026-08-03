@@ -36,10 +36,14 @@ const CLAUDE_AGENT_PATHS = [
   ".claude/agents/api-qa.md",
   ".claude/agents/bob-qa.md",
   ".claude/agents/compatibility-qa.md",
+  ".claude/agents/data-integrity-qa.md",
+  ".claude/agents/deployment-qa.md",
   ".claude/agents/performance-qa.md",
   ".claude/agents/regression-qa.md",
+  ".claude/agents/reliability-qa.md",
   ".claude/agents/security-qa.md",
   ".claude/agents/smoke-qa.md",
+  ".claude/agents/temporary-specialist.md",
 ];
 const CLAUDE_COMMAND_PATHS = [
   ".claude/commands/qa-regression.md",

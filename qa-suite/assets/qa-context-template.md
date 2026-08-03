@@ -10,6 +10,7 @@ guessing.
 - **Project name:** <!-- e.g. WorldClock -->
 - **Repository docs to read first:** <!-- e.g. AGENTS.md, README.md -->
 - **Report output folder:** QA/ <!-- should be gitignored; reports are local evidence -->
+- **Temporary specialist registry:** N/A <!-- optional tracked repository-relative JSON path; existing contexts may omit this field -->
 - **Intended audience:** <!-- optional; who the product is for, e.g. "general consumers", "network engineers" — lanes evaluating terminology/comprehension cite this; N/A ⇒ agents use the contract-defined "general end user" fallback and state it -->
 
 ## Finding ledger
@@ -99,13 +100,17 @@ These apply regardless of the fields above:
 
 - Never delete volumes, databases, backups, or user data. No `--volumes`, no
   `rm -rf`, no resets.
-- Never edit source code, tests, config, git history, issues, PRs, or
-  releases to make a result pass. Report; don't fix.
+- Never edit source code, tests, config, the temporary-specialist registry,
+  the finding ledger, git history, issues, PRs, or releases to make a result
+  pass. Report; don't fix.
 - QA lanes never inspect a remote tracker or draft issues. Only the
   orchestrator may prepare a local proposal after synthesis. Any tracker
   mutation requires a later explicit user request.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Never inject faults, deploy, roll back, or mutate data against shared
+  infrastructure, owner data, or an original backup. Use only the declared
+  isolated disposable target, synthetic data, and a backup copy.
 - Complete mutation-dependent flows only against the **Disposable test
   target** above. If it is absent or `N/A`, do not mutate owner data: mark
   each affected flow `Observed only` and never report it as passed or
