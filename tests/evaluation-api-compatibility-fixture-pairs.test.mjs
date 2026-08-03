@@ -224,7 +224,7 @@ const laneExpectations = {
     findingId: "API-01-FINDING",
     flowId: "flow_delivery_retry",
     priority: "P1",
-    severity: "S2",
+    severity: "S1",
     surfaceId: "surface_delivery_api",
   },
   "compatibility-qa": {
@@ -241,7 +241,7 @@ const laneExpectations = {
   },
 };
 
-function laneResult(lane, role) {
+function laneResult(lane, role, priority = laneExpectations[lane].priority) {
   const expected = laneExpectations[lane];
   const failed = role === "adversarial";
   const findings = failed
@@ -251,7 +251,7 @@ function laneResult(lane, role) {
           criteria: [expected.criterion],
           evidence: [expected.evidence],
           id: expected.findingId,
-          priority: expected.priority,
+          priority,
           severity: expected.severity,
           surface_id: expected.surfaceId,
         },
@@ -283,7 +283,11 @@ function laneResult(lane, role) {
   };
 }
 
-function normalizedCase(corpus, oracle) {
+function normalizedCase(
+  corpus,
+  oracle,
+  priority = laneExpectations[corpus.lane].priority,
+) {
   const suiteCase = corpus.suite.cases.find(
     ({ id }) => id === oracle.case_id,
   );
@@ -292,7 +296,7 @@ function normalizedCase(corpus, oracle) {
     case_id: oracle.case_id,
     completion_status: "completed",
     lane: corpus.lane,
-    lane_result: laneResult(corpus.lane, oracle.role),
+    lane_result: laneResult(corpus.lane, oracle.role, priority),
     schema_version: 1,
     smoke_gate: smokeGate(suiteCase.smoke_checks[0]),
     subject_commit: "0123456789abcdef0123456789abcdef01234567",
@@ -736,5 +740,26 @@ test("both sealed pairs produce deterministic zero-positive non-qualifying previ
     for (const seal of sealedTokens(corpus.oracles)) {
       assert.equal(serialized.includes(seal), false);
     }
+  }
+});
+
+test("API classification accepts every public scheduling value", () => {
+  const corpus = corpusByLane.get("api-qa");
+  assert.ok(corpus);
+
+  for (const priority of ["P0", "P1", "P2", "P3"]) {
+    const preview = previewSuite({
+      normalizedCases: corpus.oracles.map((oracle) =>
+        normalizedCase(corpus, oracle, priority)
+      ),
+      oracles: corpus.oracles,
+      suite: corpus.suite,
+    });
+
+    assert.equal(preview.completion_status, "complete");
+    assert.equal(preview.preview_assertions, "met");
+    assert.equal(preview.verification_status, "unverified");
+    assert.equal(preview.qualification, "not-evidence");
+    assert.equal(preview.result, null);
   }
 });

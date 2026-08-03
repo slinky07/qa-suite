@@ -139,6 +139,43 @@ test("priority remains independent scheduling metadata", async () => {
   );
 });
 
+test("API idempotency core-flow failure uses canonical impact and verdict rules", async () => {
+  const [skill, matrix, api] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("qa-suite/references/severity-priority-matrix.md"),
+    readRepositoryFile("qa-suite/references/agents/api-qa.md"),
+  ]);
+  const verdictVocabulary = extractSection(skill, "### Verdict vocabulary");
+  const severityImpact = extractSection(
+    matrix,
+    "## Severity — impact if left unfixed",
+  );
+  const severityVerdict = extractSection(matrix, "## Severity → verdict");
+  const testMethod = extractSection(api, "## Test Method");
+
+  assert.match(api, /idempotency; real consumer\s+impact/u);
+  assert.match(
+    testMethod,
+    /\*\*Idempotency\*\*.*confirm repeating it\s+doesn't duplicate state/su,
+  );
+  assert.match(
+    severityImpact,
+    /\| S1 \| Blocker \| Core flow unusable, data loss, crash, exposed secret, or auth bypass \|/u,
+  );
+  assert.match(
+    severityVerdict,
+    /Any confirmed S1\/S2, or a core flow demonstrably cannot be completed \| No-Go/u,
+  );
+  assert.match(
+    verdictVocabulary,
+    /No-Go.*at least one confirmed S1\/S2 finding in scope, or a core\s+flow demonstrably cannot be completed/su,
+  );
+  assert.match(
+    severityVerdict,
+    /Severity drives the verdict; priority drives scheduling only/u,
+  );
+});
+
 test("supported compatibility core-flow failure uses canonical No-Go", async () => {
   const [skill, matrix] = await Promise.all([
     readRepositoryFile("qa-suite/SKILL.md"),
