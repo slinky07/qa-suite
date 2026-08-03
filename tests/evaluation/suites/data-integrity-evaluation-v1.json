@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "data-integrity-evaluation-v1",
+  "lane": "data-integrity-qa",
+  "cases": [
+    {
+      "id": "fx_900fd4464c2266920845ed938fc894ce",
+      "qa_context": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d",
+        "seal_3e41fd43229136885fb0a3d2e8edd0c72f55ed42e8f27398e4d80aeac32d5c47"
+      ],
+      "smoke_checks": [
+        "check_transaction_probe"
+      ]
+    },
+    {
+      "id": "fx_02321e0a104476dd497a8a08d58f54f5",
+      "qa_context": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/qa-context.md",
+      "fixture_manifest": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/fixture-manifest.json",
+      "oracle_commitments": [
+        "seal_1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e",
+        "seal_af8b7211dabc2c4a34877b8354aa397cd3692cd90f160911b3883d12d8c78217"
+      ],
+      "smoke_checks": [
+        "check_transaction_probe"
+      ]
+    }
+  ]
+}

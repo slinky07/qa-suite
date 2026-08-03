@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_02321e0a104476dd497a8a08d58f54f5",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/public/data-contract.json",
+      "mode": "100644",
+      "sha256": "f327cb44b9dba4575a971b29d3c47154900865162a370610fa36fa37cb586d8d"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/public/probe.mjs",
+      "mode": "100644",
+      "sha256": "83a164a291a26d32dbab89dfb091d57c2fa4f51a2bd0339ef808e727de518d45"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/public/transaction-suite.mjs",
+      "mode": "100644",
+      "sha256": "69d48a0e2d130820d2a694460acb258d8cd049490c3a8b5d7e78f75ae8947d75"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/public/transfer-store.mjs",
+      "mode": "100644",
+      "sha256": "9b4bb7c6094a29dfd7a827487536ec6b267ef089d1352820a5d89f93e373e1f3"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_02321e0a104476dd497a8a08d58f54f5/qa-context.md",
+      "mode": "100644",
+      "sha256": "6927e76b7c42b2bbf70ba8db1bbcc1fa4af5fcde0cc0d5d0137b8075519d3d42"
+    }
+  ]
+}

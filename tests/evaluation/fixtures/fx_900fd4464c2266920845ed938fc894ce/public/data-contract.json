@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "requirement_id": "DATA-01",
+  "seed_records": [
+    {
+      "id": "reserve",
+      "balance": 70
+    },
+    {
+      "id": "settlement",
+      "balance": 30
+    }
+  ],
+  "transfer": {
+    "amount": 10,
+    "from": "reserve",
+    "to": "settlement",
+    "interruption_point": "after-debit-before-credit"
+  },
+  "acknowledged_state": {
+    "record_count": 2,
+    "total": 100,
+    "digest_sha256": "6f89a6d62d8ebf04bcb27a1b29cb812d7a6d5f7cb2a5d6ca33b0010ff0fcc819"
+  }
+}

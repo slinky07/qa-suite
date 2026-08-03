@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_580220e4bf4121dac7cfe0ad920dd45f",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_580220e4bf4121dac7cfe0ad920dd45f/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_580220e4bf4121dac7cfe0ad920dd45f/public/recovery-scenario.mjs",
+      "mode": "100644",
+      "sha256": "d2d759e508f22c424f464e5891acb15a27177a3768cc3c03a17ce2960b957cd5"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_580220e4bf4121dac7cfe0ad920dd45f/public/recovery-suite.mjs",
+      "mode": "100644",
+      "sha256": "ad50667e22d5c0f072b713bb08452eb4b6aa8e220d2c3c3b0c0ab01d7ac5245c"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_580220e4bf4121dac7cfe0ad920dd45f/public/reliability-contract.md",
+      "mode": "100644",
+      "sha256": "7e5dfd2eb47fd03cf3e92f5b6a85053d6dd171708eb180030986a57b253a6b3f"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_580220e4bf4121dac7cfe0ad920dd45f/qa-context.md",
+      "mode": "100644",
+      "sha256": "d49e8b736f55afc30b26a174610cc53fe5abdb24fd66acd0b6e211344f4a5b7f"
+    }
+  ]
+}

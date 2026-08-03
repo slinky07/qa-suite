@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmod,
@@ -238,6 +238,7 @@ async function createHarness(
     badManifest = false,
     fixtureLeakValue,
     programMismatchPath,
+    suiteLane = "bob-qa",
     subjectDirectoryDepth = 0,
     subjectFileCount = 0,
     subjectSymlink = false,
@@ -309,7 +310,7 @@ async function createHarness(
       },
     ],
     id: "bob-evaluation-v1",
-    lane: "bob-qa",
+    lane: suiteLane,
     schema_version: 1,
   };
   await write(
@@ -579,6 +580,42 @@ test("CLI serializes non-qualification at the actual top level", async (t) => {
   assert.equal(closed.qualification, "not-evidence");
   assert.equal(closed.result, null);
   assert.equal(closed.claims.state_authentication, "not-attested");
+});
+
+test("run-case rejects temporary-specialist suite identities", async (t) => {
+  const temporaryIdentity =
+    "temporary-qa-resilience-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  const harness = await createHarness(t, { suiteLane: temporaryIdentity });
+  const failure = spawnSync(
+    process.execPath,
+    [
+      runnerCli,
+      "prepare",
+      "--repository",
+      harness.repository,
+      "--controller-ref",
+      harness.controllerCommit,
+      "--subject-ref",
+      harness.subjectCommit,
+      "--suite",
+      suitePath,
+      "--case",
+      caseIds.selected,
+      "--state-parent",
+      harness.stateParent,
+      "--lane-parent",
+      harness.laneParent,
+      "--writable-root",
+      "QA",
+    ],
+    { encoding: "utf8" },
+  );
+
+  assert.notEqual(failure.status, 0);
+  assert.match(
+    failure.stderr,
+    new RegExp(`suite\\.lane has unsupported value ${temporaryIdentity}`, "u"),
+  );
 });
 
 test("close inventories only regular artifacts and stays non-qualifying", async (t) => {
