@@ -111,7 +111,7 @@ function smokeGate() {
   };
 }
 
-function laneResult(role) {
+function laneResult(role, priority = "P0") {
   const findings = role === "adversarial"
     ? [
         {
@@ -124,7 +124,7 @@ function laneResult(role) {
             },
           ],
           id: "REG-01",
-          priority: "P0",
+          priority,
           severity: "S2",
           surface_id: "surface_cancellation_window",
         },
@@ -150,12 +150,12 @@ function laneResult(role) {
   };
 }
 
-function normalizedCase(oracle) {
+function normalizedCase(oracle, priority = "P0") {
   return {
     case_id: oracle.case_id,
     completion_status: "completed",
     lane: "regression-qa",
-    lane_result: laneResult(oracle.role),
+    lane_result: laneResult(oracle.role, priority),
     schema_version: 1,
     smoke_gate: smokeGate(),
     subject_commit: "0123456789abcdef0123456789abcdef01234567",
@@ -315,7 +315,7 @@ test("both public suites pass while the focused boundary distinguishes roles", a
 
 test("the sealed regression pair produces a non-qualifying exact preview", () => {
   const input = {
-    normalizedCases: oracles.map(normalizedCase),
+    normalizedCases: oracles.map((oracle) => normalizedCase(oracle)),
     oracles,
     suite,
   };
@@ -351,5 +351,23 @@ test("the sealed regression pair produces a non-qualifying exact preview", () =>
   for (const oracle of oracles) {
     assert.equal(serialized.includes(oracle.pair_id), false);
     assert.equal(serialized.includes(oracle.canary_token), false);
+  }
+});
+
+test("regression classification accepts every public scheduling value", () => {
+  for (const priority of ["P0", "P1", "P2", "P3"]) {
+    const preview = previewSuite({
+      normalizedCases: oracles.map((oracle) =>
+        normalizedCase(oracle, priority)
+      ),
+      oracles,
+      suite,
+    });
+
+    assert.equal(preview.completion_status, "complete");
+    assert.equal(preview.preview_assertions, "met");
+    assert.equal(preview.verification_status, "unverified");
+    assert.equal(preview.qualification, "not-evidence");
+    assert.equal(preview.result, null);
   }
 });

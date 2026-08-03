@@ -120,6 +120,25 @@ test("regression history labels never override impact-based Severity", async () 
   );
 });
 
+test("priority remains independent scheduling metadata", async () => {
+  const [skill, matrix] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("qa-suite/references/severity-priority-matrix.md"),
+  ]);
+  const verdictVocabulary = extractSection(skill, "### Verdict vocabulary");
+  const severityVerdict = extractSection(matrix, "## Severity → verdict");
+
+  assert.match(matrix, /They are independent axes/u);
+  assert.match(
+    severityVerdict,
+    /Severity drives the verdict; priority drives scheduling only/u,
+  );
+  assert.match(
+    verdictVocabulary,
+    /Severity drives the verdict; priority drives scheduling\s+only/su,
+  );
+});
+
 test("supported compatibility core-flow failure uses canonical No-Go", async () => {
   const [skill, matrix] = await Promise.all([
     readRepositoryFile("qa-suite/SKILL.md"),
