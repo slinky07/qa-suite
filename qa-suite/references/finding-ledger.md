@@ -85,8 +85,9 @@ confirming it in one cycle add provenance but only one occurrence. Each write
 advances at most one occurrence and requires a new
 `candidate_last_confirmed`, a later `last_seen`, and a new report pointer for
 that candidate. A new row starts at occurrence 1 with the same first and last
-candidate. Report-pointer identities are unique and never repurposed for a
-different candidate.
+candidate. One report pointer may support multiple finding rows when every
+occurrence binds it to the same exact opaque candidate identifier. A report
+pointer is never repurposed for a different candidate.
 
 The owning `lane` remains stable when another lane confirms the same defect.
 Each report pointer records its own lane. Version 2 accepts
@@ -194,7 +195,8 @@ returns, the orchestrator:
 3. updates existing rows or creates stable new IDs;
 4. applies only mechanically authorized human lifecycle decisions;
 5. redacts before writing;
-6. validates every resulting row, committed string, and the unique-ID set;
+6. validates every resulting row, committed string, unique-ID set, and
+   ledger-wide report-pointer-to-candidate binding;
 7. acquires the exclusive sibling lock, compares the current ledger SHA-256
    with the digest read before reconciliation, validates the current and
    candidate rows again, rejects deletion, immutable-identity changes,
