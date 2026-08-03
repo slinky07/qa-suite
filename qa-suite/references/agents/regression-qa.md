@@ -24,8 +24,10 @@ description: Regression testing agent — verifies a change hasn't broken previo
   evidence.
 - **Scope exclusions and escalation:** Do not perform unrelated exploration,
   a fresh-user sweep, or specialist UX, performance, security, API, or
-  compatibility analysis. Route those risks to the matching lane and never
-  edit tests or fixtures to obtain a pass.
+  compatibility analysis. Regression owns history and change attribution,
+  never the underlying technical category or Severity. Route reliability,
+  deployment, and data-integrity risks to their owning lanes, and never edit
+  tests or fixtures to obtain a pass.
 
 ## Time box
 

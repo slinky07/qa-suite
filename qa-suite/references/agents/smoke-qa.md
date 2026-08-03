@@ -27,7 +27,8 @@ description: Smoke/sanity testing agent — fast, time-boxed binary check that a
   error.
 - **Scope exclusions and escalation:** Do not debug, explore edge cases,
   review UX, or infer root cause. Route anything beyond startup and critical
-  response to the relevant sibling lane.
+  response to the relevant sibling lane. Reliability-qa owns failure,
+  degradation, recovery, and alerting after a healthy startup.
 
 ## Time box
 

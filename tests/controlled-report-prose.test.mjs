@@ -6,8 +6,11 @@ const lanePaths = [
   "qa-suite/references/agents/api-qa.md",
   "qa-suite/references/agents/bob-qa.md",
   "qa-suite/references/agents/compatibility-qa.md",
+  "qa-suite/references/agents/data-integrity-qa.md",
+  "qa-suite/references/agents/deployment-qa.md",
   "qa-suite/references/agents/performance-qa.md",
   "qa-suite/references/agents/regression-qa.md",
+  "qa-suite/references/agents/reliability-qa.md",
   "qa-suite/references/agents/security-qa.md",
   "qa-suite/references/agents/smoke-qa.md",
 ];

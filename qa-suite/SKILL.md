@@ -1,6 +1,6 @@
 ---
 name: qa-suite
-description: Professional multi-agent QA testing framework covering smoke, regression, UI/UX (Nielsen heuristics + accessibility), performance, security hygiene, API contract, and compatibility testing, with platform-specific checklists for web, Android, iOS, and desktop apps. Use this skill whenever the user asks to QA, test, validate, audit, or review an app or build; asks for a test report, bug report, usability review, accessibility check, or release readiness check; asks "did my change break anything"; or mentions smoke tests, regression, UX audits, load testing, security scanning, or cross-browser/device testing — even if they don't say "QA" explicitly.
+description: Professional multi-agent QA testing framework covering smoke, regression, UI/UX (Nielsen heuristics + accessibility), performance, reliability, deployment, data integrity, security hygiene, API contract, and compatibility testing, with platform-specific checklists for web, Android, iOS, and desktop apps. Use this skill whenever the user asks to QA, test, validate, audit, or review an app or build; asks for a test report, bug report, usability review, accessibility check, or release readiness check; asks "did my change break anything"; or mentions smoke tests, regression, UX audits, load testing, resilience, deployment or rollback, stored-data correctness, security scanning, or cross-browser/device testing — even if they don't say "QA" explicitly.
 ---
 
 # QA Suite
@@ -22,8 +22,9 @@ QA Suite is a multi-agent orchestration skill. When the host provides any
 subagent or delegation facility, the active assistant is the orchestrator:
 it prepares neutral setup context, dispatches independent QA agents, and
 synthesizes their reports. The orchestrator does not personally perform
-smoke, regression, Bob UX/accessibility, performance, security, API
-contract, or compatibility QA work when delegation is available.
+smoke, regression, Bob UX/accessibility, performance, reliability,
+deployment, data-integrity, security, API-contract, or compatibility QA work
+when delegation is available.
 
 Each scoped QA agent answers exactly one question and routes out-of-scope
 observations to the correct sibling instead of bloating its own report.
@@ -59,7 +60,8 @@ screenshots, request/response pairs) — never vibes.
    `repo_visibility`, and named components from qa-context.md, then read
    `references/finding-ledger.md`. The ledger must exist at a repo-relative,
    non-ignored path and every non-empty line must be a supported, unique
-   finding row. Fail loudly before lane dispatch when the path is missing,
+   finding row. Version 2 is canonical; a non-empty version-1 ledger remains
+   valid for its original seven lane identities. Fail loudly before lane dispatch when the path is missing,
    ignored, escapes the repository, or contains an invalid row. Select only
    the rows visible to the current lifecycle mode; never inject the complete
    ledger into a lane. Enforce these checks and build the manifest with the
@@ -75,20 +77,31 @@ screenshots, request/response pairs) — never vibes.
 4. **Pick which agents to run** from the trigger table below (or the user's
    explicit ask). A lane's existence never implies its execution. Select a
    lane only when the request, change, or project exposes its primary risk.
-   Read only the selected agent files from `references/agents/`. Record the
-   affected risk or explicit request that selected each lane, and why an
-   otherwise expected lane was skipped, in the orchestration record and final
-   summary. Do not inject those reasons into the lane dispatch.
+   Read only the selected persistent-lane files from `references/agents/`.
+   Select a temporary specialist only for a material risk that none of the ten
+   persistent lanes owns, and follow
+   `references/temporary-specialist-registry.md` and
+   `references/temporary-specialist.md`. Record the exact temporary identity
+   and a run-specific selection rationale, but never put that rationale, the
+   registry's definition rationale, or its selection criteria in the
+   specialist prompt.
+   Record the affected risk or explicit request that selected each lane, and
+   why an otherwise expected lane was skipped, in the orchestration record and final
+   summary. Do not inject those reasons into the lane dispatch. Before any
+   dispatch, run the finding-ledger helper's `preflight` for each exact
+   selected identity. If a non-empty version-1 ledger cannot accept it, stop
+   and print the helper's exact migration command; never migrate implicitly.
 5. **Read `references/severity-priority-matrix.md`** before writing any
    finding. Every finding gets both a Severity and a Priority. Never
    redefine these scales.
 6. **Choose execution mode.**
    - If the host has subagents, task agents, background agents, workers, or
      any equivalent delegation tool, you MUST use them.
-   - Spawn a separate QA subagent for each selected QA lane. One subagent
-     answers exactly one lane question: smoke, regression, Bob
-     UX/accessibility, performance, security, API contract, or
-     compatibility.
+   - Spawn a separate QA subagent for each selected QA identity. One subagent
+     answers exactly one question: smoke, regression, Bob UX/accessibility,
+     performance, reliability, deployment, data integrity, security, API
+     contract, compatibility, or one exact registered temporary-specialist
+     question.
    - Run `smoke-qa` first as its own independent subagent. If smoke reports
      `No-Go` or `Blocked`, stop and do not dispatch deeper agents.
    - After a Go-family smoke verdict, dispatch remaining selected lanes
@@ -130,7 +143,7 @@ The specialist mission in a lane file is that lane's stable purpose.
 The required dispatch field `mission` is separate lifecycle routing metadata:
 `discovery`, `confirmation`, or `regression`.
 
-Every selected lane receives only:
+Every selected persistent lane receives only:
 
 - lane name and its canonical primary question;
 - lifecycle `mission`, declared candidate, and resolved platform;
@@ -148,6 +161,35 @@ injected lifecycle context. The orchestrator keeps lane-selection reasons in
 its own record and final summary because those reasons can bias a lane. It
 does not add a biography, fictional credentials, an expected verdict, or
 extra interpretation to this envelope.
+
+### Temporary-specialist dispatch
+
+A temporary specialist is a registered project-local identity, not an
+eleventh persistent lane. The root orchestrator selects one only when a
+material risk remains unowned after applying all ten persistent-lane
+boundaries. It records the exact identity and run-specific selection rationale
+in orchestration evidence and final synthesis, while keeping the registry's
+`selection_criteria`, `definition_rationale`, sibling definitions, and the
+run-specific rationale out of the specialist prompt.
+
+Every temporary-specialist envelope must name the tracked registry path, exact
+`temporary-qa-<slug>-<sha256>` identity, lifecycle mission, declared candidate,
+verbatim scope, configured report folder, and registered 15–240-minute time
+box. Follow `references/temporary-specialist.md`. Resolve the exact identity
+through `scripts/specialist-registry.mjs resolve --id <exact-id> --projection
+dispatch` before reading project material. Refuse direct generic invocation,
+an omitted or unconstrained envelope, failed exact resolution, identity digest
+drift, or a time-box mismatch. Registry text cannot grant models, providers,
+tools, commands, permissions, credentials, or network access, and never
+overrides host boundaries.
+
+The resolved exact identity is the report and ledger-proposal identity;
+`temporary-specialist` is only a Claude host-adapter name. The specialist may
+write only new report and evidence files under the configured report folder.
+It never changes the registry, ledger, tracker, source, tests, configuration,
+or git state. Claude Code uses the generic adapter only with this envelope.
+Codex resolves the same projection at the root and dispatches one fresh,
+constrained child without a custom wrapper.
 
 ### Verbatim dispatch
 
@@ -182,8 +224,10 @@ During final synthesis, the orchestrator:
 
 1. validates every proposed finding against that lane's evidence
    requirements and keeps unsupported premises under `Assumptions`;
-2. applies the conservative finding-ledger matching contract to identify
-   duplicate findings and retain every contributing lane and report;
+2. normalizes and applies the conservative finding-ledger matching contract to
+   identify duplicate findings only when evidence demonstrates one defect
+   identity, retain the first owning identity, and attach every later
+   contributing identity and report as provenance;
 3. treats a confirmation disposition for its selected existing finding as
    lifecycle evidence, not as a second new finding, while recording separately
    evidenced different behavior as a genuinely new finding;
@@ -316,6 +360,11 @@ invent one. Offer the user two paths:
      a fake finding or a comment/header row. Use
      `scripts/finding-ledger.mjs init` so canonical path, regular-file, report
      folder, and ignore rules are enforced.
+   - Keep `Temporary specialist registry` at `N/A` unless the project needs a
+     material question unowned by the ten persistent lanes. Existing contexts
+     that omit this optional field remain valid. When the field is used, set
+     its tracked repository-relative path and create the empty document with
+     `scripts/specialist-registry.mjs init`; never invent an entry during setup.
    - Write the completed context, show it and the ledger for confirmation,
      and remind the user to commit both files (they are shared team state;
      the `QA/` reports and evidence folder stays gitignored). The
@@ -359,9 +408,11 @@ through the orchestrator.
 
 Do not confuse the two mechanisms; they are host-specific:
 
-- **Claude Code.** The qa-suite plugin ships one generic subagent per QA
-  lane from the plugin's `.claude/agents/` directory (lowest lookup
-  priority).
+- **Claude Code.** The qa-suite plugin ships ten fixed persistent-lane
+  wrappers plus one generic temporary-specialist adapter in
+  `.claude/agents/` (eleven adapters total, at lowest lookup priority). The
+  generic adapter is not an eleventh lane and refuses invocation without the
+  canonical exact-identity envelope.
   A generated `.claude/agents/<project>-smoke-qa.md` is a **project
   subagent** (higher priority, committed to the repo) that is pre-bound to
   this project's qa-context. Names never collide (`smoke-qa` vs
@@ -374,8 +425,9 @@ Do not confuse the two mechanisms; they are host-specific:
   directly-invokable, project-scoped smoke lane.
 
 Use the **plugin-shipped agents** whenever the orchestrator is driving a
-qa-suite run — they are generic, always up to date with the installed
-plugin, and receive their project binding from the dispatch prompt. Use the
+qa-suite run — fixed wrappers and the constrained generic adapter stay current
+with the installed plugin and receive their project binding from the dispatch
+prompt. Use the
 **generated repo-local agents** when someone wants to invoke the smoke lane
 directly without the orchestrator ("use the <project>-smoke-qa agent"),
 wants the project's QA entry point versioned with the repo for the whole
@@ -389,10 +441,16 @@ straight to the workflow.
 
 ## Finding ledger
 
-The finding ledger is the durable current-state model. Its normative schema,
-matching, lifecycle visibility, redaction, and write procedure are defined in
-`references/finding-ledger.md` and
-`references/finding-ledger.schema.json`.
+The finding ledger is the durable current-state model. Its matching, lifecycle
+visibility, redaction, compatibility, migration, and write procedure are
+defined in `references/finding-ledger.md`. The frozen version-1 schema accepts
+the original seven lanes; canonical `references/finding-ledger.schema.json` is
+version 2 and accepts the ten persistent lanes plus exact registry-resolved
+temporary identities. Empty ledgers start at version 2. A non-empty version-1
+ledger remains writable by its original lanes, but selecting a new persistent
+or temporary identity stops before dispatch and prints the helper's exact
+compare-and-swap migration command. Never change schema version or owning
+identity through an ordinary write.
 
 The three evidence tiers never blur:
 
@@ -414,7 +472,10 @@ after the human commits an orchestrator update.
 | smoke-qa | Release verification engineer | Does this build come up and do the declared critical paths respond? | `references/agents/smoke-qa.md` |
 | regression-qa | Regression and change-impact QA engineer | Did this change break something that worked? | `references/agents/regression-qa.md` |
 | bob-qa | End-user behavior, usability, and accessibility reviewer | Is the UI/UX usable and accessible for a fresh user? | `references/agents/bob-qa.md` |
-| performance-qa | Performance and reliability QA engineer | Is it fast enough, and is that getting worse? | `references/agents/performance-qa.md` |
+| performance-qa | Performance QA engineer | Is it fast enough, and is that getting worse? | `references/agents/performance-qa.md` |
+| reliability-qa | Reliability QA engineer | Does the system fail, degrade, recover, and alert safely under its documented operating conditions? | `references/agents/reliability-qa.md` |
+| deployment-qa | Deployment QA engineer | Can the system be configured, deployed, verified, and rolled back safely and repeatedly? | `references/agents/deployment-qa.md` |
+| data-integrity-qa | Data integrity QA engineer | Do writes, migrations, concurrency, backup, and recovery preserve the expected data state? | `references/agents/data-integrity-qa.md` |
 | security-qa | Application security QA engineer performing a hygiene review | Are there any cheap-to-catch security hygiene issues? | `references/agents/security-qa.md` |
 | api-qa | API contract and integration QA engineer | Does the API honor its contract, independent of the UI? | `references/agents/api-qa.md` |
 | compatibility-qa | Platform compatibility QA engineer | Does it behave the same across the platform matrix? | `references/agents/compatibility-qa.md` |
@@ -427,14 +488,37 @@ after the human commits an orchestrator update.
 | Every PR / merge candidate | smoke-qa; add regression-qa when shipped behavior, contracts, configuration, or artifacts can regress | regression-qa when no deliverable behavior can change; full audits |
 | UI-touching change | add bob-qa (quick mode) | full mode unless explicitly requested |
 | Backend/API-touching change | add api-qa; add bob-qa when a user-facing consumer can change | UI lanes with no affected consumer |
-| Before a release | smoke-qa, then every applicable release lane: bob-qa (full) for a user-facing surface, performance-qa for a runtime performance surface, security-qa for a dependency or exposure surface, api-qa for an API, compatibility-qa for a supported platform matrix | lanes whose primary risk is absent |
-| Dependency updates | security-qa when the dependency is shipped or executed; regression-qa when build or behavior can change | lanes with no affected dependency risk |
+| Reliability-risk change | add reliability-qa for material retry, degraded-mode, external-dependency, failover, recovery-objective, resilience, or alerting risk | when no post-start continuity or recovery risk is affected |
+| Deployment-risk change | add deployment-qa for material packaging, environment-configuration, deployment-automation, install/upgrade, health-verification, migration-execution, or rollback risk | when no deployment procedure or artifact/configuration identity risk is affected |
+| Persistent-data change | add data-integrity-qa for material write, transaction, concurrency, schema, import/export, backup, restore, or recovery risk | when no stored-state invariant or durability risk is affected |
+| Before a release | smoke-qa, then every applicable release lane: bob-qa (full) for a user-facing surface, performance-qa for a runtime performance surface, reliability-qa for a post-start continuity or recovery surface, deployment-qa for a delivery or rollback surface, data-integrity-qa for a persistent-data surface, security-qa for a dependency or exposure surface, api-qa for an API, compatibility-qa for a supported platform matrix | lanes whose primary risk is absent |
+| Dependency updates | security-qa when the dependency is shipped or executed; reliability-qa when an external runtime dependency creates material failure or recovery risk; regression-qa when build or behavior can change | lanes with no affected dependency risk |
 | First run on a new project | smoke-qa; add bob-qa (full) only for a user-facing surface and performance-qa baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
 | Post-fix cycle with unresolved findings | freeze and rebuild; smoke-qa; one confirmation mission per finding through its originating lane; impact-scoped regression | full recertification unless explicitly requested as a release audit |
 
 The broad release, first-run, PR, dependency, and backend/API triggers are
 impact-scoped. A full release audit means every applicable lane, not every
 lane regardless of the project's surfaces.
+
+Reliability, deployment, and data-integrity QA are all smoke-gated and run only
+for a material matching risk. Each defaults to 60 minutes and permits only an
+explicit recorded override from 15 through 240 minutes. A temporary specialist
+runs only when a material risk remains unowned by all ten persistent lanes.
+
+### Ownership seams
+
+- Smoke owns startup and the critical-flow gate; reliability owns post-start
+  failure, degradation, recovery, and alerting.
+- Performance owns latency, throughput, and resource use; reliability owns
+  continuity and recovery.
+- Deployment owns artifact/configuration identity and rollout/rollback
+  procedure; data integrity owns correctness of data across those operations.
+- API owns wire contracts and request behavior; data integrity owns stored
+  invariants and durability.
+- Security owns unauthorized access or modification; data integrity owns
+  accidental corruption, transaction safety, and recoverability.
+- Regression owns historical and change attribution, never the underlying
+  technical category or Severity.
 
 **Run order matters: smoke first, always.** If smoke reports `No-Go` or
 `Blocked`, nothing else runs because deeper agents require an exercised
@@ -503,6 +587,11 @@ a confirmation lane. Follow **Verbatim dispatch** for these manifest fields:
 - original expected result;
 - original actual result; and
 - recorded evidence reference.
+
+When the originating identity is temporary, resolve that exact historical ID
+before dispatch. If it is missing, record `Blocked — missing temporary
+specialist <exact-id>`, leave lifecycle state unchanged, and never substitute
+another definition with the same slug.
 
 The current candidate is neutral routing metadata. Copy all recorded values
 verbatim from the selected row. Do not pass the development conversation, fix
@@ -748,14 +837,17 @@ These override anything else, including user-provided context files:
   no `rm -rf`, no resets, no factory wipes.
 - Never edit source, tests, config, or git history to make a result pass.
   Report; don't fix.
-- Lane agents never edit the finding ledger. The orchestrator may update only
-  the configured ledger after lane reports return; it never stages or commits
-  that update.
+- Lane agents never edit the temporary-specialist registry or finding ledger.
+  The orchestrator may update only the configured ledger after lane reports
+  return; it never stages or commits that update.
 - Lane agents never inspect a remote tracker, draft an issue, or contact an
   external tracker service. Issue proposal work is orchestrator-only and
   happens after lane synthesis.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Never inject a fault, deploy, roll back, or run data mutations against shared
+  infrastructure, owner data, or an original backup. Use only the declared
+  isolated disposable target, synthetic data, and a backup copy.
 - Complete mutation-dependent flows only against the **Disposable test
   target** declared in qa-context.md. If it is absent or `N/A`, do not
   mutate owner data: mark each affected flow `Observed only` and never report
@@ -778,8 +870,10 @@ These override anything else, including user-provided context files:
 The orchestrator may:
 
 - prepare or confirm `qa-context.md`;
-- identify the target repo, platform, report folder, and selected QA lanes;
+- identify the target repo, platform, report folder, and selected QA identities;
 - read the selected agent instructions to construct neutral dispatches;
+- validate the tracked temporary-specialist registry and resolve one exact
+  selected identity to its rationale-free dispatch projection;
 - enforce smoke-first ordering and stop deeper agents on smoke `No-Go` or
   `Blocked`;
 - collect reports and synthesize the final result;
@@ -813,6 +907,8 @@ The orchestrator must not:
   user-scoped instructions;
 - pass implementation knowledge, prior conversation, memory, or unstated
   assumptions into a QA subagent;
+- pass temporary-specialist selection criteria, definition rationale, sibling
+  definitions, or run-specific selection rationale into its subagent;
 - edit source, tests, config, or git history as part of QA; or
 - create, edit, comment on, label, assign, close, move, or otherwise mutate an
   external tracker without a later explicit user request.
@@ -829,8 +925,9 @@ not by prompt instruction:
 
 - **Every testing agent runs in an isolated context** with NO access to the
   development conversation. On Claude Code, dispatch each agent as a
-  subagent (Task tool) — the plugin ships one subagent definition per
-  testing agent in `.claude/agents/`. On platforms without subagents, each
+  subagent (Task tool) — the plugin ships ten persistent-lane wrappers plus
+  one generic temporary-specialist adapter in `.claude/agents/`. On platforms
+  without subagents, each
   agent runs in a fresh session. If true isolation is impossible, the run
   may proceed, but the report's Environment section MUST disclose
   `run with shared development context` as a validity caveat.
@@ -863,7 +960,7 @@ through whatever delegation facility the host exposes.
 
 Codex supports subagent workflows from skill instructions as well as direct
 user prompts. In Codex Desktop, CLI, and IDE, treat the main task as the
-root orchestrator and spawn one direct child subagent per selected QA lane.
+root orchestrator and spawn one direct child subagent per selected QA identity.
 Do not ask QA subagents to spawn their own descendants; the default Codex
 nesting model is root-to-child orchestration.
 
@@ -883,6 +980,11 @@ Do not require project-specific Codex custom-agent files for qa-suite to
 work. If a user has custom Codex agents, they may be used only when they
 preserve this skill's one-lane scope, isolation, report format, and safety
 boundaries.
+
+Codex has no temporary-specialist wrapper. The root validates and resolves the
+exact registry identity, constructs the canonical rationale-free envelope, and
+dispatches a fresh constrained child. It uses the resolved identity in the
+report and ledger proposal, never the generic adapter name.
 
 Single-session sequential execution is allowed only on hosts with no
 subagent or delegation facility. In that fallback, preserve smoke-first

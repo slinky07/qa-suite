@@ -6,8 +6,11 @@ const lanePaths = [
   "qa-suite/references/agents/api-qa.md",
   "qa-suite/references/agents/bob-qa.md",
   "qa-suite/references/agents/compatibility-qa.md",
+  "qa-suite/references/agents/data-integrity-qa.md",
+  "qa-suite/references/agents/deployment-qa.md",
   "qa-suite/references/agents/performance-qa.md",
   "qa-suite/references/agents/regression-qa.md",
+  "qa-suite/references/agents/reliability-qa.md",
   "qa-suite/references/agents/security-qa.md",
   "qa-suite/references/agents/smoke-qa.md",
 ];
@@ -272,6 +275,14 @@ test("every shipped lane declares a numeric time box", async () => {
 
     if (path.endsWith("/smoke-qa.md")) {
       assert.match(section, /does not accept a dispatch\s+time-box override/);
+    } else if (
+      path.endsWith("/reliability-qa.md") ||
+      path.endsWith("/deployment-qa.md") ||
+      path.endsWith("/data-integrity-qa.md")
+    ) {
+      assert.match(section, /default wall-clock time box is 60 minutes/);
+      assert.match(section, /15 through 240\s+minutes/);
+      assert.match(section, /explicit recorded/);
     } else {
       assert.match(section, /different\s+positive limit/);
     }
@@ -342,6 +353,12 @@ test("broad triggers are impact-scoped and mirrored publicly", async () => {
   assert.match(rowsByEvent.get("Before a release").run, /api-qa for an API/);
   assert.match(rowsByEvent.get("Before a release").skip, /primary risk is absent/);
   assert.match(rowsByEvent.get("Dependency updates").run, /when the dependency/);
+  assert.match(rowsByEvent.get("Reliability-risk change").run, /material retry/);
+  assert.match(rowsByEvent.get("Deployment-risk change").run, /material packaging/);
+  assert.match(rowsByEvent.get("Persistent-data change").run, /material write/);
+  assert.match(rowsByEvent.get("Before a release").run, /reliability-qa/);
+  assert.match(rowsByEvent.get("Before a release").run, /deployment-qa/);
+  assert.match(rowsByEvent.get("Before a release").run, /data-integrity-qa/);
   assert.match(rowsByEvent.get("First run on a new project").run, /only for/);
   assert.match(releaseCommand, /canonical trigger table/);
   assert.match(releaseCommand, /do not run a lane only\s+because it exists/);

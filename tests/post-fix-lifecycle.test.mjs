@@ -6,8 +6,11 @@ const lanePaths = [
   "qa-suite/references/agents/api-qa.md",
   "qa-suite/references/agents/bob-qa.md",
   "qa-suite/references/agents/compatibility-qa.md",
+  "qa-suite/references/agents/data-integrity-qa.md",
+  "qa-suite/references/agents/deployment-qa.md",
   "qa-suite/references/agents/performance-qa.md",
   "qa-suite/references/agents/regression-qa.md",
+  "qa-suite/references/agents/reliability-qa.md",
   "qa-suite/references/agents/security-qa.md",
   "qa-suite/references/agents/smoke-qa.md",
 ];
@@ -93,7 +96,7 @@ test("lane reports propose ledger rows without reading the ledger", async () => 
       "oracle",
       "severity",
       "priority",
-      "sanitized ordered repro steps",
+      "sanitized ordered repro(?:duction)? steps",
       "expected result",
       "actual result",
       "environment",
@@ -301,4 +304,23 @@ test("candidate supersession gates impact-scoped post-fix synthesis", async () =
 
   assert.match(readme, /Post-fix cycle with unresolved findings/);
   assert.match(readme, /Routine discovery runs receive no finding manifest/);
+});
+
+test("temporary confirmation retains the exact historical identity", async () => {
+  const [skill, readme] = await Promise.all([
+    readRepositoryFile("qa-suite/SKILL.md"),
+    readRepositoryFile("README.md"),
+  ]);
+  const confirmations = extractSection(
+    extractSection(skill, "## Post-fix lifecycle"),
+    "### Confirmation missions",
+  );
+
+  assert.match(confirmations, /originating identity is temporary/);
+  assert.match(confirmations, /resolve that exact historical ID/);
+  assert.match(confirmations, /Blocked — missing temporary\s+specialist <exact-id>/);
+  assert.match(confirmations, /leave lifecycle state unchanged/);
+  assert.match(confirmations, /never substitute.*same slug/s);
+  assert.match(readme, /same exact historical\s+identity/);
+  assert.match(readme, /lifecycle row stays unchanged/);
 });

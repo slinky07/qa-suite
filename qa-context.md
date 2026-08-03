@@ -77,8 +77,9 @@ list for its matrix.
 3. Use the qa-suite skill to initialize a project with `qa-context.md`.
 4. Use the qa-suite orchestrator to run smoke-first QA lanes and write timestamped reports.
 5. Use Claude Code command wrappers for smoke, regression, and release QA paths.
-6. Use plugin-shipped agent wrappers for smoke, regression, Bob UX/accessibility, performance, security, API, and compatibility lanes.
-7. During an explicitly scoped release audit, validate the prebuilt `qa-suite.skill`, `qa-suite-source.zip`, and the `qa-suite/` skill directory consistently.
+6. Use ten plugin-shipped persistent wrappers for smoke, regression, Bob UX/accessibility, performance, reliability, deployment, data integrity, security, API, and compatibility lanes.
+7. Use the generic Claude adapter or wrapperless Codex dispatch for one exact registered temporary-specialist identity without adding it to the persistent roster.
+8. During an explicitly scoped release audit, validate the prebuilt `qa-suite.skill`, `qa-suite-source.zip`, and the `qa-suite/` skill directory consistently.
 
 ## API surface
 
@@ -103,13 +104,17 @@ These apply regardless of the fields above:
 
 - Never delete volumes, databases, backups, or user data. No `--volumes`, no
   `rm -rf`, no resets.
-- Never edit source code, tests, config, git history, issues, PRs, or
-  releases to make a result pass. Report; don't fix.
+- Never edit source code, tests, config, the temporary-specialist registry,
+  the finding ledger, git history, issues, PRs, or releases to make a result
+  pass. Report; don't fix.
 - QA lanes never inspect a remote tracker or draft issues. Only the
   orchestrator may prepare a local proposal after synthesis. Any tracker
   mutation requires a later explicit user request.
 - Never submit real credentials, tokens, personal files, or private
   identifiers into any page, form, or request.
+- Never inject faults, deploy, roll back, or mutate data against shared
+  infrastructure, owner data, or an original backup. Use only the declared
+  isolated disposable target, synthetic data, and a backup copy.
 - Never inspect files, browser data, or applications unrelated to the app
   under test.
 - Never test against production or a public hostname unless the user

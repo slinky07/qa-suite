@@ -7,6 +7,7 @@ const templateUrl = new URL(
   import.meta.url,
 );
 const exampleUrl = new URL("../examples/qa-context.example.md", import.meta.url);
+const repositoryContextUrl = new URL("../qa-context.md", import.meta.url);
 
 function extractSectionHeadings(markdown) {
   return [...markdown.matchAll(/^##[ \t]+(.+?)[ \t]*$/gm)].map(
@@ -26,4 +27,25 @@ test("qa-context example section headings match the template", async () => {
   }
 
   assert.deepEqual(extractSectionHeadings(example), templateHeadings);
+});
+
+test("qa-context surfaces expose the optional temporary-specialist registry", async () => {
+  const contexts = await Promise.all(
+    [templateUrl, exampleUrl, repositoryContextUrl].map((url) =>
+      readFile(url, "utf8"),
+    ),
+  );
+
+  for (const context of contexts) {
+    assert.match(context, /^- \*\*Temporary specialist registry:\*\*\s+\S+/m);
+  }
+
+  const legacyContext = contexts[0].replace(
+    /^- \*\*Temporary specialist registry:\*\*.*\n/m,
+    "",
+  );
+  assert.deepEqual(
+    extractSectionHeadings(legacyContext),
+    extractSectionHeadings(contexts[0]),
+  );
 });

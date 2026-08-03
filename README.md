@@ -7,7 +7,7 @@ lanes.
 
 | What it tests | How it tests | Why it helps |
 |---|---|---|
-| The built app, declared user flows, supported interfaces, and release candidate | Independent lanes exercise the scoped target through rendered UI, requests, measurements, logs, and screenshots | It finds integration, usability, safety, and compatibility failures that isolated code checks can miss |
+| The built app, declared user flows, supported interfaces, operational behavior, persistent data, deployment procedure, and release candidate | Independent lanes exercise the scoped target through rendered UI, requests, measurements, deterministic faults, disposable deployments and stores, logs, and screenshots | It finds integration, usability, resilience, rollout, data-integrity, safety, and compatibility failures that isolated code checks can miss |
 
 QA-Suite complements unit and integration tests. Those tests verify code-level
 contracts quickly and repeatably. QA-Suite exercises the assembled product
@@ -27,7 +27,8 @@ perform safe interactions on the scoped test target.
 
 QA lanes read, observe, and test only the scoped app. They write only their
 reports and evidence under the configured QA folder. They do not edit source,
-tests, configuration, or git history; delete or reset data; use real
+tests, configuration, the specialist registry, the finding ledger, or git
+history; delete or reset data; alter an original backup; use real
 credentials or private files; or test production or public endpoints without
 explicit scope and confirmed authorization. Mutation-dependent flows run only
 on a declared disposable target; otherwise they are marked `Observed only`. A
@@ -91,12 +92,19 @@ On first run it:
 4. Generates dedicated, repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` for Claude Code and `.codex/agents/<project>-smoke-qa.toml` for Codex — skipping a format only when the host/project clearly does not support it or you decline. These are project files meant to be committed alongside `qa-context.md`; qa-suite orchestration still works without them.
 
 **Repository exception.** This repository distributes qa-suite rather than
-consuming it. It owns the two source templates under `qa-suite/assets/` and the
-seven generic Claude plugin wrappers, but does not commit project-bound
-generated smoke agents for itself. Consuming repositories own their generated
-copies and must regenerate or refresh them whenever template behavior changes.
+consuming it. It owns the two source templates under `qa-suite/assets/`, ten
+persistent Claude lane wrappers, and one generic temporary-specialist adapter
+(eleven Claude adapters total), but does not commit project-bound generated
+smoke agents for itself. Consuming repositories own their generated copies and
+must regenerate or refresh them whenever template behavior changes.
 
 Users can also copy `qa-suite/assets/qa-context-template.md` manually.
+
+`Temporary specialist registry` is optional. Leave it `N/A` unless a material
+project risk is unowned by all ten persistent lanes. Existing contexts without
+the field remain valid. When used, it names one tracked repository-relative
+JSON file whose content-addressed identities are resolved exactly; see
+`qa-suite/references/temporary-specialist-registry.md`.
 
 Commit `qa-context.md`; it is shared team configuration.
 
@@ -115,6 +123,9 @@ full release audit
 run Bob QA quick mode on the changed UI
 check API contract behavior
 baseline performance for this project
+test deterministic failure and recovery behavior
+verify rollout identity and rollback on the disposable target
+check stored-data invariants across this migration
 ```
 
 When the request is unclear, qa-suite asks whether this is a routine pass, UI review, or release audit instead of running everything.
@@ -125,16 +136,46 @@ When the request is unclear, qa-suite asks whether this is a routine pass, UI re
 | Every PR / merge candidate | `smoke-qa`; add `regression-qa` when shipped behavior, contracts, configuration, or artifacts can regress | `regression-qa` when no deliverable behavior can change; full audits |
 | UI-touching change | add `bob-qa` (quick mode) | full mode unless explicitly requested |
 | Backend/API-touching change | add `api-qa`; add `bob-qa` when a user-facing consumer can change | UI lanes with no affected consumer |
-| Before a release | `smoke-qa`, then every applicable release lane: `bob-qa` (full) for a user-facing surface, `performance-qa` for a runtime performance surface, `security-qa` for a dependency or exposure surface, `api-qa` for an API, `compatibility-qa` for a supported platform matrix | lanes whose primary risk is absent |
-| Dependency updates | `security-qa` when the dependency is shipped or executed; `regression-qa` when build or behavior can change | lanes with no affected dependency risk |
+| Reliability-risk change | add `reliability-qa` for material retry, degraded-mode, external-dependency, failover, recovery-objective, resilience, or alerting risk | when no post-start continuity or recovery risk is affected |
+| Deployment-risk change | add `deployment-qa` for material packaging, environment-configuration, deployment-automation, install/upgrade, health-verification, migration-execution, or rollback risk | when no deployment procedure or artifact/configuration identity risk is affected |
+| Persistent-data change | add `data-integrity-qa` for material write, transaction, concurrency, schema, import/export, backup, restore, or recovery risk | when no stored-state invariant or durability risk is affected |
+| Before a release | `smoke-qa`, then every applicable release lane: `bob-qa` (full) for a user-facing surface, `performance-qa` for a runtime performance surface, `reliability-qa` for a post-start continuity or recovery surface, `deployment-qa` for a delivery or rollback surface, `data-integrity-qa` for a persistent-data surface, `security-qa` for a dependency or exposure surface, `api-qa` for an API, `compatibility-qa` for a supported platform matrix | lanes whose primary risk is absent |
+| Dependency updates | `security-qa` when the dependency is shipped or executed; `reliability-qa` when an external runtime dependency creates material failure or recovery risk; `regression-qa` when build or behavior can change | lanes with no affected dependency risk |
 | First run on a new project | `smoke-qa`; add `bob-qa` (full) only for a user-facing surface and `performance-qa` baseline framing only for a runtime performance surface | inapplicable surfaces and baseline comparisons that do not exist |
 | Post-fix cycle with unresolved findings | freeze and rebuild; `smoke-qa`; one confirmation mission per finding through its originating lane; impact-scoped regression | full recertification unless explicitly requested as a release audit |
 
 The broad release, first-run, PR, dependency, and backend/API triggers are impact-scoped. A full release audit means every applicable lane, not every lane regardless of the project's surfaces.
 
+Reliability, deployment, and data-integrity QA are smoke-gated, selected only
+for material matching risk, and default to 60 minutes with an explicit recorded
+15–240-minute override. Smoke owns startup; reliability owns post-start
+failure, degradation, recovery, and alerts. Performance owns speed and resource
+use. Deployment owns artifact/configuration identity and procedure; data
+integrity owns state correctness across it. API owns wire behavior, security
+owns unauthorized modification, and regression owns history; data integrity
+owns stored invariants, accidental corruption, transaction safety, and
+recoverability.
+
+A temporary specialist is selected only when a material risk remains unowned
+by all ten lanes. It uses one exact immutable registry identity and remains
+outside the persistent roster.
+
+Finding-ledger schema v2 is canonical for empty ledgers and accepts all ten
+persistent identities plus exact registry-resolved temporary identities. A
+non-empty v1 ledger remains valid and writable by its original seven lanes.
+Selecting a new persistent or temporary identity against v1 stops before
+dispatch and prints the exact compare-and-swap migration command. Temporary
+findings default to `uncertain` sensitivity and redacted or sidecar-only
+storage until explicit human clearance permits publication.
+
 Run order matters: smoke first, always. If smoke is `No-Go` or `Blocked`, deeper agents stop because they require an exercised smoke target.
 
 Post-fix runs bind every report to one frozen candidate. They confirm each unresolved finding through its originating lane, mark older-candidate evidence as superseded, and run only the regression lanes justified by the fix's impact. Routine discovery runs receive no finding manifest.
+
+A temporary finding always confirms through the same exact historical
+identity. If that definition is missing, confirmation is named `Blocked`, the
+lifecycle row stays unchanged, and another entry with the same slug is never
+substituted.
 
 ## Orchestration Model
 
@@ -147,12 +188,20 @@ semantic steering. They are not credentials, certification, guaranteed
 expertise, or a substitute for qualified human assessment. Operational rules
 and evidence outrank the role title.
 
-The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or `Blocked`, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
+The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or `Blocked`, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `reliability-qa`, `deployment-qa`, `data-integrity-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
 
 Lane selection follows the affected risks or the user's explicit request. The
 orchestrator records a brief reason for every selected lane and any expected
 lane it skips, but keeps those reasons out of the specialist prompt so they do
 not steer the result.
+
+For a temporary specialist, the root validates the tracked registry, selects
+one exact content-addressed identity, and records a run-specific rationale. The
+specialist receives only the rationale-free dispatch projection; it never
+receives `selection_criteria`, `definition_rationale`, sibling definitions, or
+the run-specific rationale. Direct generic invocation, an incomplete envelope,
+failed exact resolution, identity digest drift, or unconstrained scope is
+refused before project inspection.
 
 Each QA subagent receives only project-visible context: `qa-context.md`, relevant repo docs named there, the matching platform checklist, its own lane instructions, the severity/priority matrix when applicable, the report folder, and the user's scoped QA request. Subagents do not inherit the implementation agent's prior context, conversation history, memory, unstated assumptions, or explanation of how the feature should work. `bob-qa` is especially isolated so it can keep a fresh-user mindset; `smoke-qa` is independent evidence, not orchestrator self-certification.
 
@@ -163,8 +212,10 @@ regression corpus is allowed. Scope and manifest values remain subject to the
 single canonical verbatim-dispatch rule in `qa-suite/SKILL.md`.
 
 During synthesis, the orchestrator validates evidence, keeps assumptions
-separate and verdict-neutral, deduplicates through the finding-ledger matching
-contract, and names unresolved factual or recommendation conflicts. Lane
+separate and verdict-neutral, deduplicates demonstrated defects through the
+finding-ledger matching contract, retains the first owning identity, attaches
+later reports as provenance, and names unresolved factual or recommendation
+conflicts. Lane
 results remain visible separately from the orchestrator-owned final assessment
 or final release assessment. Reports and summaries preserve useful evidence
 shape while redacting credentials, sessions, personal data, private
@@ -208,16 +259,21 @@ Codex skill instructions can request delegation, so qa-suite does not need separ
 
 Codex subagents inherit the parent task's sandbox and permission mode. Choose the parent permission mode before dispatch and keep QA subagents read-only except for their own report and evidence files under the configured QA folder.
 
+Codex remains wrapperless for temporary specialists. The root resolves the
+same exact registry projection and dispatches a fresh constrained child with
+no inherited conversation. The resolved `temporary-qa-...` identity—not a
+generic adapter name—appears in its report and ledger proposals.
+
 ## Plugin-Shipped Agents vs Repo-Local Project Agents
 
 qa-suite involves two different agent mechanisms per host. Don't confuse them.
 
 | | Plugin-shipped (installed with qa-suite) | Repo-local (generated at project init) |
 |---|---|---|
-| Claude Code | Generic lane subagents from the plugin's `.claude/agents/` directory (`smoke-qa`, `regression-qa`, ...). Lowest lookup priority; project-agnostic; get their project binding from the orchestrator's dispatch prompt. | `.claude/agents/<project>-smoke-qa.md` — a project subagent (Markdown + YAML frontmatter, higher priority than plugin agents), pre-bound to this repo's `qa-context.md` and committed with the repo. |
+| Claude Code | Ten persistent lane wrappers plus one generic temporary-specialist adapter from the plugin's `.claude/agents/` directory. Eleven adapters total; the generic adapter is not a lane and refuses a missing exact-identity envelope. Lowest lookup priority; project-agnostic; get their project binding from the orchestrator's dispatch prompt. | `.claude/agents/<project>-smoke-qa.md` — a project subagent (Markdown + YAML frontmatter, higher priority than plugin agents), pre-bound to this repo's `qa-context.md` and committed with the repo. |
 | Codex | qa-suite is a plugin **skill** — prompt instructions the main task follows and delegates from. Skills are not agent definitions. | `.codex/agents/<project>-smoke-qa.toml` — a Codex **custom agent** (TOML with `name`, `description`, `developer_instructions`), directly spawnable and committed with the repo. |
 
-Use plugin-shipped agents for orchestrated qa-suite runs — they update with the plugin and cover every lane. Use the generated repo-local agents when you want to invoke the smoke lane directly without orchestration, share the project's QA entry point with the team through git, or work in a session where the plugin isn't installed.
+Use plugin-shipped agents for orchestrated qa-suite runs — they update with the plugin and cover every persistent lane plus exact registered temporary specialists. Use the generated repo-local agents when you want to invoke the smoke lane directly without orchestration, share the project's QA entry point with the team through git, or work in a session where the plugin isn't installed.
 
 Invoking the generated agents later:
 
@@ -233,10 +289,17 @@ Generated agents are deliberately narrow: smoke only, `qa-context.md` first, def
 | `smoke-qa` | Release verification engineer | Does this build come up and do the declared critical paths respond? |
 | `regression-qa` | Regression and change-impact QA engineer | Did this change break something that worked? |
 | `bob-qa` | End-user behavior, usability, and accessibility reviewer | Is the UI/UX usable and accessible for a fresh user? |
-| `performance-qa` | Performance and reliability QA engineer | Is it fast enough, and is that getting worse? |
+| `performance-qa` | Performance QA engineer | Is it fast enough, and is that getting worse? |
+| `reliability-qa` | Reliability QA engineer | Does the system fail, degrade, recover, and alert safely under its documented operating conditions? |
+| `deployment-qa` | Deployment QA engineer | Can the system be configured, deployed, verified, and rolled back safely and repeatedly? |
+| `data-integrity-qa` | Data integrity QA engineer | Do writes, migrations, concurrency, backup, and recovery preserve the expected data state? |
 | `security-qa` | Application security QA engineer performing a hygiene review | Are there any cheap-to-catch security hygiene issues? |
 | `api-qa` | API contract and integration QA engineer | Does the API honor its contract, independent of the UI? |
 | `compatibility-qa` | Platform compatibility QA engineer | Does it behave the same across the platform matrix? |
+
+These are exactly ten persistent lanes. Temporary specialists are dynamic,
+project-local identities and never appear in this roster or the closed
+maintainer evaluation corpus.
 
 ## Platform Checklists
 

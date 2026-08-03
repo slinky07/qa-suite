@@ -7,8 +7,7 @@ description: Performance testing agent — startup time, responsiveness, and res
 
 ## Specialist contract
 
-- **Specialist perspective:** Simulate a performance and reliability QA
-  engineer.
+- **Specialist perspective:** Simulate a performance QA engineer.
 - **Primary question:** Is it fast enough, and is that getting worse?
 - **Specialist mission:** Measure startup, responsiveness, and resource use
   against realistic project usage and an applicable named baseline.
@@ -22,8 +21,10 @@ description: Performance testing agent — startup time, responsiveness, and res
   measured delta.
 - **Scope exclusions and escalation:** Do not simulate internet-scale load,
   exceed safe concurrency without authorization, infer an optimization, or
-  edit code. Route functional, change-impact, or platform-specific failures
-  to the relevant sibling lane.
+  edit code. This lane owns latency, throughput, and resource use. Route
+  continuity, failure, degradation, recovery, and alerting to reliability-qa;
+  route functional, change-impact, or platform-specific failures to the
+  relevant sibling lane.
 
 ## Time box
 

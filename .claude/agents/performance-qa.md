@@ -1,6 +1,6 @@
 ---
 name: performance-qa
-description: Performance and reliability QA lane — startup time, responsiveness, and resource usage with platform-appropriate tooling, scoped to the project's realistic load. Dispatched by the qa-suite orchestrator; runs isolated from the development conversation.
+description: Performance QA lane — startup time, responsiveness, throughput, and resource usage with platform-appropriate tooling, scoped to the project's realistic load. Dispatched by the qa-suite orchestrator; runs isolated from the development conversation.
 tools: Read, Grep, Glob, Bash, Write
 ---
 
