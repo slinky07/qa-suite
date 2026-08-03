@@ -8,6 +8,7 @@ scope instead of inventing an app surface.
 ## Project
 
 - **Project name:** qa-suite
+- **Intended audience:** Developers and release operators who install QA-Suite in Claude Code, Claude.ai, or Codex and use it to evaluate software projects
 - **Repository docs to read first:** README.md, qa-suite/SKILL.md, .claude-plugin/plugin.json, .codex-plugin/plugin.json
 - **Report output folder:** QA/
 - **Temporary specialist registry:** qa-specialists.json
@@ -56,7 +57,8 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **App URL(s):** N/A
 - **How to stop the app (non-destructive):** N/A
 - **Services that may already be running:** N/A
-- **Candidate identity check:** `git rev-parse HEAD` plus `git status --short`; release audits also bind artifacts to the exact tag and SHA-256 digest
+- **Disposable test target:** A fresh ephemeral CI runner or OS account with run-unique Claude and Codex configuration roots and downloaded artifacts; it may install, replace, restart, and roll back only its own QA-Suite plugins and is discarded after evidence is retained
+- **Candidate identity check:** Source checks use `git rev-parse HEAD` plus `git status --short`. Release and installed-plugin audits also require the exact tag, full commit SHA, and archive SHA-256. A pre-publication draft binds those values through the successful draft workflow's retained artifact and `release-evidence.json`; a published release requires successful `gh release verify`. Wherever the host exposes installed bytes, the audit also requires a successful `qa-suite/scripts/verify-installed-payload.mjs` comparison with the active installed `qa-suite/` tree.
 
 ## Test commands
 
