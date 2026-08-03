@@ -15,10 +15,31 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const scriptPath = fileURLToPath(import.meta.url);
-const schemaPath = resolve(
+const schemaV2Path = resolve(
   dirname(scriptPath),
   "../references/finding-ledger.schema.json",
 );
+const schemaV1Path = resolve(
+  dirname(scriptPath),
+  "../references/finding-ledger-v1.schema.json",
+);
+const LEGACY_LANES = [
+  "smoke-qa",
+  "regression-qa",
+  "bob-qa",
+  "performance-qa",
+  "security-qa",
+  "api-qa",
+  "compatibility-qa",
+];
+const SHIPPED_LANES = [
+  ...LEGACY_LANES,
+  "reliability-qa",
+  "deployment-qa",
+  "data-integrity-qa",
+];
+const TEMPORARY_SPECIALIST_PATTERN =
+  /^temporary-qa-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{64}$/u;
 const REQUIRED_FIELDS = [
   "id",
   "schema_version",
@@ -628,8 +649,9 @@ export function validateSchemaContract(schema) {
     throw new Error("finding ledger schema header is invalid");
   }
   assertArrayEqual(schema.required, REQUIRED_FIELDS, "schema required fields");
-  if (schema.properties?.schema_version?.const !== 1) {
-    throw new Error("schema_version must be const 1");
+  const schemaVersion = schema.properties?.schema_version?.const;
+  if (![1, 2].includes(schemaVersion)) {
+    throw new Error("schema_version must be const 1 or 2");
   }
   let idPattern;
   try {
@@ -637,14 +659,43 @@ export function validateSchemaContract(schema) {
   } catch (error) {
     throw new Error(`schema id pattern is invalid: ${error.message}`);
   }
-  for (const property of [
-    "lane",
-    "severity",
-    "priority",
-    "status",
-  ]) {
+  for (const property of ["severity", "priority", "status"]) {
     if (!Array.isArray(schema.properties?.[property]?.enum)) {
       throw new Error(`schema ${property} enum is missing`);
+    }
+  }
+  const laneContracts = [
+    [schema.properties?.lane, "schema lane"],
+    [schema.$defs?.report_pointer?.properties?.lane, "schema report lane"],
+  ];
+  const acceptedLanes = schemaVersion === 1 ? LEGACY_LANES : SHIPPED_LANES;
+  for (const [contract, label] of laneContracts) {
+    if (!contract) throw new Error(`${label} contract is missing`);
+    for (const lane of acceptedLanes) {
+      assertSchemaValue(lane, contract, schema, label);
+    }
+    for (const lane of SHIPPED_LANES.filter(
+      (candidate) => !acceptedLanes.includes(candidate),
+    )) {
+      try {
+        assertSchemaValue(lane, contract, schema, label);
+      } catch {
+        continue;
+      }
+      throw new Error(
+        `${label} accepts unsupported version-${schemaVersion} lane ${lane}`,
+      );
+    }
+    const temporary =
+      "temporary-qa-cache-failover-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    let acceptsTemporary = true;
+    try {
+      assertSchemaValue(temporary, contract, schema, label);
+    } catch {
+      acceptsTemporary = false;
+    }
+    if (acceptsTemporary !== (schemaVersion === 2)) {
+      throw new Error(`${label} temporary identity contract is invalid`);
     }
   }
   for (const property of ["classification", "storage"]) {
@@ -656,19 +707,32 @@ export function validateSchemaContract(schema) {
       throw new Error(`schema sensitivity ${property} enum is missing`);
     }
   }
-  return { idPattern };
+  return { idPattern, schemaVersion };
 }
 
-async function loadSchema() {
-  const source = await readFile(schemaPath, "utf8");
-  const schema = parseJsonStrict(source, "finding-ledger.schema.json");
-  return { schema, ...validateSchemaContract(schema) };
+async function loadSchemas() {
+  const [v1Source, v2Source] = await Promise.all([
+    readFile(schemaV1Path, "utf8"),
+    readFile(schemaV2Path, "utf8"),
+  ]);
+  const v1 = parseJsonStrict(v1Source, "finding-ledger-v1.schema.json");
+  const v2 = parseJsonStrict(v2Source, "finding-ledger.schema.json");
+  validateSchemaContract(v1);
+  validateSchemaContract(v2);
+  return new Map([
+    [1, v1],
+    [2, v2],
+  ]);
 }
 
 function assertEnum(schema, property, value, label) {
   if (!schema.properties[property].enum.includes(value)) {
     throw new Error(`${label} has unsupported ${property}: ${value}`);
   }
+}
+
+function assertLane(schema, value, label) {
+  assertSchemaValue(value, schema.properties.lane, schema, `${label}.lane`);
 }
 
 function assertNonEmptyString(value, label) {
@@ -944,6 +1008,7 @@ function assertSensitivity(row, schema, context, label) {
 
   const securityHigh =
     row.lane === "security-qa" && ["S1", "S2"].includes(row.severity);
+  const temporarySpecialist = TEMPORARY_SPECIALIST_PATTERN.test(row.lane);
   if (
     securityHigh &&
     !["security-s1-s2", "human-cleared"].includes(classification)
@@ -958,6 +1023,14 @@ function assertSensitivity(row, schema, context, label) {
     storage === "committed"
   ) {
     throw new Error(`${label} public security S1/S2 record must be redacted`);
+  }
+  if (
+    temporarySpecialist &&
+    !["uncertain", "human-cleared"].includes(classification)
+  ) {
+    throw new Error(
+      `${label} temporary specialist finding requires uncertain or human-cleared sensitivity`,
+    );
   }
 
   if (storage === "committed") {
@@ -974,7 +1047,7 @@ function assertSensitivity(row, schema, context, label) {
 }
 
 export function validateFindingRows(rows, schema, context) {
-  const { idPattern } = validateSchemaContract(schema);
+  const { idPattern, schemaVersion } = validateSchemaContract(schema);
   if (!Array.isArray(rows)) {
     throw new Error("finding rows must be an array");
   }
@@ -985,7 +1058,7 @@ export function validateFindingRows(rows, schema, context) {
     const label = `finding row ${index + 1}`;
     assertSchemaValue(row, schema, schema, label);
     assertExactKeys(row, REQUIRED_FIELDS, label);
-    if (row.schema_version !== 1) {
+    if (row.schema_version !== schemaVersion) {
       throw new Error(`${label} has unsupported schema_version`);
     }
     assertNonEmptyString(row.id, `${label}.id`);
@@ -996,7 +1069,8 @@ export function validateFindingRows(rows, schema, context) {
       throw new Error(`duplicate finding id: ${row.id}`);
     }
     ids.add(row.id);
-    for (const property of ["lane", "severity", "priority", "status"]) {
+    assertLane(schema, row.lane, label);
+    for (const property of ["severity", "priority", "status"]) {
       assertEnum(schema, property, row[property], label);
     }
     for (const property of [
@@ -1031,7 +1105,12 @@ export function validateFindingRows(rows, schema, context) {
     row.reports.forEach((report, reportIndex) => {
       const reportLabel = `${label}.reports[${reportIndex}]`;
       assertExactKeys(report, REPORT_POINTER_FIELDS, reportLabel);
-      assertEnum(schema, "lane", report.lane, reportLabel);
+      assertSchemaValue(
+        report.lane,
+        schema.$defs.report_pointer.properties.lane,
+        schema,
+        `${reportLabel}.lane`,
+      );
       assertSafeString(report.pointer, `${reportLabel}.pointer`);
       assertSafeString(report.candidate, `${reportLabel}.candidate`);
       if (reportPointers.has(report.pointer)) {
@@ -1101,6 +1180,15 @@ function extractField(markdown, label) {
   ).exec(markdown);
   if (!match) throw new Error(`qa-context.md is missing ${label}`);
   return match[1].replace(/[ \t]*<!--.*$/, "").trim();
+}
+
+function extractOptionalField(markdown, label) {
+  try {
+    return extractField(markdown, label);
+  } catch (error) {
+    if (error.message === `qa-context.md is missing ${label}`) return undefined;
+    throw error;
+  }
 }
 
 function insideRepository(repositoryRoot, path, label) {
@@ -1173,11 +1261,40 @@ async function loadContext(repositoryRoot, contextPath) {
   if (components.size !== componentValues.length) {
     throw new Error("Named components must be unique");
   }
+  const configuredRegistry = extractOptionalField(
+    markdown,
+    "Temporary specialist registry",
+  );
+  let registryGitPath;
+  let registryPath;
+  if (configuredRegistry && configuredRegistry !== "N/A") {
+    if (isAbsolute(configuredRegistry)) {
+      throw new Error("temporary specialist registry path must be repo-relative");
+    }
+    registryPath = resolve(repositoryRoot, configuredRegistry);
+    registryGitPath = insideRepository(
+      repositoryRoot,
+      registryPath,
+      "temporary specialist registry",
+    );
+    const registryReportRelative = relative(reportPath, registryPath);
+    if (
+      registryReportRelative === "" ||
+      (!registryReportRelative.startsWith(`..${sep}`) &&
+        !isAbsolute(registryReportRelative))
+    ) {
+      throw new Error(
+        "temporary specialist registry must not resolve inside the report folder",
+      );
+    }
+  }
   return {
     components,
     contextPath: resolvedContext,
     ledgerGitPath,
     ledgerPath,
+    registryGitPath,
+    registryPath,
     repoVisibility,
   };
 }
@@ -1247,12 +1364,76 @@ async function assertSidecarBoundary(repositoryRoot) {
   await assertRegularInRepository(repositoryRoot, sidecarPath, "sensitive sidecar");
 }
 
+function schemaVersionForRows(rows) {
+  if (rows.length === 0) return 2;
+  const versions = new Set(rows.map((row) => row?.schema_version));
+  if (versions.size !== 1) {
+    throw new Error("finding ledger cannot mix schema versions");
+  }
+  const [version] = versions;
+  if (![1, 2].includes(version)) {
+    throw new Error(`unsupported finding ledger schema_version: ${version}`);
+  }
+  return version;
+}
+
+function temporaryIdentities(rows) {
+  return new Set(
+    rows.flatMap((row) => [row.lane, ...row.reports.map(({ lane }) => lane)])
+      .filter((lane) => TEMPORARY_SPECIALIST_PATTERN.test(lane)),
+  );
+}
+
+async function resolveTemporaryIdentities(
+  rows,
+  contextContract,
+  { allowMissing = false } = {},
+) {
+  const identities = temporaryIdentities(rows);
+  if (identities.size === 0) return [];
+  if (!contextContract.registryGitPath) {
+    if (allowMissing) return [...identities].sort();
+    throw new Error(
+      "temporary specialist findings require Temporary specialist registry in qa-context.md",
+    );
+  }
+  const { validateRegistryProject } = await import("./specialist-registry.mjs");
+  let registry;
+  try {
+    registry = await validateRegistryProject({
+      repository: contextContract.repositoryRoot,
+      context: relative(
+        contextContract.repositoryRoot,
+        contextContract.contextPath,
+      ),
+      registry: contextContract.registryGitPath,
+    });
+  } catch (error) {
+    if (allowMissing && error.code === "ENOENT") {
+      return [...identities].sort();
+    }
+    throw error;
+  }
+  const registered = new Set(
+    registry.registry.specialists.map(({ id }) => id),
+  );
+  const missing = [...identities].filter((id) => !registered.has(id)).sort();
+  if (missing.length > 0 && !allowMissing) {
+    throw new Error(
+      `temporary specialist identities are not registered: ${missing.join(", ")}`,
+    );
+  }
+  return missing;
+}
+
 export async function validateProject({
   repository = ".",
   context = "qa-context.md",
+  allowMissingTemporary = false,
 }) {
   const repositoryRoot = await realpath(resolve(repository));
   const contextContract = await loadContext(repositoryRoot, context);
+  contextContract.repositoryRoot = repositoryRoot;
   await assertRegularInRepository(
     repositoryRoot,
     contextContract.ledgerPath,
@@ -1270,12 +1451,19 @@ export async function validateProject({
   );
   await assertSidecarBoundary(repositoryRoot);
   const source = await readFile(contextContract.ledgerPath, "utf8");
-  const { schema } = await loadSchema();
   const rows = parseJsonl(source, contextContract.ledgerGitPath);
+  const schemaVersion = schemaVersionForRows(rows);
+  const schemas = await loadSchemas();
+  const schema = schemas.get(schemaVersion);
   const unknownComponents = validateFindingRows(
     rows,
     schema,
     contextContract,
+  );
+  const missingTemporarySpecialists = await resolveTemporaryIdentities(
+    rows,
+    contextContract,
+    { allowMissing: allowMissingTemporary },
   );
   return {
     ...contextContract,
@@ -1283,6 +1471,8 @@ export async function validateProject({
     repositoryRoot,
     rows,
     schema,
+    schemaVersion,
+    missingTemporarySpecialists,
     unknownComponents,
   };
 }
@@ -1325,6 +1515,47 @@ export function selectManifest(rows, mode) {
     return rows.filter(({ status }) => status === "fixed");
   }
   throw new Error("mode must be discovery, confirmation, or regression");
+}
+
+export async function preflightLane({
+  repository = ".",
+  context = "qa-context.md",
+  lane,
+}) {
+  assertNonEmptyString(lane, "lane");
+  const project = await validateProject({ repository, context });
+  const schemas = await loadSchemas();
+  const v2Schema = schemas.get(2);
+  assertSchemaValue(
+    lane,
+    v2Schema.properties.lane,
+    v2Schema,
+    "dispatch lane",
+  );
+  if (TEMPORARY_SPECIALIST_PATTERN.test(lane)) {
+    if (!project.registryGitPath) {
+      throw new Error(
+        "temporary specialist dispatch requires Temporary specialist registry in qa-context.md",
+      );
+    }
+    const { resolveSpecialist } = await import("./specialist-registry.mjs");
+    await resolveSpecialist({
+      repository: project.repositoryRoot,
+      context: relative(project.repositoryRoot, project.contextPath),
+      registry: project.registryGitPath,
+      id: lane,
+    });
+  }
+  if (project.schemaVersion === 1 && !LEGACY_LANES.includes(lane)) {
+    const contextPath = relative(
+      project.repositoryRoot,
+      project.contextPath,
+    );
+    throw new Error(
+      `finding ledger schema version 1 cannot record ${lane}; run node ${JSON.stringify(scriptPath)} migrate --repo ${JSON.stringify(project.repositoryRoot)} --context ${JSON.stringify(contextPath)} --to 2 --expected-sha256 ${project.digest}`,
+    );
+  }
+  return { ...project, lane };
 }
 
 function assertLedgerTransition(currentRows, candidateRows) {
@@ -1427,6 +1658,7 @@ export async function replaceLedger({
   const candidateSource = await readFile(resolve(candidatePath), "utf8");
   const candidateRows = parseJsonl(candidateSource, candidatePath);
   validateFindingRows(candidateRows, project.schema, project);
+  await resolveTemporaryIdentities(candidateRows, project);
   const lockPath = `${project.ledgerPath}.lock`;
   const temporaryPath = `${project.ledgerPath}.${process.pid}.${Date.now()}.tmp`;
   let lock;
@@ -1457,8 +1689,108 @@ export async function replaceLedger({
     const currentRows = parseJsonl(currentSource, project.ledgerGitPath);
     validateFindingRows(currentRows, project.schema, project);
     validateFindingRows(candidateRows, project.schema, project);
+    await resolveTemporaryIdentities(currentRows, project);
+    await resolveTemporaryIdentities(candidateRows, project);
     assertLedgerTransition(currentRows, candidateRows);
 
+    temporary = await open(temporaryPath, "wx", 0o644);
+    await temporary.writeFile(candidateSource);
+    await temporary.sync();
+    await temporary.close();
+    temporary = undefined;
+    await rename(temporaryPath, project.ledgerPath);
+  } finally {
+    if (temporary) await temporary.close();
+    await unlink(temporaryPath).catch((error) => {
+      if (error.code !== "ENOENT") throw error;
+    });
+    if (lock) {
+      await lock.close();
+      await unlink(lockPath).catch((error) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+    }
+  }
+  return validateProject({ repository, context });
+}
+
+export async function migrateLedger({
+  repository = ".",
+  context = "qa-context.md",
+  toVersion,
+  expectedDigest,
+}) {
+  if (String(toVersion) !== "2") {
+    throw new Error("finding ledger migration target must be 2");
+  }
+  assertNonEmptyString(expectedDigest, "expectedDigest");
+  if (!/^[0-9a-f]{64}$/u.test(expectedDigest)) {
+    throw new Error("expectedDigest must be a lowercase SHA-256 digest");
+  }
+  const project = await validateProject({ repository, context });
+  if (project.rows.length === 0) {
+    throw new Error("an empty finding ledger starts at schema version 2; migration is not required");
+  }
+  if (project.schemaVersion !== 1) {
+    throw new Error(`finding ledger is already schema version ${project.schemaVersion}`);
+  }
+  const schemas = await loadSchemas();
+  const v1Schema = schemas.get(1);
+  const v2Schema = schemas.get(2);
+  const lockPath = `${project.ledgerPath}.lock`;
+  const temporaryPath = `${project.ledgerPath}.${process.pid}.${Date.now()}.tmp`;
+  let lock;
+  let temporary;
+  try {
+    lock = await open(lockPath, "wx", 0o600);
+    await lock.writeFile(
+      `${JSON.stringify({
+        pid: process.pid,
+        created_at: new Date().toISOString(),
+        expected_digest: expectedDigest,
+        migration: "1-to-2",
+      })}\n`,
+    );
+    await lock.sync();
+
+    await assertRegularInRepository(
+      project.repositoryRoot,
+      project.ledgerPath,
+      "finding ledger",
+    );
+    const currentSource = await readFile(project.ledgerPath, "utf8");
+    const currentDigest = sha256(currentSource);
+    if (currentDigest !== expectedDigest) {
+      throw new Error(
+        `finding ledger changed concurrently: expected ${expectedDigest}, observed ${currentDigest}`,
+      );
+    }
+    const currentRows = parseJsonl(currentSource, project.ledgerGitPath);
+    if (schemaVersionForRows(currentRows) !== 1) {
+      throw new Error("finding ledger schema version changed during migration");
+    }
+    validateFindingRows(currentRows, v1Schema, project);
+    const candidateRows = currentRows.map((row) => ({
+      ...row,
+      schema_version: 2,
+    }));
+    validateFindingRows(candidateRows, v2Schema, project);
+    for (let index = 0; index < currentRows.length; index += 1) {
+      const current = currentRows[index];
+      const candidate = candidateRows[index];
+      for (const field of REQUIRED_FIELDS.filter(
+        (property) => property !== "schema_version",
+      )) {
+        if (!valuesEqual(current[field], candidate[field])) {
+          throw new Error(
+            `migration changed finding ${current.id} field ${field}`,
+          );
+        }
+      }
+    }
+    const candidateSource = `${candidateRows
+      .map((row) => JSON.stringify(row))
+      .join("\n")}\n`;
     temporary = await open(temporaryPath, "wx", 0o644);
     await temporary.writeFile(candidateSource);
     await temporary.sync();
@@ -1516,7 +1848,7 @@ async function main() {
     console.log(
       JSON.stringify({
         ledger: result.ledgerGitPath,
-        schema_version: 1,
+        schema_version: result.schemaVersion,
         rows: result.rows.length,
         sha256: result.digest,
         unknown_components: result.unknownComponents,
@@ -1524,10 +1856,44 @@ async function main() {
     );
     return;
   }
+  if (command === "preflight") {
+    const result = await preflightLane({
+      ...common,
+      lane: options.lane,
+    });
+    console.log(
+      JSON.stringify({
+        lane: result.lane,
+        ledger: result.ledgerGitPath,
+        schema_version: result.schemaVersion,
+        sha256: result.digest,
+      }),
+    );
+    return;
+  }
   if (command === "manifest") {
-    const result = await validateProject(common);
+    const result = await validateProject({
+      ...common,
+      allowMissingTemporary: true,
+    });
+    const missing = new Set(result.missingTemporarySpecialists);
     for (const row of selectManifest(result.rows, options.mode)) {
-      console.log(JSON.stringify(row));
+      const unresolved = [...temporaryIdentities([row])]
+        .filter((id) => missing.has(id))
+        .sort();
+      if (unresolved.length > 0) {
+        console.log(
+          JSON.stringify({
+            type: "blocked",
+            disposition: "Blocked",
+            finding_id: row.id,
+            lane: row.lane,
+            blocker: `Exact temporary specialist contract is unavailable: ${unresolved.join(", ")}`,
+          }),
+        );
+      } else {
+        console.log(JSON.stringify(row));
+      }
     }
     return;
   }
@@ -1547,7 +1913,26 @@ async function main() {
     );
     return;
   }
-  throw new Error("command must be init, validate, manifest, or write");
+  if (command === "migrate") {
+    const result = await migrateLedger({
+      ...common,
+      toVersion: options.to,
+      expectedDigest: options["expected-sha256"],
+    });
+    console.log(
+      JSON.stringify({
+        ledger: result.ledgerGitPath,
+        schema_version: result.schemaVersion,
+        rows: result.rows.length,
+        sha256: result.digest,
+        unknown_components: result.unknownComponents,
+      }),
+    );
+    return;
+  }
+  throw new Error(
+    "command must be init, validate, preflight, manifest, write, or migrate",
+  );
 }
 
 if (

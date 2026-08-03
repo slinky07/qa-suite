@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/finding-ledger.schema.json",
+  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/finding-ledger-v1.schema.json",
   "title": "QA-Suite finding ledger row",
-  "description": "Schema version 2 for one current-state finding.jsonl row.",
+  "description": "Schema version 1 for one current-state finding.jsonl row.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -32,10 +32,18 @@
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
     },
     "schema_version": {
-      "const": 2
+      "const": 1
     },
     "lane": {
-      "$ref": "#/$defs/lane_identity"
+      "enum": [
+        "smoke-qa",
+        "regression-qa",
+        "bob-qa",
+        "performance-qa",
+        "security-qa",
+        "api-qa",
+        "compatibility-qa"
+      ]
     },
     "severity": {
       "enum": ["S1", "S2", "S3", "S4"]
@@ -232,28 +240,6 @@
     }
   ],
   "$defs": {
-    "lane_identity": {
-      "oneOf": [
-        {
-          "enum": [
-            "smoke-qa",
-            "regression-qa",
-            "bob-qa",
-            "performance-qa",
-            "security-qa",
-            "api-qa",
-            "compatibility-qa",
-            "reliability-qa",
-            "deployment-qa",
-            "data-integrity-qa"
-          ]
-        },
-        {
-          "type": "string",
-          "pattern": "^temporary-qa-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{64}$"
-        }
-      ]
-    },
     "defect_record": {
       "type": "object",
       "additionalProperties": false,
@@ -292,7 +278,15 @@
       "required": ["lane", "pointer", "candidate"],
       "properties": {
         "lane": {
-          "$ref": "#/$defs/lane_identity"
+          "enum": [
+            "smoke-qa",
+            "regression-qa",
+            "bob-qa",
+            "performance-qa",
+            "security-qa",
+            "api-qa",
+            "compatibility-qa"
+          ]
         },
         "pointer": {
           "type": "string",

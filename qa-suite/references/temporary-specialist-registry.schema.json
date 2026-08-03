@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/temporary-specialist-registry.schema.json",
+  "title": "QA-Suite temporary specialist registry",
+  "description": "Schema version 1 for durable content-addressed temporary QA specialists.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "specialists"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "specialists": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/specialist"
+      }
+    }
+  },
+  "$defs": {
+    "specialist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "specialist_perspective",
+        "primary_question",
+        "specialist_mission",
+        "priorities",
+        "decision_rules",
+        "evidence_requirements",
+        "scope_exclusions",
+        "selection_criteria",
+        "definition_rationale",
+        "time_box_minutes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^temporary-qa-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{64}$"
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "specialist_perspective": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "primary_question": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "specialist_mission": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "priorities": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "decision_rules": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "evidence_requirements": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "scope_exclusions": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "selection_criteria": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "definition_rationale": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "time_box_minutes": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 240
+        }
+      }
+    },
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_empty_string_list": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/non_empty_string"
+      }
+    }
+  }
+}

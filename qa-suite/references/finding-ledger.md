@@ -27,15 +27,19 @@ commit; sanitize it first.
 - First-run setup runs
   `git check-ignore --no-index -- <ledger-path>`. Exit status 0 is a hard
   failure because the path is ignored.
-- An empty ledger is a zero-byte file. Every non-empty line is exactly one
-  JSON object conforming to `finding-ledger.schema.json`. Blank, comment,
-  header, array, and tombstone lines are invalid.
+- An empty ledger is a zero-byte file. Its first row uses schema version 2.
+  Every non-empty line is exactly one JSON object conforming to the schema for
+  its homogeneous file version. Blank, comment, header, array, and tombstone
+  lines are invalid.
 - IDs are unique and stable. The ordinary write path never deletes a row,
   renumbers an ID, or reuses an ID. A deletion requires a separate,
   schema-versioned governed migration. Git history is the audit log; the file
   holds only current rows.
-- `schema_version` is mandatory. A reader that does not support a row's
-  version fails before dispatch instead of guessing or rewriting it.
+- `schema_version` is mandatory. A ledger cannot mix versions. The frozen
+  `finding-ledger-v1.schema.json` accepts the original seven lanes. Canonical
+  `finding-ledger.schema.json` is version 2 and accepts all ten shipped lanes
+  plus registry-resolved temporary identities. A reader that does not support
+  a row's version fails before dispatch instead of guessing or rewriting it.
 
 The human commits the initial empty ledger with qa-context.md. On later runs,
 the orchestrator validates the entire file before lane dispatch. Missing,
@@ -85,7 +89,10 @@ candidate. Report-pointer identities are unique and never repurposed for a
 different candidate.
 
 The owning `lane` remains stable when another lane confirms the same defect.
-Each report pointer records its own lane.
+Each report pointer records its own lane. Version 2 accepts
+`temporary-qa-<slug>-<sha256>` only when the exact immutable identity resolves
+through the tracked registry declared by qa-context.md. A pattern match alone
+is never authorization.
 
 `sensitivity` is an auditable marker with three fields:
 
@@ -154,6 +161,9 @@ Visibility can change; committed history cannot be made private later.
   to redacted in every repository.
 - Uncertain sensitivity uses classification `uncertain` and resolves to
   redacted.
+- Every temporary-specialist finding defaults to `uncertain` and redacted or
+  sidecar-local storage. Only the existing human-clearance contract permits a
+  sanitized committed record.
 - `repo_visibility: public` always forces those defaults and can never loosen
   them. A public `security-qa` S1/S2 row remains redacted even after a human
   sanitization decision, so it does not enter the committed regression corpus.
@@ -198,11 +208,16 @@ point:
 ```sh
 node <qa-suite-root>/scripts/finding-ledger.mjs validate \
   --repo <target-repo> --context qa-context.md
+node <qa-suite-root>/scripts/finding-ledger.mjs preflight \
+  --repo <target-repo> --context qa-context.md --lane <exact-lane-id>
 node <qa-suite-root>/scripts/finding-ledger.mjs manifest \
   --repo <target-repo> --context qa-context.md --mode confirmation
 node <qa-suite-root>/scripts/finding-ledger.mjs write \
   --repo <target-repo> --context qa-context.md \
   --candidate <validated-jsonl> --expected-sha256 <original-digest>
+node <qa-suite-root>/scripts/finding-ledger.mjs migrate \
+  --repo <target-repo> --context qa-context.md \
+  --to 2 --expected-sha256 <original-digest>
 ```
 
 Validation resolves regular files canonically inside the repository, rejects
@@ -213,6 +228,20 @@ dependency-free schema interpreter implements every keyword used by the
 versioned schema, validates the schema itself before row evaluation, and fails
 closed when an unsupported keyword or format, invalid pattern, or empty
 applicator array appears.
+
+A non-empty version-1 ledger remains valid and writable by its original seven
+lanes. Selecting a new shipped or temporary lane stops before dispatch and
+the `preflight` command returns the exact required migration command. Migration
+uses the same exclusive lock and compare-and-swap discipline and changes only
+`schema_version` from 1 to 2. It rejects an empty ledger, mixed versions, stale
+digests, repeat migration, and downgrade. An empty ledger needs no migration.
+
+Version-2 validation resolves every temporary owner and report-provenance
+identity through the tracked JSON registry declared in `qa-context.md`, under
+the contract in `temporary-specialist-registry.md`. Ordinary validation and
+writes fail on a missing identity. A confirmation or regression manifest emits
+a named `Blocked` disposition for an unresolved historical identity, preserves
+the row, and never substitutes another entry with the same slug.
 
 The write command uses an exclusive lock plus compare-and-swap. Atomic rename
 alone is insufficient: a second writer with a stale digest fails instead of
