@@ -582,14 +582,13 @@ test("match fixtures merge cross-lane identity and split distinct defects", asyn
   );
 });
 
-test("configured ledger is canonical, tracked, empty, and non-ignored", async () => {
+test("configured ledger is canonical, tracked, valid, and non-ignored", async () => {
   const project = await validateProject({
     repository: fileURLToPath(repositoryRoot),
     context: "qa-context.md",
   });
   assert.equal(project.ledgerGitPath, "findings.jsonl");
   assert.equal(project.schemaVersion, 2);
-  assert.equal(project.rows.length, 0);
   assert.deepEqual(project.unknownComponents, []);
 });
 
