@@ -1,8 +1,9 @@
 # Lane evaluation contracts
 
-This directory documents the maintainer meta-testing contracts for Issue #30.
-It is not an eighth QA lane, does not ship in the QA-Suite archives, and does
-not change the behavior of any distributed lane.
+This directory documents maintainer meta-testing contracts established by
+Issue #30 and expanded to the ten-lane corpus by Issue #36. It is not a QA
+lane, does not ship in the QA-Suite archives, and does not change the behavior
+of any distributed lane.
 
 The machine authority for shared suite, case, lane, and closure contracts is
 `scripts/evaluation/contracts.mjs`;
@@ -868,10 +869,11 @@ checks prove deterministic fixture bytes and behavior only. They do not attest
 semantic opacity, host isolation, a Bob baseline, or any qualifying evaluation
 result.
 
-## Complete committed seven-lane corpus
+## Complete committed ten-lane corpus
 
 Together with the four Bob cases above, the reusable corpus contains exactly
-seven shipped lanes, sixteen opaque cases, and eight adversarial/control pairs:
+ten shipped lanes, twenty-two opaque cases, and eleven adversarial/control
+pairs:
 
 - `smoke-evaluation-v1` pairs two otherwise identical Recovery Console
   fixtures. Both start with HTTP 200 and a valid title; the adversarial action
@@ -883,6 +885,20 @@ seven shipped lanes, sixteen opaque cases, and eight adversarial/control pairs:
 - `performance-evaluation-v1` pairs two Journey Brief fixtures that differ only
   in whether the measured user task runs independent requests sequentially or
   concurrently.
+- `reliability-evaluation-v1` pairs two Dispatch Relay fixtures whose healthy
+  operation, bounded outage retries, safe degradation, dependency restoration,
+  and initial alert are identical. One resumes the major operation and resolves
+  the alert within REL-01; the other remains unavailable beyond the recovery
+  objective.
+- `deployment-evaluation-v1` pairs two Release Slot fixtures whose v1 and v2
+  artifact/configuration bytes and failed v2 verification are identical. One
+  rollback restores the exact pre-rollout identities and healthy state; the
+  other snapshots after replacement and leaves the failed candidate active.
+- `data-integrity-evaluation-v1` pairs two Settlement Transfer fixtures whose
+  uninterrupted acknowledged write succeeds. After the same deterministic
+  interruption between debit and credit, one recovery reaches the exact
+  two-record, digest, and total-100 state while the other retains a partial
+  acknowledged write with total 90.
 - `security-evaluation-v1` pairs two Status Board fixtures whose deployment
   guidance differs only in its forwarding-trust boundary.
 - `api-evaluation-v1` pairs two Delivery Queue fixtures whose identical retry
@@ -898,10 +914,17 @@ validate exact corpus bytes, isolated behavior, and deterministic non-qualifying
 scoring. Only fresh isolated runs of the unchanged lanes provide semantic
 evidence that a lane detected or missed the sealed defect.
 
+`tests/evaluation-operational-fixture-pairs.test.mjs` validates the three new
+pairs' exact fixture inventories, hashes, modes, role-neutral opacity checks,
+ordinary-path behavior, sole failure seams, zero-positive previews, and closed
+non-qualification fields. Temporary-specialist identities are permanently
+outside this fixed maintainer corpus; the default evaluator and snapshot CLI
+reject them even when the identity has a valid registry shape.
+
 Run the corpus-wide contract check with:
 
 ```sh
-node --test tests/evaluation-seven-lane-corpus.test.mjs
+node --test tests/evaluation-lane-corpus.test.mjs
 ```
 
 This check validates the exact suite/oracle inventory, manifest contracts,
@@ -1013,8 +1036,10 @@ four cases against the remediated subject and retain the before/after evidence.
 
 ## Remaining Issue #30 boundaries
 
-The complete seven-lane corpus is now committed. The following remain outside
-the non-qualifying maintainer infrastructure:
+The maintained ten-lane corpus is now committed. Historical Issue #30 closure
+records and retained seven-lane rerun evidence remain unchanged; Issue #36 adds
+the three operational pairs without reclassifying those records. The following
+remain outside the non-qualifying maintainer infrastructure:
 
 - a qualifying runtime boundary that authenticates controller state, the
   provider/model/tool inventory, fresh model context, hostile process-tree

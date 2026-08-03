@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
-  LANES,
+  SHIPPED_LANES,
   parseContractJson,
   validateFixtureManifest,
   validateOracleSet,
@@ -36,6 +36,18 @@ const corpus = [
   },
   {
     caseCount: 2,
+    file: "data-integrity-evaluation-v1.json",
+    lane: "data-integrity-qa",
+    pairCount: 1,
+  },
+  {
+    caseCount: 2,
+    file: "deployment-evaluation-v1.json",
+    lane: "deployment-qa",
+    pairCount: 1,
+  },
+  {
+    caseCount: 2,
     file: "performance-evaluation-v1.json",
     lane: "performance-qa",
     pairCount: 1,
@@ -44,6 +56,12 @@ const corpus = [
     caseCount: 2,
     file: "regression-evaluation-v1.json",
     lane: "regression-qa",
+    pairCount: 1,
+  },
+  {
+    caseCount: 2,
+    file: "reliability-evaluation-v1.json",
+    lane: "reliability-qa",
     pairCount: 1,
   },
   {
@@ -135,7 +153,12 @@ function assertScoringContract(oracle, lane) {
   }
 }
 
-test("the committed corpus covers all seven shipped lanes without cross-suite token reuse", async () => {
+test("the committed corpus covers exactly ten shipped lanes without cross-suite token reuse", async () => {
+  assert.equal(SHIPPED_LANES.size, 10);
+  assert.equal(
+    [...SHIPPED_LANES].some((lane) => lane.startsWith("temporary-qa-")),
+    false,
+  );
   const expectedFiles = corpus.map(({ file }) => file).sort();
   assert.deepEqual(
     await jsonFiles("tests/evaluation/suites"),
@@ -208,11 +231,11 @@ test("the committed corpus covers all seven shipped lanes without cross-suite to
     }
   }
 
-  assert.deepEqual([...lanes].sort(), [...LANES].sort());
-  assert.equal(caseIds.length, 16);
-  assert.equal(pairTokens.length, 8);
-  assert.equal(adversarialCount, 8);
-  assert.equal(controlCount, 8);
+  assert.deepEqual([...lanes].sort(), [...SHIPPED_LANES].sort());
+  assert.equal(caseIds.length, 22);
+  assert.equal(pairTokens.length, 11);
+  assert.equal(adversarialCount, 11);
+  assert.equal(controlCount, 11);
   assertUnique(caseIds, "case IDs");
   assertUnique(commitments, "public oracle commitments");
   assertUnique(nonPairTokens, "oracle canary and assertion tokens");
@@ -237,4 +260,17 @@ test("the committed corpus covers all seven shipped lanes without cross-suite to
       "committed controller tokens must not collide with labeled examples",
     );
   }
+});
+
+test("the fixed evaluator rejects temporary-specialist identities", async () => {
+  const suite = await readContract(
+    "tests/evaluation/suites/reliability-evaluation-v1.json",
+    "reliability suite",
+  );
+  suite.lane =
+    "temporary-qa-resilience-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  assert.throws(
+    () => validateSuite(suite),
+    /suite\.lane has unsupported value temporary-qa-resilience-/u,
+  );
 });

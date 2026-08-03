@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_900fd4464c2266920845ed938fc894ce",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/public/data-contract.json",
+      "mode": "100644",
+      "sha256": "f327cb44b9dba4575a971b29d3c47154900865162a370610fa36fa37cb586d8d"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/public/probe.mjs",
+      "mode": "100644",
+      "sha256": "83a164a291a26d32dbab89dfb091d57c2fa4f51a2bd0339ef808e727de518d45"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/public/transaction-suite.mjs",
+      "mode": "100644",
+      "sha256": "69d48a0e2d130820d2a694460acb258d8cd049490c3a8b5d7e78f75ae8947d75"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/public/transfer-store.mjs",
+      "mode": "100644",
+      "sha256": "a12bce94ce026cfb4a9ab4d033ce43467571dbb5fb186e0cdb39f16d60b93dc6"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_900fd4464c2266920845ed938fc894ce/qa-context.md",
+      "mode": "100644",
+      "sha256": "06025e476ac4a550fb779386339df510725b7a3558a07530273545a4e7640184"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "case_id": "fx_e6ecb4040e0cec62b05433dafe6553eb",
+  "files": [
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/artifacts/service-v1.json",
+      "mode": "100644",
+      "sha256": "84d8db30c7d60bf103404ec24073dc40359e617883704565571c1d1b4870ebc5"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/artifacts/service-v2.json",
+      "mode": "100644",
+      "sha256": "828c67b5703d019d5e42122ec549cff247a78a9fbcea5a72daf7b9f438a217a7"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/config/service-v1.json",
+      "mode": "100644",
+      "sha256": "e68c46d92624999a8821f544e709858071ed969bfb9f2c24a83f532a3f855cfa"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/config/service-v2.json",
+      "mode": "100644",
+      "sha256": "1add0c34259c22e5aad998551e9100f39202753c8a728864d8b284ba7c0559a5"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/deployment-contract.md",
+      "mode": "100644",
+      "sha256": "fefc0cbcc3dd2c3ff191201ed09f107405c65575a6e764923b02c8a48cc2d177"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/deployment-suite.mjs",
+      "mode": "100644",
+      "sha256": "0d4a407af3fdc158190256a960fb726deedb066f27dec1dbd3dc4c7b55c6f43b"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/findings.jsonl",
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/public/rollout.mjs",
+      "mode": "100644",
+      "sha256": "cd04649d205e812661a68e4f7b0fdb2e36f5b5ac775f612c78ae109755a98200"
+    },
+    {
+      "path": "tests/evaluation/fixtures/fx_e6ecb4040e0cec62b05433dafe6553eb/qa-context.md",
+      "mode": "100644",
+      "sha256": "27cd28762229d708f96a06332c6200dfbd1bbafe481b63fd0cd896a99684f336"
+    }
+  ]
+}

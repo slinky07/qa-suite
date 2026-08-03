@@ -15,12 +15,15 @@ const FINDING_ID = /^[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)*$/;
 const BOB_REPORT_PATH =
   /^QA\/([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])-([01][0-9]|2[0-3])([0-5][0-9])-bob-qa-([^/]+)\.md$/u;
 
-export const LANES = new Set([
+export const SHIPPED_LANES = new Set([
   "api-qa",
   "bob-qa",
   "compatibility-qa",
+  "data-integrity-qa",
+  "deployment-qa",
   "performance-qa",
   "regression-qa",
+  "reliability-qa",
   "security-qa",
   "smoke-qa",
 ]);
@@ -322,7 +325,7 @@ export function validateClosedCaseRun(value, label = "closed case run") {
     `${label}.controller_commit`,
     FULL_COMMIT,
   );
-  assertEnum(value.lane, LANES, `${label}.lane`);
+  assertEnum(value.lane, SHIPPED_LANES, `${label}.lane`);
   assertString(value.node_version, `${label}.node_version`);
   assertString(value.run_id, `${label}.run_id`, RUN_ID);
   assertString(value.subject_commit, `${label}.subject_commit`, FULL_COMMIT);
@@ -707,7 +710,7 @@ export function validateCaseDisclosure(value) {
   assertVersion(value.schema_version, "case disclosure");
   assertString(value.run_id, "case disclosure.run_id", RUN_ID);
   assertString(value.case_id, "case disclosure.case_id", CASE_ID);
-  assertEnum(value.lane, LANES, "case disclosure.lane");
+  assertEnum(value.lane, SHIPPED_LANES, "case disclosure.lane");
   if (value.mission !== "discovery") {
     throw new Error("case disclosure.mission must equal discovery");
   }
@@ -904,7 +907,7 @@ export function validateSuite(value) {
   assertExactKeys(value, ["cases", "id", "lane", "schema_version"], "suite");
   assertVersion(value.schema_version, "suite");
   assertString(value.id, "suite.id", SUITE_ID);
-  assertEnum(value.lane, LANES, "suite.lane");
+  assertEnum(value.lane, SHIPPED_LANES, "suite.lane");
   assertArray(value.cases, "suite.cases", { minimum: 2 });
   value.cases.forEach((entry, index) =>
     validateSuiteCase(entry, `suite.cases[${index}]`),

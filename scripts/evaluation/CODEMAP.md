@@ -32,7 +32,7 @@ only what its node needs and cite real lines.
 
 | Module | Lines | Role | Owning tests |
 |---|---|---|---|
-| `contracts.mjs` | 1925 | Machine authority for suite/case/lane/closure contracts and validation | `tests/evaluation-foundation.test.mjs` |
+| `contracts.mjs` | 1928 | Machine authority for suite/case/lane/closure contracts and validation | `tests/evaluation-foundation.test.mjs` |
 | `runner.mjs` | 1790 | Non-qualifying snapshot runner: single-case disclosure, lane-root preparation, artifact closure | `tests/evaluation-runner.test.mjs` |
 | `scoring.mjs` | 455 | Non-qualifying preview math; every output keeps the non-claims stamp | `tests/evaluation-foundation.test.mjs` |
 | `git-snapshot.mjs` | 452 | Frozen-commit snapshot and subject-tree export | `tests/evaluation-runner.test.mjs` |
@@ -41,8 +41,9 @@ only what its node needs and cite real lines.
 The reusable corpus (fixtures, sealed oracles, public suites) lives in
 `tests/evaluation/fixtures|oracles|suites` and is validated structurally by
 `tests/evaluation-fixture-corpus.test.mjs` and
-`tests/evaluation-seven-lane-corpus.test.mjs`, plus one per-pair test file per
-lane pair.
+`tests/evaluation-lane-corpus.test.mjs`, plus focused pair tests including
+`tests/evaluation-operational-fixture-pairs.test.mjs` for reliability,
+deployment, and data integrity.
 
 ## Tier F — frozen reference (Codex-0.145-pinned Bob live stack)
 
