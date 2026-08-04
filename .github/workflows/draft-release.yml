@@ -53,7 +53,7 @@ jobs:
           echo "tag=v${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Run repository tests
-        run: node --test
+        run: node --test "tests/**/*.test.mjs"
 
       - name: Build twice and verify release parity
         env:

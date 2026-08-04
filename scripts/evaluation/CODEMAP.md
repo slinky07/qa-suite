@@ -19,7 +19,8 @@ only what its node needs and cite real lines.
 ## Tiers
 
 - **Tier A — active and maintained.** Lane-agnostic evaluation core. Changes
-  follow the normal node loop and must keep `node --test` green.
+  follow the normal node loop and must keep
+  `node --test "tests/**/*.test.mjs"` green.
 - **Tier F — frozen reference.** The Bob live-execution stack, pinned to
   Codex CLI 0.145 transport behavior. It is not a maintained compatibility
   surface. Only the repository owner may authorize an invocation or change,
@@ -86,7 +87,8 @@ They are tracked there and in filed issues — not fixed opportunistically.
    or modification under a filed issue and exact evidence contract. An
    authorized invocation stays as-is; failure becomes evidenced `Blocked`,
    not an implied repair task.
-6. Verification before handoff: `node --test` from the repository root, then
+6. Verification before handoff: `node --test "tests/**/*.test.mjs"` from the
+   repository root, then
    `node scripts/release/check.mjs --ref HEAD` (evaluation files are inside
    the release-integrity CI path filter), then
    `git diff --check origin/main...HEAD`.
@@ -98,5 +100,5 @@ They are tracked there and in filed issues — not fixed opportunistically.
 A physical partition (`scripts/evaluation/live/` for tier F) would make the
 boundary structural instead of documented, at the cost of touching every
 import in ~12 test files. Do it, if at all, as one dedicated
-behavior-preserving node with `node --test` proof before and after — never as
-a side effect of another change.
+behavior-preserving node with `node --test "tests/**/*.test.mjs"` proof before
+and after — never as a side effect of another change.

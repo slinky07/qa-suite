@@ -931,7 +931,7 @@ This check validates the exact suite/oracle inventory, manifest contracts,
 global opaque-token namespaces, control budgets, and expected classification
 and evidence shapes. It does not create normalized results, score a lane, or
 turn static fixture validation into release evidence. The existing release
-workflows run it through their unchanged `node --test` gates.
+workflows run it through their scoped `node --test "tests/**/*.test.mjs"` gates.
 
 ## Smoke gating and incomplete coverage
 

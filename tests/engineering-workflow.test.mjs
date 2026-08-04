@@ -6,6 +6,18 @@ async function text(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
+function assertScopedRepositorySuite(document, label) {
+  assert.ok(
+    document.includes('node --test "tests/**/*.test.mjs"'),
+    `${label} must name the scoped repository suite`,
+  );
+  assert.doesNotMatch(
+    document,
+    /`node --test`|^\s*node --test\s*$|node --test ['"]tests\/\*\.test\.mjs['"]/m,
+    `${label} must not prescribe a bare or non-recursive Node test command`,
+  );
+}
+
 test("AGENTS.md stays concise and routes agents to detailed authority", async () => {
   const agents = await text("AGENTS.md");
   const lineCount = agents.trimEnd().split("\n").length;
@@ -32,6 +44,7 @@ test("AGENTS.md stays concise and routes agents to detailed authority", async ()
     agents,
     /byte-identical ZIP data built from `qa-suite\/` at the exact Git\s+ref/,
   );
+  assertScopedRepositorySuite(agents, "AGENTS.md");
 });
 
 test("workflow preserves graph readiness, isolation, and human gates", async () => {
@@ -47,4 +60,21 @@ test("workflow preserves graph readiness, isolation, and human gates", async () 
   assert.match(workflow, /Knowledge graph.*outside this workflow/);
   assert.match(workflow, /origin\/main\.\.\.HEAD/);
   assert.match(workflow, /dedicated child issue may use `Closes/);
+  assertScopedRepositorySuite(workflow, "WORKFLOW.md");
+});
+
+test("current repository-suite guidance stays scoped to tracked tests", async () => {
+  const qaContext = await text("qa-context.md");
+  const evaluationReadme = await text("tests/evaluation/README.md");
+  const evaluationCodemap = await text("scripts/evaluation/CODEMAP.md");
+
+  assertScopedRepositorySuite(qaContext, "qa-context.md");
+  assertScopedRepositorySuite(
+    evaluationReadme,
+    "tests/evaluation/README.md",
+  );
+  assertScopedRepositorySuite(
+    evaluationCodemap,
+    "scripts/evaluation/CODEMAP.md",
+  );
 });
