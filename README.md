@@ -61,22 +61,53 @@ QA-Suite gives Claude Code, Claude.ai, and Codex a shared QA workflow with:
 ## Install Once Per Agent Platform
 
 Install qa-suite once in your agent platform. Do **not** copy it into every project you test.
+Choose an immutable release tag such as `vX.Y.Z`; do not install from a moving
+branch when payload identity matters. Verify the release attestation and retain
+its source archive before installation as described in
+[the release guide](docs/releasing.md#verify-the-release-input-and-active-payload).
 
 | Platform | Install |
 |---|---|
-| Claude Code | Add this repo as a plugin marketplace with `/plugin marketplace add slinky07/qa-suite`, then install `qa-suite` with `/plugin install qa-suite@qa-suite`. For local-only use, copy the repository's `qa-suite/` directory so its `SKILL.md` is at `$HOME/.claude/skills/qa-suite/SKILL.md`. |
+| Claude Code | Add the pinned marketplace with `claude plugin marketplace add slinky07/qa-suite@vX.Y.Z`, then run `claude plugin install qa-suite@qa-suite`. For local-only use, install the verified release archive so its `SKILL.md` is at `$HOME/.claude/skills/qa-suite/SKILL.md`. |
 | Claude.ai | Download `qa-suite.skill` from this repository's Releases page and upload it as a skill. |
-| Codex | Add the marketplace with `codex plugin marketplace add slinky07/qa-suite`, install the plugin with `codex plugin add qa-suite@qa-suite`, and verify the installation with `codex plugin list --marketplace qa-suite --json`; the `qa-suite` entry must appear under `installed` with `"installed": true`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If command codex is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli  |
-| Codex local skill fallback | Copy the repository's `qa-suite/` directory so its `SKILL.md` is at `$HOME/.agents/skills/qa-suite/SKILL.md` if you want the skill without using the plugin marketplace. |
+| Codex | Add the pinned marketplace with `codex plugin marketplace add slinky07/qa-suite --ref vX.Y.Z`, then run `codex plugin add qa-suite@qa-suite`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If `codex` is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli |
+| Codex local skill fallback | Install the verified release archive so its `SKILL.md` is at `$HOME/.agents/skills/qa-suite/SKILL.md` if you want the skill without the marketplace. |
 
 The Claude Code plugin also includes thin slash commands: `/qa-smoke` (smoke pass), `/qa-regression` (smoke then regression), and `/qa-release` (full release audit).
 
 ### Updating an Installed Plugin
 
-| Platform | Update |
-|---|---|
-| Claude Code | Refresh the marketplace with `/plugin marketplace update qa-suite`, then update the plugin with `/plugin update qa-suite@qa-suite` (restart required to apply). |
-| Codex | Run `codex plugin marketplace upgrade` to refresh marketplaces and upgrade installed plugins. |
+An installed flag or displayed version is not payload proof. Before an update,
+retain the prior tag and verified archive. Re-target the marketplace by removing
+the plugin and marketplace, adding the repository at the intended immutable
+tag, and reinstalling. Claude Code accepts `slinky07/qa-suite@vX.Y.Z`; Codex
+accepts `slinky07/qa-suite --ref vX.Y.Z`. Restart the host after installation.
+
+Download `qa-suite-source.zip` for that same release and verify the active
+bytes with the verifier from the trusted release:
+
+```sh
+node /trusted-release/qa-suite/scripts/verify-installed-payload.mjs \
+  --archive /verified-download/qa-suite-source.zip \
+  --installed-root /active-install/qa-suite
+```
+
+The command exits `0` only when all paths, entry types, file SHA-256 digests,
+and symlink targets match. Its `archive_sha256` must match the digest reported
+by `gh release verify vX.Y.Z -R slinky07/qa-suite`. For Claude Code, obtain the
+plugin root from the single `qa-suite@qa-suite` item returned by `claude plugin
+list --json`, then append `/qa-suite`. For Codex, first confirm the single
+installed item with `codex plugin list --marketplace qa-suite --json`, then use
+the corresponding `<Codex home>/plugins/cache/qa-suite/qa-suite/<version>/qa-suite`
+directory. Stop when the host output or cache candidates are ambiguous; never
+select an active tree from the displayed version alone.
+
+Rollback uses the same remove, pinned-marketplace add, install, restart, and
+payload-verification sequence with the retained prior tag and archive. Claude.ai
+does not expose uploaded skill bytes; verify its release asset before upload and
+replacement, but do not claim post-upload byte identity. See
+[the release guide](docs/releasing.md#consumer-install-upgrade-and-rollback) for
+the complete channel procedures and disposable-host rehearsal.
 
 ## Configure Once Per Project
 
