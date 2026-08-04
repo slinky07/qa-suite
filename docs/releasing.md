@@ -177,7 +177,7 @@ The release rehearsal uses a fresh ephemeral CI runner or OS account with
 isolated Claude and Codex configuration roots. It must not read or change the
 owner's installed plugins.
 
-For the v1.5.0 candidate:
+For the current candidate:
 
 1. Download and verify the published `v1.4.0` assets. Obtain the candidate
    archive from the successful draft workflow's retained artifact and bind it
