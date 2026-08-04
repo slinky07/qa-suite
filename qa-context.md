@@ -16,7 +16,7 @@ scope instead of inventing an app surface.
 
 - **Path:** findings.jsonl
 - **Repository visibility (`repo_visibility`):** public
-- **Named components:** codex-install, claude-code-install, project-initialization, qa-orchestration, command-wrappers, agent-wrappers, release-artifacts
+- **Named components:** codex-install, claude-code-install, plugin-installation, project-initialization, qa-orchestration, command-wrappers, agent-wrappers, release-artifacts
 
 ## Issue proposal governance
 
