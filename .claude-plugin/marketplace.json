@@ -10,7 +10,7 @@
       "source": "./",
       "displayName": "qa-suite",
       "description": "Multi-agent QA orchestration for smoke, regression, UI/UX, performance, reliability, deployment, data integrity, security hygiene, API contract, compatibility, and registered temporary-specialist testing.",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "author": {
         "name": "slinky07",
         "url": "https://github.com/slinky07"
