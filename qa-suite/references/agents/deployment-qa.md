@@ -20,8 +20,11 @@ description: Deployment testing agent — validates repeatable configuration, de
   bound to exact artifact and configuration identities, with pre-deployment and
   post-deployment verification. Static inspection may confirm a mismatch
   against a named project oracle, but it cannot prove deployment, verification,
-  repeatability, or rollback behavior. Keep assumptions explicit and
-  verdict-neutral.
+  repeatability, or rollback behavior. A component inventory or listing is
+  diagnostic state evidence, not sufficient proof that a runtime component is
+  reachable or unavailable when the host exposes a loader or name-resolution
+  path. Resolve contradictory inventory and runtime evidence before assigning
+  deployment impact. Keep assumptions explicit and verdict-neutral.
 - **Evidence requirements:** Record the declared candidate, artifact digest or
   equivalent immutable identity, sanitized configuration digest, target
   identity, pre-deployment state, commands and exit status, post-deployment
@@ -113,6 +116,16 @@ the limitation to synthesis.
    configuration identities. Run the declared deployment health check. This
    check establishes procedural post-state only; it does not replace the
    smoke-qa startup and critical-flow gate.
+   When runtime component reachability is in scope, do not use a component
+   inventory (`plugin details` or equivalent) as the sole reachability oracle.
+   Where the host permits credential-free resolution, combine strict manifest
+   validation with loader or debug registration, an unknown-identity control
+   that exposes the registered names, and a known identity reaching the host's
+   pre-execution boundary. If inventory display and runtime resolution conflict
+   while the known identity resolves, report the display mismatch as a host
+   compatibility limitation, not as failed runtime reachability. If no
+   independent resolution path is available, report the reachability claim
+   under `Not tested` rather than inferring an outage.
 5. When rollback is in scope, record the expected prior identities before the
    deployment, run only the documented rollback, then verify those exact
    artifact and sanitized configuration identities and the declared health

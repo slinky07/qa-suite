@@ -54,6 +54,18 @@ The release check validates every manifest-referenced path and the complete
 shipped Claude agent/command sets. A channel path may not disappear or drift
 without failing CI.
 
+For a credential-isolated Claude Code rehearsal, treat `claude plugin details`
+as a component-inventory diagnostic, not the sole agent-reachability oracle.
+First require strict plugin and marketplace validation. Then use debug output
+to require the expected registration count, use an unknown-agent control to
+require the exact registered names, and require one known QA-Suite agent to
+cross name resolution to the host's pre-execution boundary. Reaching an
+expected login boundary proves name resolution without making a model call.
+If the inventory display disagrees while those runtime checks pass, retain the
+display mismatch as a host compatibility limitation; do not classify the
+agents as unavailable. If the host exposes no independent resolution path,
+record reachability under `Not tested`.
+
 ## Consumer install, upgrade, and rollback
 
 ### Verify the release input and active payload
