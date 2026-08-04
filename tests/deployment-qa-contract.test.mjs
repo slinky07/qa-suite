@@ -9,6 +9,10 @@ function readDeploymentDefinition() {
   );
 }
 
+function readReleaseGuide() {
+  return readFile(new URL("../docs/releasing.md", import.meta.url), "utf8");
+}
+
 function extractSection(markdown, heading) {
   const marker = `${heading}\n`;
   const start = markdown.indexOf(marker);
@@ -137,6 +141,37 @@ test("deployment QA fails closed around targets and evidence", async () => {
   assert.match(method, /post-state only; it does not replace the\s+smoke-qa/);
   assert.match(method, /Route stored-data invariant checks to data-integrity-qa/);
   assert.match(method, /Static inspection alone cannot support\s+a claim/);
+});
+
+test("deployment QA separates component inventory from runtime reachability", async () => {
+  const [markdown, releaseGuide] = await Promise.all([
+    readDeploymentDefinition(),
+    readReleaseGuide(),
+  ]);
+  const contract = extractSection(markdown, "## Specialist contract");
+  const method = extractSection(markdown, "## Method");
+  const decisionRules = extractField(contract, "Decision rules");
+
+  assert.match(decisionRules, /component inventory or listing/);
+  assert.match(decisionRules, /not sufficient proof/);
+  assert.match(decisionRules, /loader or name-resolution path/);
+  assert.match(decisionRules, /Resolve contradictory inventory and runtime evidence/);
+
+  assert.match(method, /do not use a component\s+inventory .* as the sole reachability oracle/s);
+  assert.match(method, /strict manifest\s+validation/);
+  assert.match(method, /loader or debug registration/);
+  assert.match(method, /unknown-identity control/);
+  assert.match(method, /known identity reaching the host's\s+pre-execution boundary/);
+  assert.match(method, /host\s+compatibility limitation, not as failed runtime reachability/);
+  assert.match(method, /under `Not tested` rather than inferring an outage/);
+
+  assert.match(releaseGuide, /`claude plugin details`/);
+  assert.match(releaseGuide, /not the sole agent-reachability oracle/);
+  assert.match(releaseGuide, /strict plugin and marketplace validation/);
+  assert.match(releaseGuide, /unknown-agent control/);
+  assert.match(releaseGuide, /expected login boundary proves name resolution/);
+  assert.match(releaseGuide, /host compatibility limitation/);
+  assert.match(releaseGuide, /record reachability under `Not tested`/);
 });
 
 test("deployment QA keeps sibling ownership explicit", async () => {
