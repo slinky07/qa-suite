@@ -48,6 +48,27 @@ function normalizeTriggerRows(markdown, heading) {
     );
 }
 
+test("README names the invocable Claude plugin commands", async () => {
+  const readme = await readRepositoryFile("README.md");
+
+  assert.match(
+    readme,
+    /The Claude Code plugin also includes thin slash commands: `\/qa-suite:qa-smoke` \(smoke pass\), `\/qa-suite:qa-regression` \(smoke then regression\), and `\/qa-suite:qa-release` \(full release audit\)\./,
+  );
+  assert.match(
+    readme,
+    /README introduced Claude Code slash-command guidance and plugin update commands for Claude Code and Codex\. Current plugin invocations use the namespaced forms `\/qa-suite:qa-smoke`, `\/qa-suite:qa-regression`, and `\/qa-suite:qa-release`\./,
+  );
+  assert.doesNotMatch(
+    readme,
+    /The Claude Code plugin also includes thin slash commands: `\/qa-smoke` \(smoke pass\), `\/qa-regression` \(smoke then regression\), and `\/qa-release` \(full release audit\)\./,
+  );
+  assert.doesNotMatch(
+    readme,
+    /Current plugin invocations use the (?:namespaced )?forms `\/qa-smoke`, `\/qa-regression`, and `\/qa-release`/,
+  );
+});
+
 test("risk acceptance remains a human-controlled lifecycle contract", async () => {
   const [skill, readme, releaseCommand] = await Promise.all([
     readRepositoryFile("qa-suite/SKILL.md"),
