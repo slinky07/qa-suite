@@ -356,6 +356,13 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.5.1`:
+
+* Documents the invocable namespaced Claude Code commands and adds exact contract coverage for all three public wrappers.
+* Scopes authoritative repository test gates to tracked tests so retained QA evidence cannot enter Node.js test discovery.
+* Requires independent validation, registration, and name-resolution evidence for Claude agent reachability; a contradictory component-inventory display is retained as a host compatibility limitation rather than treated as a product outage.
+* Closes all seven candidate-bound findings from the full v1.5.0 release audit and its post-audit remediation cycle.
+
 `v1.5.0`:
 
 * Expands the persistent roster from seven to ten lanes with reliability, deployment, and data-integrity QA, matching Claude wrappers, smoke-gated selection boundaries, and release-audit coverage for each applicable risk.
@@ -363,7 +370,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Extends the closed maintainer evaluation corpus to all ten persistent lanes with operational fixture pairs, real-engine coverage, and stricter evidence and disposition contracts; maintainer evaluation remains outside the distributed package.
 * Adds exact installed-payload verification and pinned update, repeat-install, and rollback procedures for Claude Code, Codex, local skills, and the observable Claude.ai boundary.
 
-Repository package version: `v1.5.0`. The GitHub Releases page is the
+Repository package version: `v1.5.1`. The GitHub Releases page is the
 authority for whether that version has been published.
 
 `v1.4.0`:
