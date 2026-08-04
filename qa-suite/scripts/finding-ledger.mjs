@@ -1052,6 +1052,7 @@ export function validateFindingRows(rows, schema, context) {
     throw new Error("finding rows must be an array");
   }
   const ids = new Set();
+  const reportCandidates = new Map();
   const unknownComponents = new Set();
 
   rows.forEach((row, index) => {
@@ -1117,6 +1118,15 @@ export function validateFindingRows(rows, schema, context) {
         throw new Error(`${label} has a duplicate report pointer`);
       }
       reportPointers.add(report.pointer);
+      if (
+        reportCandidates.has(report.pointer) &&
+        reportCandidates.get(report.pointer) !== report.candidate
+      ) {
+        throw new Error(
+          `${reportLabel}.pointer is already bound to a different candidate`,
+        );
+      }
+      reportCandidates.set(report.pointer, report.candidate);
     });
     if (
       !row.reports.some(
@@ -1211,6 +1221,33 @@ async function assertRegularInRepository(repositoryRoot, path, label) {
   }
   const canonical = await realpath(path);
   insideRepository(repositoryRoot, canonical, label);
+}
+
+async function assertCreationParentInRepository(
+  repositoryRoot,
+  targetPath,
+  label,
+) {
+  let existingParent = dirname(targetPath);
+  while (true) {
+    try {
+      const canonicalParent = await realpath(existingParent);
+      const relativeParent = relative(repositoryRoot, canonicalParent);
+      if (
+        relativeParent === ".." ||
+        relativeParent.startsWith(`..${sep}`) ||
+        isAbsolute(relativeParent)
+      ) {
+        throw new Error(`${label} parent must resolve inside the repository`);
+      }
+      return;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      const parent = dirname(existingParent);
+      if (parent === existingParent) throw error;
+      existingParent = parent;
+    }
+  }
 }
 
 async function loadContext(repositoryRoot, contextPath) {
@@ -1483,6 +1520,11 @@ export async function initializeLedger({
 }) {
   const repositoryRoot = await realpath(resolve(repository));
   const contextContract = await loadContext(repositoryRoot, context);
+  await assertCreationParentInRepository(
+    repositoryRoot,
+    contextContract.ledgerPath,
+    "finding ledger",
+  );
   assertNotIgnored(
     repositoryRoot,
     contextContract.ledgerGitPath,

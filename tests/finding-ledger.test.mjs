@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
+  initializeLedger,
   parseJsonStrict,
   migrateLedger,
   replaceLedger,
@@ -297,6 +298,39 @@ test("invalid schema, row, version, and duplicate ID fail loudly", async () => {
       ),
     /needs report provenance for candidate_last_confirmed/,
   );
+});
+
+test("report pointers remain bound to one exact candidate across rows", async () => {
+  const [v1Schema, v2Schema, rows] = await Promise.all([
+    readJson("qa-suite/references/finding-ledger-v1.schema.json"),
+    readJson("qa-suite/references/finding-ledger.schema.json"),
+    readJsonl("tests/fixtures/finding-ledger-valid.jsonl"),
+  ]);
+
+  for (const [schemaVersion, schema] of [
+    [1, v1Schema],
+    [2, v2Schema],
+  ]) {
+    const first = clone(rows[0]);
+    const second = clone(rows[0]);
+    first.schema_version = schemaVersion;
+    second.schema_version = schemaVersion;
+    second.id = `FND-shared-report-v${schemaVersion}`;
+    second.reports = [clone(first.reports[0])];
+    second.reports[0].lane = "api-qa";
+
+    assert.doesNotThrow(() =>
+      validateFindingRows([first, second], schema, fixtureContext()),
+    );
+
+    second.candidate_first_seen = "different-candidate";
+    second.candidate_last_confirmed = "different-candidate";
+    second.reports[0].candidate = "different-candidate";
+    assert.throws(
+      () => validateFindingRows([first, second], schema, fixtureContext()),
+      /report.*pointer is already bound to a different candidate/,
+    );
+  }
 });
 
 test("lifecycle visibility yields confirmation and regression inputs", async () => {
@@ -662,6 +696,116 @@ test("prospective sensitive sidecar must be ignored before it exists", async (t)
     validateProject({ repository }),
     /sensitive sidecar path must be ignored/,
   );
+});
+
+test("ledger initialization rejects escaping parents before creation", async (t) => {
+  const escapingRepository = await createTestRepository();
+  const nestedRepository = await createTestRepository();
+  const outsideDirectory = await mkdtemp(
+    join(tmpdir(), "finding-ledger-init-outside-"),
+  );
+  t.after(() => rm(escapingRepository, { recursive: true, force: true }));
+  t.after(() => rm(nestedRepository, { recursive: true, force: true }));
+  t.after(() => rm(outsideDirectory, { recursive: true, force: true }));
+
+  const escapingContextPath = join(escapingRepository, "qa-context.md");
+  await writeFile(
+    escapingContextPath,
+    (await readFile(escapingContextPath, "utf8")).replace(
+      "- **Path:** findings.jsonl",
+      "- **Path:** linked/findings.jsonl",
+    ),
+  );
+  await symlink(outsideDirectory, join(escapingRepository, "linked"), "dir");
+  await assert.rejects(
+    initializeLedger({ repository: escapingRepository }),
+    /finding ledger parent must resolve inside the repository/,
+  );
+  await assert.rejects(
+    readFile(join(outsideDirectory, "findings.jsonl")),
+    (error) => error.code === "ENOENT",
+  );
+
+  const nestedContextPath = join(nestedRepository, "qa-context.md");
+  await writeFile(
+    nestedContextPath,
+    (await readFile(nestedContextPath, "utf8")).replace(
+      "- **Path:** findings.jsonl",
+      "- **Path:** state/ledger/findings.jsonl",
+    ),
+  );
+  await initializeLedger({ repository: nestedRepository });
+  const nestedLedger = join(nestedRepository, "state/ledger/findings.jsonl");
+  assert.equal(await readFile(nestedLedger, "utf8"), "");
+
+  await writeFile(nestedLedger, "existing ledger content\n");
+  await initializeLedger({ repository: nestedRepository });
+  assert.equal(
+    await readFile(nestedLedger, "utf8"),
+    "existing ledger content\n",
+  );
+});
+
+test("ordinary writes enforce report candidate bindings without data loss", async (t) => {
+  const repository = await createTestRepository();
+  t.after(() => rm(repository, { recursive: true, force: true }));
+  const rows = await readJsonl("tests/fixtures/finding-ledger-valid.jsonl");
+  const first = clone(rows[0]);
+  const second = clone(rows[0]);
+  first.schema_version = 2;
+  first.component = "authentication";
+  second.schema_version = 2;
+  second.id = "FND-shared-report-write";
+  second.component = "authentication";
+  second.reports = [clone(first.reports[0])];
+  second.reports[0].lane = "api-qa";
+  const acceptedCandidatePath = join(repository, "candidate-shared.jsonl");
+  await writeFile(
+    acceptedCandidatePath,
+    `${[first, second].map((row) => JSON.stringify(row)).join("\n")}\n`,
+  );
+
+  const emptyDigest =
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+  const written = await replaceLedger({
+    repository,
+    candidatePath: acceptedCandidatePath,
+    expectedDigest: emptyDigest,
+  });
+  assert.equal(written.rows.length, 2);
+
+  const conflicting = clone(first);
+  conflicting.id = "FND-conflicting-report-write";
+  conflicting.candidate_first_seen = "different-candidate";
+  conflicting.candidate_last_confirmed = "different-candidate";
+  conflicting.reports = [
+    { ...clone(first.reports[0]), candidate: "different-candidate" },
+  ];
+  const rejectedCandidatePath = join(repository, "candidate-conflicting.jsonl");
+  await writeFile(
+    rejectedCandidatePath,
+    `${[first, second, conflicting]
+      .map((row) => JSON.stringify(row))
+      .join("\n")}\n`,
+  );
+  const beforeFailure = await readFile(
+    join(repository, "findings.jsonl"),
+    "utf8",
+  );
+  await assert.rejects(
+    replaceLedger({
+      repository,
+      candidatePath: rejectedCandidatePath,
+      expectedDigest: written.digest,
+    }),
+    /report.*pointer is already bound to a different candidate/,
+  );
+  const afterFailure = await readFile(
+    join(repository, "findings.jsonl"),
+    "utf8",
+  );
+  assert.equal(afterFailure, beforeFailure);
+  assert.equal((await validateProject({ repository })).digest, written.digest);
 });
 
 test("exclusive CAS prevents competing writers from losing findings", async (t) => {
