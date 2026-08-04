@@ -62,7 +62,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 
 ## Test commands
 
-- **Fast validation:** `node --test`
+- **Fast validation:** `node --test "tests/**/*.test.mjs"`
 - **Browser/E2E suite:** N/A
 - **Container validation:** N/A
 - **Dependency install (if needed):** N/A

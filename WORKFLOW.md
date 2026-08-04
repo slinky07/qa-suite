@@ -245,7 +245,7 @@ evidence, name deferred findings, and state exactly what remains human-gated.
 Run the smallest relevant checks first. Before PR handoff, run:
 
 ```sh
-node --test
+node --test "tests/**/*.test.mjs"
 node scripts/release/check.mjs --ref HEAD
 git diff --check origin/main...HEAD
 ```

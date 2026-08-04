@@ -123,7 +123,7 @@ Every mutating unit follows:
 Before PR handoff, run:
 
 ```sh
-node --test
+node --test "tests/**/*.test.mjs"
 node scripts/release/check.mjs --ref HEAD
 git diff --check origin/main...HEAD
 ```
