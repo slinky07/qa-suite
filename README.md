@@ -73,7 +73,7 @@ its source archive before installation as described in
 | Codex | Add the pinned marketplace with `codex plugin marketplace add slinky07/qa-suite --ref vX.Y.Z`, then run `codex plugin add qa-suite@qa-suite`. Once installed, the plugin is available in both Codex CLI and Codex Desktop. If `codex` is not found, install codex-cli: https://learn.chatgpt.com/docs/codex/cli |
 | Codex local skill fallback | Install the verified release archive so its `SKILL.md` is at `$HOME/.agents/skills/qa-suite/SKILL.md` if you want the skill without the marketplace. |
 
-The Claude Code plugin also includes thin slash commands: `/qa-smoke` (smoke pass), `/qa-regression` (smoke then regression), and `/qa-release` (full release audit).
+The Claude Code plugin also includes thin slash commands: `/qa-suite:qa-smoke` (smoke pass), `/qa-suite:qa-regression` (smoke then regression), and `/qa-suite:qa-release` (full release audit).
 
 ### Updating an Installed Plugin
 
@@ -388,7 +388,7 @@ authority for whether that version has been published.
 `v1.1.3`:
 
 * Project initialization now generates the repo-local smoke QA agents by default — `.claude/agents/<project>-smoke-qa.md` and `.codex/agents/<project>-smoke-qa.toml` — instead of offering them as an optional post-confirmation step. A format is skipped only when the host/project clearly does not support it or the user declines.
-* README now names the Claude Code slash commands (`/qa-smoke`, `/qa-regression`, `/qa-release`) and documents plugin update commands for Claude Code and Codex.
+* README introduced Claude Code slash-command guidance and plugin update commands for Claude Code and Codex. Current plugin invocations use the namespaced forms `/qa-suite:qa-smoke`, `/qa-suite:qa-regression`, and `/qa-suite:qa-release`.
 * `qa-suite.skill` and `qa-suite-source.zip` are regenerated from the current `qa-suite/` tree and verified byte-identical to the checkout, fixing the stale-artifact QA findings (BOB-001, COMPAT-001/002, security finding 1).
 
 `v1.1.2`:
