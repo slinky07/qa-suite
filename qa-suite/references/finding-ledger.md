@@ -187,6 +187,12 @@ it never clears redaction or copies private details into the ledger.
 
 ## Reconciliation and write safety
 
+Machine-verifiable proposal completeness is defined by
+`finding-reconciliation.md`. This ledger contract proves structural and
+evolution safety for the candidate rows it receives; a valid candidate ledger
+alone does not prove that every report-local proposal was created, matched,
+rejected, or blocked.
+
 Lane agents write only their timestamped reports. After every selected lane
 returns, the orchestrator:
 
