@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/finding-reconciliation-dispatch-v1.schema.json",
+  "title": "QA-Suite finding reconciliation dispatch manifest",
+  "description": "Protocol version 1 frozen selected-lane execution manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol",
+    "run_id",
+    "candidate",
+    "frozen_at",
+    "selected_executions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "protocol": {
+      "const": "qa-suite-finding-reconciliation"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "git-commit",
+            "build",
+            "release",
+            "opaque"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "frozen_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "selected_executions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "execution_id",
+          "lane",
+          "report_pointer",
+          "sidecar_pointer"
+        ],
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "lane": {
+            "oneOf": [
+              {
+                "enum": [
+                  "smoke-qa",
+                  "regression-qa",
+                  "bob-qa",
+                  "performance-qa",
+                  "security-qa",
+                  "api-qa",
+                  "compatibility-qa",
+                  "reliability-qa",
+                  "deployment-qa",
+                  "data-integrity-qa"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^temporary-qa-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{64}$"
+              }
+            ]
+          },
+          "report_pointer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sidecar_pointer": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
