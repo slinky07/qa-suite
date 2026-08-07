@@ -403,6 +403,13 @@ Compatibility claims are made only for combinations that were actually run. Emul
 
 ## Release Notes
 
+`v1.6.0`:
+
+* Adds a versioned, machine-readable finding-reconciliation protocol that inventories every selected lane proposal and requires one explicit created, matched, rejected, or blocked disposition.
+* Moves completeness, digest binding, stable-identity validation, crash recovery, idempotent publication, and persistence verification into deterministic tooling while keeping semantic match and split judgment bounded and conservative.
+* Integrates the same canonical reconciliation task and decision contract across Codex and Claude hosts, preserves lane blindness and sensitive-data boundaries, and makes working-tree versus durable committed state explicit at handoff.
+* Adds a twelve-case adversarial/control proof corpus plus exact-ref archive, installed-payload, cross-host byte-compatibility, cold-process resumption, and fresh-clone persistence coverage.
+
 `v1.5.1`:
 
 * Documents the invocable namespaced Claude Code commands and adds exact contract coverage for all three public wrappers.
@@ -417,7 +424,7 @@ Compatibility claims are made only for combinations that were actually run. Emul
 * Extends the closed maintainer evaluation corpus to all ten persistent lanes with operational fixture pairs, real-engine coverage, and stricter evidence and disposition contracts; maintainer evaluation remains outside the distributed package.
 * Adds exact installed-payload verification and pinned update, repeat-install, and rollback procedures for Claude Code, Codex, local skills, and the observable Claude.ai boundary.
 
-Repository package version: `v1.5.1`. The GitHub Releases page is the
+Repository package version: `v1.6.0`. The GitHub Releases page is the
 authority for whether that version has been published.
 
 `v1.4.0`:
