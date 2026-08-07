@@ -699,6 +699,118 @@ test("materializes matched recurrence fields once per stable finding", async () 
   ]);
 });
 
+test("accepts an explicit split for similar-language distinct defect records", async () => {
+  const existing = findingRow({
+    id: "FND-ambiguous-city-actions",
+    candidate: "baseline",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-city-actions.md",
+    }],
+  });
+  existing.defect_record = {
+    repro_steps: ["Open two different city cards.", "Compare their action names."],
+    expected_result: "Each action identifies the city it changes.",
+    actual_result: "Different cities expose indistinguishable action names.",
+    environment: "Synthetic browser fixture",
+  };
+  const repository = await createRepository({ rows: [existing] });
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-catalogue-duplicate",
+    lane: "bob-qa",
+    proposal: sourceProposal({
+      title: "Duplicate city entries remain ambiguous",
+      comparison: {
+        storage: "sanitized",
+        repro_steps: ["Open the grid.", "Compare entries from both catalogues."],
+        expected_result: "One place appears once.",
+        actual_result: "The same place appears twice from different catalogues.",
+        environment: "Synthetic browser fixture",
+        safe_evidence_refs: ["evidence/catalogue-duplicate.png"],
+      },
+    }),
+    reportName: "bob-catalogue-duplicate",
+  }]);
+  const task = await buildSemanticDecisionTask({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    component: "clock-grid",
+  });
+  assert.equal(task.candidate_findings[0].id, existing.id);
+  assert.notEqual(
+    task.candidate_findings[0].defect_record.actual_result,
+    task.proposals[0].comparison.actual_result,
+  );
+  const report = prepared.inventory.inventory.reports[0];
+  const newId = "FND-catalogue-duplicate";
+  const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+    decisions: [createdDecision(
+      proposalRef(report, report.proposals[0]),
+      newId,
+      [existing.id],
+    )],
+    name: "explicit-split-draft.json",
+  });
+  const materialized = await materializeCandidateLedger({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    decisionPath: draft.path,
+    candidateLedgerPath: "QA/explicit-split-candidate.jsonl",
+    outputDecisionPath: "QA/explicit-split-final.json",
+  });
+  const rows = (await readFile(
+    join(repository, materialized.candidateLedgerPath),
+    "utf8",
+  )).trimEnd().split("\n").map(JSON.parse);
+  assert.deepEqual(rows.map(({ id }) => id), [existing.id, newId]);
+  assert.notDeepEqual(rows[0].defect_record, rows[1].defect_record);
+});
+
+test("resumes materialization from candidate-ledger-only output", async () => {
+  const repository = await createRepository();
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-resume",
+    lane: "bob-qa",
+    proposal: sourceProposal(),
+    reportName: "bob-resume",
+  }], "run-materialize-resume");
+  const report = prepared.inventory.inventory.reports[0];
+  const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+    decisions: [createdDecision(
+      proposalRef(report, report.proposals[0]),
+      "FND-materialize-resume",
+    )],
+    name: "materialize-resume-draft.json",
+  });
+  const options = {
+    repository,
+    inventoryPath: prepared.inventory.path,
+    decisionPath: draft.path,
+    candidateLedgerPath: "QA/materialize-resume-candidate.jsonl",
+    outputDecisionPath: "QA/materialize-resume-final.json",
+  };
+  const first = await materializeCandidateLedger(options);
+  const candidateBytes = await readFile(
+    join(repository, first.candidateLedgerPath),
+    "utf8",
+  );
+  const decisionBytes = await readFile(join(repository, first.decisionPath), "utf8");
+  await rm(join(repository, first.decisionPath));
+
+  const resumed = await materializeCandidateLedger(options);
+  assert.equal(resumed.candidateLedgerDigest, first.candidateLedgerDigest);
+  assert.equal(resumed.decisionDigest, first.decisionDigest);
+  assert.equal(
+    await readFile(join(repository, resumed.candidateLedgerPath), "utf8"),
+    candidateBytes,
+  );
+  assert.equal(
+    await readFile(join(repository, resumed.decisionPath), "utf8"),
+    decisionBytes,
+  );
+});
+
 test("publishes a complete split decision idempotently and proves persistence", async () => {
   const baseline = findingRow({
     id: "FND-existing-actions",
@@ -839,6 +951,44 @@ test("fails closed when one inventoried proposal has no decision", async () => {
   await assert.rejects(
     access(join(repository, "qa-reconciliation/run-001/reconciliation-receipt.json")),
     /ENOENT/,
+  );
+});
+
+test("rejects a matched decision for an unknown stable finding", async () => {
+  const repository = await createRepository();
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-unknown-match",
+    lane: "bob-qa",
+    proposal: sourceProposal(),
+    reportName: "bob-unknown-match",
+  }], "run-unknown-match");
+  const report = prepared.inventory.inventory.reports[0];
+  const unknownId = "FND-unknown-match";
+  const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+    decisions: [matchedDecision(
+      proposalRef(report, report.proposals[0]),
+      unknownId,
+      [unknownId],
+    )],
+    name: "unknown-match-draft.json",
+  });
+  await assert.rejects(
+    materializeCandidateLedger({
+      repository,
+      inventoryPath: prepared.inventory.path,
+      decisionPath: draft.path,
+      candidateLedgerPath: "QA/unknown-match-candidate.jsonl",
+      outputDecisionPath: "QA/unknown-match-final.json",
+    }),
+    new RegExp(`matched stable finding ${unknownId} is absent`),
+  );
+  await assert.rejects(
+    readFile(join(repository, "QA/unknown-match-candidate.jsonl")),
+    { code: "ENOENT" },
+  );
+  await assert.rejects(
+    readFile(join(repository, "QA/unknown-match-final.json")),
+    { code: "ENOENT" },
   );
 });
 
