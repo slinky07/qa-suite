@@ -7,3 +7,6 @@ qa-suite-source.zip
 qa-suite.skill
 release-artifacts/
 release-evidence.json
+qa-reconciliation/**/.*
+*.finding-reconciliation.stage
+findings.jsonl.lock*

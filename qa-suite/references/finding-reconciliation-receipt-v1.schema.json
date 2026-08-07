@@ -29,12 +29,12 @@
       "const": "qa-suite-finding-reconciliation"
     },
     "run_id": {
-      "$ref": "#/$defs/identifier"
+      "$ref": "#/$defs/run_id"
     },
     "supersedes_run_id": {
       "oneOf": [
         {
-          "$ref": "#/$defs/identifier"
+          "$ref": "#/$defs/run_id"
         },
         {
           "type": "null"
@@ -183,6 +183,10 @@
     "identifier": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^(?!(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\..*)?$)[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?$"
     },
     "lane_identity": {
       "oneOf": [
