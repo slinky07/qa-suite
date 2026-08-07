@@ -329,14 +329,15 @@ test("specialist dispatch keeps lifecycle mission separate and neutral", async (
   );
 });
 
-test("specialist synthesis validates, deduplicates, and exposes conflicts", async () => {
+test("specialist synthesis uses bounded decisions and verified persistence", async () => {
   const skill = await readRepositoryFile("qa-suite/SKILL.md");
   const synthesis = extractSection(skill, "### Specialist synthesis");
 
-  assert.match(synthesis, /validates every proposed finding/);
-  assert.match(synthesis, /keeps unsupported premises under `Assumptions`/);
-  assert.match(synthesis, /conservative finding-ledger matching contract/);
-  assert.match(synthesis, /duplicate findings/);
+  assert.match(synthesis, /one `review` projection at a time/);
+  assert.match(synthesis, /never injects the full\s+report corpus or full ledger/);
+  assert.match(synthesis, /version-1 draft decision envelope/);
+  assert.match(synthesis, /`materialize` command copies and\s+evolves the complete ledger/);
+  assert.match(synthesis, /verified receipt and\s+`verify` result/);
   assert.match(synthesis, /confirmation disposition.*not as a second new finding/s);
   assert.match(synthesis, /genuinely new finding/);
   assert.match(synthesis, /conflicting factual conclusions or recommendations/);
@@ -344,6 +345,8 @@ test("specialist synthesis validates, deduplicates, and exposes conflicts", asyn
   assert.match(synthesis, /Assumptions never count as findings/);
   assert.match(synthesis, /Contract-defined defaults.*declared test\s+inputs/s);
   assert.match(synthesis, /safe, redacted supporting evidence references/);
+  assert.match(synthesis, /Ledger reconciled; persistence pending human commit/);
+  assert.match(synthesis, /dispatch manifest, inventory, and receipt paths and digests/);
 });
 
 test("Claude wrappers remain thin, isolated, and report-write-only", async () => {
@@ -364,10 +367,11 @@ test("Claude wrappers remain thin, isolated, and report-write-only", async () =>
     assert.match(markdown, /project-visible\s+evidence/, name);
     assert.match(
       markdown,
-      /Stay\s+read-only except your own report\s+and\s+evidence files/,
+      /exact report pointer.*exact adjacent sidecar pointer/s,
       name,
     );
-    assert.match(markdown, /finding\s+ledger/, name);
+    assert.match(markdown, /explicit empty array/, name);
+    assert.match(markdown, /never read or write an inventory, decisions, receipt, or ledger/, name);
     assert.match(markdown, /git state/, name);
     assert.doesNotMatch(
       markdown,
@@ -406,6 +410,9 @@ test("standalone Smoke templates mirror the validated specialist contract", asyn
     assert.match(template, /canonical mission context under the installed skill/);
     assert.match(template, /Assumptions\s+section/);
     assert.match(template, /never count an assumption as a\s+finding/);
+    assert.match(template, /reconciliation transport as all-or-none/i);
+    assert.match(template, /remain report-only/);
+    assert.match(template, /neither proposal\s+completeness nor ledger reconciliation/);
   }
 });
 

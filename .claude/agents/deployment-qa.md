@@ -20,3 +20,9 @@ project-visible evidence and the canonical lane contract.
    tests, configuration,
    the finding ledger, or git state. Write your report to the configured report
    folder and state the platform in the Environment section.
+4. Refuse an orchestrated dispatch unless it supplies the frozen protocol
+   version, run ID, execution ID, candidate object, exact report pointer,
+   exact adjacent sidecar pointer, and proposal-schema path. The sidecar is
+   the only additional report output permitted above: finalize the report
+   first, bind its SHA-256, emit every proposal or an explicit empty array,
+   and never read or write an inventory, decisions, receipt, or ledger.

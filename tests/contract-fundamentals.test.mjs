@@ -254,7 +254,13 @@ test("smoke No-Go and Blocked both gate deeper lanes", async () => {
     skill,
     /If smoke reports `No-Go` or\s+`Blocked`, nothing else runs/,
   );
-  assert.match(readme, /If smoke is `No-Go` or `Blocked`, deeper agents stop/);
+  assert.match(
+    readme,
+    /If smoke is\s+`No-Go` or `Blocked`, deeper agents stop/,
+  );
+  assert.match(readme, /explicit gated or blocked\s+`unexecuted` inventory record/);
+  assert.match(regressionCommand, /smoke gate records regression as explicit `unexecuted` input/);
+  assert.match(releaseCommand, /smoke-gated lanes become explicit\s+`unexecuted` inventory inputs/);
   assert.match(
     regressionCommand,
     /If smoke reports `No-Go` or `Blocked`, stop/,

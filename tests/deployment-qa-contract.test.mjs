@@ -217,8 +217,10 @@ test("deployment QA uses the current report and lifecycle contract", async () =>
     normalizedReports,
     /demonstrated deployment impact \| recommendation \| validation/,
   );
-  assert.match(normalizedReports, /does not read or write the finding ledger/);
-  assert.match(normalizedReports, /assigns stable IDs and statuses/);
+  assert.match(normalizedReports, /never reads sibling reports.*finding ledger.*never writes any of them/);
+  assert.match(normalizedReports, /reconciliation helper validates and publishes.*bounded decisions/);
+  assert.match(normalizedReports, /finding-proposals-v1\.schema\.json/);
+  assert.match(normalizedReports, /explicit empty `proposals` array/);
   assert.match(normalizedReports, /\*\*Not tested\*\*/);
   assert.doesNotMatch(normalizedReports, /confidence/i);
   assert.doesNotMatch(normalizedReports, /per-finding verdict/i);

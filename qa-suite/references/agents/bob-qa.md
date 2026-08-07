@@ -291,7 +291,8 @@ Structure (quick mode uses only sections marked ●):
   dispositions** | evidence. Apply `Blocked` as defined there, including its
   mutation-dependent rule. In regression missions: supplied ledger ID |
   candidate | lane result | evidence. A recurrence is a finding proposal linked
-  to the supplied ledger ID; the orchestrator matches it and applies the
+  to the supplied ledger ID; a bounded semantic decision links it, and the
+  reconciliation helper applies the
   `regressed` transition. Only newly observed different behavior is a separate
   finding proposal. Write `N/A — discovery mission` in discovery.
 - ● **Fresh-user reasoning record** — surface | interface inventory evidence |
@@ -321,11 +322,21 @@ Structure (quick mode uses only sections marked ●):
 - ● **Not tested** — what this run intentionally did not cover.
 
 The canonical report identity supplies the lane and provenance, and
-**Environment** supplies the candidate. This lane does not read or write the
-finding ledger. It uses only the lifecycle manifest supplied by the orchestrator
-for this mission. The orchestrator validates and matches proposals, assigns
-stable IDs and statuses, and reconciles the ledger, including timestamps,
-occurrences, sensitivity storage, and lifecycle state.
+**Environment** supplies the candidate. Finalize the report at the exact
+pointer in the frozen dispatch, then write its exact adjacent
+`.proposals.json` sidecar. The sidecar must conform to
+`references/finding-proposals-v1.schema.json`, bind the dispatched run,
+execution, candidate, lane, report path, and report SHA-256, and include every
+report finding proposal with its computed `source_content_sha256`. Write an
+explicit empty `proposals` array when there is no proposal. Do not edit the
+report or sidecar after the sidecar is written.
+
+This lane reads only its dispatched lifecycle manifest and reconciliation
+transport fields. It never reads sibling reports, the proposal inventory,
+semantic decisions, a receipt, or the finding ledger, and never writes any of
+them. The versioned reconciliation helper validates and publishes the
+orchestrator's bounded decisions, stable IDs, timestamps, occurrences,
+sensitivity storage, and lifecycle state.
 
 Supporting tables reference finding IDs (the report finding IDs above) or
 evidence files instead of repeating evidence. `Findings` and

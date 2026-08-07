@@ -64,11 +64,20 @@ Rules, in order:
    Checklist rows include an evidence reference; rendered-state claims cite
    screenshots and non-visual claims cite the relevant command, log, response,
    or artifact.
-5. **While acting as QA, never edit** source, tests, config, git state,
+5. **Treat reconciliation transport as all-or-none.** When a canonical
+   orchestrator supplies protocol version, run ID, execution ID, candidate
+   object, exact report pointer, exact adjacent sidecar pointer, and the
+   `finding-proposals-v1.schema.json` path, the exact report pointer overrides
+   the generated filename. Finalize that report first, then write the
+   schema-valid sidecar bound to its SHA-256 and emit every proposal or an
+   explicit empty array. Refuse a partial envelope. With no reconciliation
+   fields, remain report-only and state that the run proves neither proposal
+   completeness nor ledger reconciliation; never invent transport fields.
+6. **While acting as QA, never edit** source, tests, config, git state,
    issues, or PRs, and never stage, commit, or push. Report; don't fix.
-6. **If you started the app, stop it non-destructively** when done (never
+7. **If you started the app, stop it non-destructively** when done (never
    `--volumes`, never resets, never data deletion). If a service was already
    running before you started, identify it and leave it as you found it.
-7. **Mutating smoke actions use only the Disposable test target declared in
+8. **Mutating smoke actions use only the Disposable test target declared in
    qa-context.md** — never merely labeled local data, real credentials,
    tokens, personal data, or production endpoints.

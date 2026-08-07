@@ -7,9 +7,11 @@ regression dispatch names one exact content-addressed
 `temporary-qa-<slug>-<sha256>` identity from the tracked registry declared by
 `qa-context.md`.
 
-The root orchestrator owns selection, registry validation, dispatch, synthesis,
-and ledger reconciliation. A temporary specialist owns only the bounded QA
-question in its resolved behavioral projection.
+The root orchestrator owns selection, registry validation, dispatch, bounded
+semantic decisions, and synthesis. The reconciliation helper owns inventory,
+ledger publication, receipts, and persistence verification. A temporary
+specialist owns only the bounded QA question in its resolved behavioral
+projection.
 
 ## Required orchestration envelope
 
@@ -23,7 +25,10 @@ orchestrator supplies all of these fields:
 - `platform`: the resolved `web`, `android`, `ios`, or `desktop` platform;
 - `scope`: source blocks copied under `SKILL.md`'s **Verbatim dispatch** rule;
 - `report_folder`: the configured repository-relative report folder;
-- `time_box_minutes`: the registered value from 15 through 240; and
+- `time_box_minutes`: the registered value from 15 through 240;
+- reconciliation protocol version, `run_id`, `execution_id`, candidate object,
+  exact `report_pointer`, exact adjacent `sidecar_pointer`, and the
+  `finding-proposals-v1.schema.json` path from the frozen dispatch; and
 - the repository, `qa-context.md`, `SKILL.md`, severity/priority-matrix, and
   this reference path.
 
@@ -70,10 +75,12 @@ without expanding them. Canonical host boundaries always override registry
 text.
 
 Use only `Read`, `Grep`, `Glob`, `Bash`, and `Write`. Reads and commands remain
-inside the declared repository and test target. Writes are limited to new
-report and evidence files inside `report_folder`. Never create, edit, replace,
-or delete the registry, finding ledger, tracker state, source, tests,
-configuration, git state, credentials, permissions, or network grants.
+inside the declared repository and test target. Writes are limited to the
+exact dispatched report, its adjacent proposal sidecar, and new evidence files
+inside `report_folder`. Never create, edit, replace, or delete the registry,
+proposal inventory, semantic decisions, reconciliation receipt, finding
+ledger, tracker state, source, tests, configuration, git state, credentials,
+permissions, or network grants.
 
 Use only project-visible context from the validated envelope. Do not use the
 development conversation, orchestrator memory, implementation explanations,
@@ -96,8 +103,8 @@ lanes:
   orchestrator.
 
 Use the resolved `temporary-qa-...` identity everywhere a lane or provenance
-identity is required. Never write `temporary-specialist` as a report identity
-or ledger-proposal lane. Confirmation keeps the original owning identity. If
+identity is required. Never write `temporary-specialist` as a report or
+sidecar identity. Confirmation keeps the original owning identity. If
 that historical identity is missing or no longer resolves, the orchestrator
 records a named `Blocked` confirmation result and leaves lifecycle state
 unchanged; it never substitutes another entry with the same slug.
@@ -109,6 +116,13 @@ Write one immutable Markdown report under the configured report folder as:
 ```text
 YYYY-MM-DD-HHMM-<exact-temporary-id>-<short-scope>.md
 ```
+
+The frozen dispatch's exact report pointer is authoritative. Finalize those
+bytes first, then write the exact adjacent `.proposals.json` sidecar conforming
+to `finding-proposals-v1.schema.json`. Bind the run, execution, candidate,
+resolved temporary identity, report path, and report SHA-256. Include every
+proposal and its computed `source_content_sha256`, or an explicit empty
+`proposals` array. Do not edit either immutable artifact afterward.
 
 The report follows the current canonical report contract in `SKILL.md`:
 
@@ -133,6 +147,7 @@ Every finding must satisfy the resolved evidence requirements and the shared
 severity/priority matrix. Temporary findings default to sensitivity
 `uncertain` and remain redacted or sidecar-local until the existing explicit
 human-clearance rules permit publication. This specialist proposes findings;
-it never reads or writes the finding ledger. The orchestrator validates,
-deduplicates, preserves the first owning identity, attaches later reports as
-provenance, exposes material conflicts, and performs the locked ledger update.
+it never reads sibling reports, the inventory, decisions, receipt, or finding
+ledger and never writes them. The reconciliation helper validates the
+orchestrator's component-bounded decisions, preserves provenance, derives
+counts, and performs the locked ledger and receipt publication.

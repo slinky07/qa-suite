@@ -140,7 +140,8 @@ time — reruns always create a new file):
   dispositions** | evidence. Apply `Blocked` as defined there, including its
   mutation-dependent rule. In regression missions: supplied ledger ID |
   candidate | lane result | evidence. A recurrence is a finding proposal
-  linked to the supplied ledger ID; the orchestrator matches it and applies
+  linked to the supplied ledger ID; a bounded semantic decision links it,
+  and the reconciliation helper applies
   the `regressed` transition. Only newly observed different behavior is a
   separate finding proposal. Write `N/A — discovery mission` in discovery.
 - **Scenario results** — scenario | named oracle | injected condition |
@@ -155,13 +156,23 @@ time — reruns always create a new file):
   recommendation | validation. Use `None` when there is no proposal.
 - **Not tested** — skipped risks, scenarios, or signals and why.
 
-Every finding carries both Severity and Priority from the shared matrix. The
-canonical report identity supplies the lane and provenance, and
-**Environment** supplies the candidate. This lane does not read or write the
-finding ledger. It uses only the lifecycle manifest supplied by the
-orchestrator for this mission. The orchestrator validates and matches
-proposals, assigns stable IDs and statuses, and reconciles the ledger,
-including timestamps, occurrences, sensitivity storage, and lifecycle state.
+Every finding carries both Severity and Priority from the shared matrix.
+The canonical report identity supplies the lane and provenance, and
+**Environment** supplies the candidate. Finalize the report at the exact
+pointer in the frozen dispatch, then write its exact adjacent
+`.proposals.json` sidecar. The sidecar must conform to
+`references/finding-proposals-v1.schema.json`, bind the dispatched run,
+execution, candidate, lane, report path, and report SHA-256, and include every
+report finding proposal with its computed `source_content_sha256`. Write an
+explicit empty `proposals` array when there is no proposal. Do not edit the
+report or sidecar after the sidecar is written.
+
+This lane reads only its dispatched lifecycle manifest and reconciliation
+transport fields. It never reads sibling reports, the proposal inventory,
+semantic decisions, a receipt, or the finding ledger, and never writes any of
+them. The versioned reconciliation helper validates and publishes the
+orchestrator's bounded decisions, stable IDs, timestamps, occurrences,
+sensitivity storage, and lifecycle state.
 
 ## Voice
 

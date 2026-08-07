@@ -126,7 +126,7 @@ test("lane reports propose ledger rows without reading the ledger", async () => 
     assert.match(normalized, /N\/A — discovery mission/, lanePaths[index]);
     assert.match(
       normalized,
-      /recurrence.*finding proposal linked to the supplied ledger ID.*orchestrator matches it.*`regressed` transition/,
+      /recurrence.*finding proposal linked to the supplied ledger ID.*bounded semantic decision links it.*reconciliation helper applies the `regressed` transition/,
       lanePaths[index],
     );
     assert.match(
@@ -136,14 +136,17 @@ test("lane reports propose ledger rows without reading the ledger", async () => 
     );
     assert.match(
       normalized,
-      /does not read or write the finding ledger/,
+      /never reads sibling reports.*proposal inventory.*semantic decisions.*receipt.*finding ledger/,
       lanePaths[index],
     );
     assert.match(
       normalized,
-      /orchestrator validates and matches proposals, assigns stable IDs and statuses, and reconciles the ledger/,
+      /versioned reconciliation helper validates and publishes the orchestrator's bounded decisions/,
       lanePaths[index],
     );
+    assert.match(normalized, /finding-proposals-v1\.schema\.json/, lanePaths[index]);
+    assert.match(normalized, /report SHA-256/, lanePaths[index]);
+    assert.match(normalized, /explicit empty `proposals` array/, lanePaths[index]);
     assert.match(normalized, /\*\*Not tested\*\*/, lanePaths[index]);
   });
 
