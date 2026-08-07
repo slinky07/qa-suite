@@ -5,9 +5,10 @@ contract. It complements finding-ledger.md: the ledger contract validates the
 rows it receives, while this protocol proves that every proposal from every
 completed selected lane received exactly one explicit disposition.
 
-The protocol is the authority for the R2 implementation. Until that helper
-ships, a schema-valid ledger does not prove proposal completeness and no host
-may claim that it does.
+The protocol is the authority for the dependency-free
+`scripts/finding-reconciliation.mjs` helper. A schema-valid ledger without a
+verified reconciliation receipt does not prove proposal completeness and no
+host may claim that it does.
 
 ## Trust boundary
 
@@ -56,6 +57,10 @@ execution in a manifest conforming to
 finding-reconciliation-dispatch-v1.schema.json. The tracked location is:
 
     qa-reconciliation/<run-id>/dispatch-manifest.json
+
+Run IDs are portable filename segments: they exclude `:`, trailing dots, and
+Windows reserved device basenames so identical tracked paths work on every
+supported host.
 
 Each selected execution has one stable execution_id, lane identity, expected
 report pointer, and expected sidecar pointer. Selection reasons stay in the
@@ -118,6 +123,12 @@ completed execution contributes exactly one report and sidecar. An unexecuted
 record names its gated or blocked state and a safe reason. Missing, extra, or
 multiply represented execution IDs fail closed.
 
+Inventory freeze requires the canonical finding ledger to be tracked and
+byte-identical to `HEAD`. A dirty, staged-only, or untracked predecessor fails
+with an explicit commit gate. This guarantees that crash recovery and later
+historical verification can retrieve the exact pre-write ledger bytes rather
+than guessing from a mutable working tree.
+
 Durable proposal projections omit lane-authored titles, locations, oracles, and
 local-sensitive comparison bytes. Every persisted string is sanitized. A
 withheld projection retains safe component, Severity, Priority, sensitivity,
@@ -129,6 +140,24 @@ Inventory creation uses exclusive create. The same run_id and identical bytes
 are an idempotent success; the same run_id with different bytes is a hard
 conflict. Once frozen, an inventory is immutable. Changed reports, sidecars,
 candidates, or ledger input require a new run rather than an edit.
+
+### Decision envelope
+
+Bounded semantic judgment is transported in an ignored decision envelope
+conforming to finding-reconciliation-decisions-v1.schema.json. It binds the
+run, frozen inventory path and digest, candidate, canonical reconciliation
+timestamp, optional superseded run, every proposal decision, and the exact
+candidate-ledger path and digest when ledger changes are proposed. It contains
+no summary, persistence claim, or finding-results grouping for the agent to
+guess; deterministic tooling derives those values for the receipt.
+
+The candidate ledger and decision envelope remain ignored local inputs. A
+blocked-only or rejected-only envelope may use a null candidate ledger. Any
+created or matched decision requires a digest-bound candidate ledger. Created
+or matched dispositions cannot coexist with a blocked disposition because no
+stable row is published in a blocked run; rejected and blocked dispositions
+may coexist. The helper validates candidate rows, stable identities, complete
+candidate sets, and report provenance before retaining a receipt.
 
 ### Reconciliation receipt
 
@@ -236,7 +265,8 @@ byte-identical across hosts.
 Inventory freeze and reconciliation use a run lock plus the existing ledger
 sibling lock, acquired in canonical path order. Reconciliation compares the
 current ledger SHA-256 with the inventory's previous digest before any staged
-output is accepted.
+output is accepted. The repository must ignore that exact sibling lock and its
+owner/recovery artifacts; a broad dependency-lock ignore is not permitted.
 
 Because a ledger and receipt are two files, publication uses a sanitized
 transaction journal in the run directory rather than pretending two renames
@@ -325,3 +355,12 @@ adapters. R4 supplies adversarial and control fixtures, cross-host
 compatibility, installed-payload verification, and release proof. Each phase
 must preserve the issue's human gates and may claim only the behavior actually
 implemented and verified in that phase.
+
+## Helper commands
+
+The canonical helper commands are `dispatch`, `inventory`, `reconcile`,
+`recover`, and `verify`. Each accepts `--repo`; commands that read the finding
+ledger also accept `--context`. Timestamps are explicit inputs rather than
+wall-clock defaults. Dispatch, inventory, and receipt locations derive from
+the validated run ID. The helper never stages, commits, pushes, merges, or
+deletes Git state.

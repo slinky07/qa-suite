@@ -22,8 +22,8 @@ function assertStrictObject(schema, required) {
   );
 }
 
-test("reconciliation protocol ships four strict version-1 schemas", async () => {
-  const [dispatch, sidecar, inventory, receipt] = await Promise.all([
+test("reconciliation protocol ships five strict version-1 schemas", async () => {
+  const [dispatch, sidecar, inventory, decisions, receipt] = await Promise.all([
     repositoryJson(
       "qa-suite/references/finding-reconciliation-dispatch-v1.schema.json",
     ),
@@ -32,11 +32,14 @@ test("reconciliation protocol ships four strict version-1 schemas", async () => 
       "qa-suite/references/finding-reconciliation-inventory-v1.schema.json",
     ),
     repositoryJson(
+      "qa-suite/references/finding-reconciliation-decisions-v1.schema.json",
+    ),
+    repositoryJson(
       "qa-suite/references/finding-reconciliation-receipt-v1.schema.json",
     ),
   ]);
 
-  for (const schema of [dispatch, sidecar, inventory, receipt]) {
+  for (const schema of [dispatch, sidecar, inventory, decisions, receipt]) {
     assert.equal(
       schema.$schema,
       "https://json-schema.org/draft/2020-12/schema",
@@ -79,6 +82,17 @@ test("reconciliation protocol ships four strict version-1 schemas", async () => 
     "reports",
     "unexecuted",
   ]);
+  assertStrictObject(decisions, [
+    "schema_version",
+    "protocol",
+    "run_id",
+    "supersedes_run_id",
+    "candidate",
+    "inventory",
+    "candidate_ledger",
+    "reconciled_at",
+    "decisions",
+  ]);
   assertStrictObject(receipt, [
     "schema_version",
     "protocol",
@@ -95,6 +109,56 @@ test("reconciliation protocol ships four strict version-1 schemas", async () => 
     "prominent_risks",
     "persistence",
   ]);
+
+  for (const pattern of [
+    dispatch.properties.run_id.pattern,
+    inventory.properties.run_id.pattern,
+    decisions.$defs.run_id.pattern,
+    receipt.$defs.run_id.pattern,
+  ]) {
+    const runId = new RegExp(pattern);
+    assert.equal(runId.test("run-001"), true);
+    assert.equal(runId.test("run:001"), false);
+    assert.equal(runId.test("run."), false);
+    assert.equal(runId.test("CON"), false);
+  }
+});
+
+test("decision envelope and receipt share one exact semantic decision contract", async () => {
+  const [decisions, receipt] = await Promise.all([
+    repositoryJson(
+      "qa-suite/references/finding-reconciliation-decisions-v1.schema.json",
+    ),
+    repositoryJson(
+      "qa-suite/references/finding-reconciliation-receipt-v1.schema.json",
+    ),
+  ]);
+  for (const definition of [
+    "sha256",
+    "identifier",
+    "run_id",
+    "lane_identity",
+    "candidate",
+    "artifact_ref",
+    "proposal_ref",
+    "candidate_finding_ids",
+    "evidence_field",
+    "evidence_fields",
+    "created_decision",
+    "matched_decision",
+    "rejected_decision",
+    "blocked_decision",
+    "decision",
+  ]) {
+    assert.deepEqual(decisions.$defs[definition], receipt.$defs[definition]);
+  }
+  assert.equal(decisions.properties.decisions.items.$ref, "#/$defs/decision");
+  assert.deepEqual(
+    decisions.properties.candidate_ledger.oneOf.map((option) =>
+      option.$ref ?? option.type,
+    ),
+    ["#/$defs/artifact_ref", "null"],
+  );
 });
 
 test("proposal schemas bind candidate, report, proposal, and safe comparison data", async () => {
@@ -331,7 +395,10 @@ test("contract defines completeness, crash recovery, persistence, and compatibil
     contract,
     /qa-reconciliation\/<run-id>\/reconciliation-receipt\.json/,
   );
-  assert.match(contract, /schema-valid ledger does not prove proposal completeness/);
+  assert.match(
+    contract,
+    /schema-valid ledger without a\s+verified reconciliation receipt does not prove proposal completeness/,
+  );
   assert.match(contract, /Lane agents remain blind to the complete ledger/);
   assert.match(contract, /Titles never establish identity/);
   assert.match(
@@ -359,6 +426,8 @@ test("contract defines completeness, crash recovery, persistence, and compatibil
   assert.match(contract, /ledger schema\s+version 1 or 2/);
   assert.match(contract, /R1 defines and schema-lints the data contracts/);
   assert.match(contract, /R2 implements behavioral\s+validation/);
+  assert.match(contract, /finding-reconciliation-decisions-v1\.schema\.json/);
+  assert.match(contract, /canonical helper commands are `dispatch`, `inventory`,/);
 
   assert.match(
     ledger,

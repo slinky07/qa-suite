@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/slinky07/qa-suite/qa-suite/references/finding-reconciliation-decisions-v1.schema.json",
+  "title": "QA-Suite finding reconciliation decision envelope",
+  "description": "Protocol version 1 bounded semantic decisions bound to one frozen inventory and candidate ledger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol",
+    "run_id",
+    "supersedes_run_id",
+    "candidate",
+    "inventory",
+    "candidate_ledger",
+    "reconciled_at",
+    "decisions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "protocol": {
+      "const": "qa-suite-finding-reconciliation"
+    },
+    "run_id": {
+      "$ref": "#/$defs/run_id"
+    },
+    "supersedes_run_id": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/run_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "inventory": {
+      "$ref": "#/$defs/artifact_ref"
+    },
+    "candidate_ledger": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/artifact_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reconciled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decisions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^(?!(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\..*)?$)[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?$"
+    },
+    "lane_identity": {
+      "oneOf": [
+        {
+          "enum": [
+            "smoke-qa",
+            "regression-qa",
+            "bob-qa",
+            "performance-qa",
+            "security-qa",
+            "api-qa",
+            "compatibility-qa",
+            "reliability-qa",
+            "deployment-qa",
+            "data-integrity-qa"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^temporary-qa-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{64}$"
+        }
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "git-commit",
+            "build",
+            "release",
+            "opaque"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "proposal_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_id",
+        "lane",
+        "report_pointer",
+        "report_sha256",
+        "local_id",
+        "source_content_sha256",
+        "content_sha256"
+      ],
+      "properties": {
+        "execution_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "lane": {
+          "$ref": "#/$defs/lane_identity"
+        },
+        "report_pointer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "report_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "local_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "candidate_finding_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_field": {
+      "enum": [
+        "component",
+        "repro_steps",
+        "expected_result",
+        "actual_result",
+        "environment",
+        "candidate"
+      ]
+    },
+    "evidence_fields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/evidence_field"
+      }
+    },
+    "created_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal",
+        "disposition",
+        "stable_finding_id",
+        "candidate_finding_ids",
+        "reason_code",
+        "explanation",
+        "evidence_fields"
+      ],
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/proposal_ref"
+        },
+        "disposition": {
+          "const": "created"
+        },
+        "stable_finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_finding_ids": {
+          "$ref": "#/$defs/candidate_finding_ids"
+        },
+        "reason_code": {
+          "const": "new-evidenced-finding"
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_fields": {
+          "$ref": "#/$defs/evidence_fields"
+        }
+      }
+    },
+    "matched_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal",
+        "disposition",
+        "stable_finding_id",
+        "candidate_finding_ids",
+        "reason_code",
+        "explanation",
+        "evidence_fields"
+      ],
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/proposal_ref"
+        },
+        "disposition": {
+          "const": "matched"
+        },
+        "stable_finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_finding_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/candidate_finding_ids"
+            }
+          ],
+          "minItems": 1
+        },
+        "reason_code": {
+          "const": "same-evidenced-defect"
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_fields": {
+          "$ref": "#/$defs/evidence_fields"
+        }
+      }
+    },
+    "rejected_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal",
+        "disposition",
+        "candidate_finding_ids",
+        "reason_code",
+        "explanation",
+        "evidence_fields"
+      ],
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/proposal_ref"
+        },
+        "disposition": {
+          "const": "rejected"
+        },
+        "candidate_finding_ids": {
+          "$ref": "#/$defs/candidate_finding_ids"
+        },
+        "reason_code": {
+          "enum": [
+            "unsupported-evidence",
+            "tooling-or-environment-failure",
+            "assumption-as-finding",
+            "duplicate-of-named-stable-finding",
+            "candidate-mismatch",
+            "malformed-or-incomplete-proposal"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidence_field"
+          }
+        }
+      }
+    },
+    "blocked_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal",
+        "disposition",
+        "candidate_finding_ids",
+        "reason_code",
+        "explanation",
+        "evidence_fields",
+        "unblock_condition"
+      ],
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/proposal_ref"
+        },
+        "disposition": {
+          "const": "blocked"
+        },
+        "candidate_finding_ids": {
+          "$ref": "#/$defs/candidate_finding_ids"
+        },
+        "reason_code": {
+          "enum": [
+            "sensitive-manual-handling",
+            "candidate-drift",
+            "report-drift",
+            "proposal-drift",
+            "ledger-drift",
+            "manual-semantic-review-required"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidence_field"
+          }
+        },
+        "unblock_condition": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "decision": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/created_decision"
+        },
+        {
+          "$ref": "#/$defs/matched_decision"
+        },
+        {
+          "$ref": "#/$defs/rejected_decision"
+        },
+        {
+          "$ref": "#/$defs/blocked_decision"
+        }
+      ]
+    }
+  }
+}
