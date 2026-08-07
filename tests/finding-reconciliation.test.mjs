@@ -11,10 +11,13 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
+  buildSemanticDecisionTask,
   createProposalInventory,
   freezeDispatchManifest,
+  materializeCandidateLedger,
   reconcileFindings,
   verifyReconciliationPersistence,
 } from "../qa-suite/scripts/finding-reconciliation.mjs";
@@ -311,6 +314,389 @@ test.after(async () => {
   await Promise.all(createdRepositories.map((repository) =>
     rm(repository, { recursive: true, force: true }),
   ));
+});
+
+test("builds one canonical component-bounded semantic decision task", async () => {
+  const matching = findingRow({
+    id: "FND-clock-grid",
+    candidate: "baseline",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-clock-grid.md",
+    }],
+  });
+  const unrelated = findingRow({
+    id: "FND-qa-driver",
+    candidate: "baseline",
+    component: "qa-driver",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-driver.md",
+    }],
+  });
+  const repository = await createRepository({ rows: [matching, unrelated] });
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-grid",
+    lane: "bob-qa",
+    proposal: sourceProposal(),
+    reportName: "run-001-bob-grid",
+  }]);
+
+  const task = await buildSemanticDecisionTask({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    component: "clock-grid",
+  });
+  assert.equal(task.kind, "semantic-decision-task");
+  assert.deepEqual(task.candidate_finding_ids, [matching.id]);
+  assert.deepEqual(task.candidate_findings.map(({ id }) => id), [matching.id]);
+  assert.equal(JSON.stringify(task).includes(unrelated.id), false);
+  assert.equal(task.proposals.length, 1);
+  assert.equal(task.proposals[0].identity.storage, "sanitized");
+  assert.equal("title" in task.proposals[0].identity, false);
+  assert.equal(task.proposals[0].required_decision, null);
+
+  const script = fileURLToPath(
+    new URL("../qa-suite/scripts/finding-reconciliation.mjs", import.meta.url),
+  );
+  const output = execFileSync(process.execPath, [
+    script,
+    "review",
+    "--repo",
+    repository,
+    "--inventory",
+    prepared.inventory.path,
+    "--component",
+    "clock-grid",
+  ], { encoding: "utf8" });
+  assert.deepEqual(JSON.parse(output), task);
+  assert.equal(output, canonicalJsonDocument(task));
+});
+
+test("semantic review withholds sensitive proposal identity and comparison", async () => {
+  const repository = await createRepository();
+  const prepared = await prepareInventory(repository, [{
+    executionId: "security-grid",
+    lane: "security-qa",
+    proposal: sourceProposal({
+      sensitivity_classification: "security-s1-s2",
+      comparison: {
+        storage: "sensitive-local",
+        repro_steps: ["Use an ignored sensitive fixture."],
+        expected_result: "The protected behavior remains safe.",
+        actual_result: "Sensitive local details are required for review.",
+        environment: "Ignored local security fixture",
+        local_evidence_refs: ["QA/private-evidence.txt"],
+      },
+    }),
+    reportName: "run-001-security-grid",
+  }]);
+
+  const task = await buildSemanticDecisionTask({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    component: "clock-grid",
+  });
+  assert.deepEqual(task.proposals[0].identity, {
+    storage: "withheld",
+    location: null,
+    oracle: null,
+  });
+  assert.deepEqual(task.proposals[0].comparison, {
+    storage: "withheld",
+    reason_code: "sensitive-manual-handling",
+    safe_evidence_refs: [],
+  });
+  assert.equal(JSON.stringify(task).includes("private-evidence"), false);
+  assert.deepEqual(task.proposals[0].required_decision, {
+    disposition: "blocked",
+    reason_code: "sensitive-manual-handling",
+    explanation: "Sensitive comparison content is withheld from durable reconciliation.",
+    unblock_condition: "An authorized human must review the ignored source proposal.",
+    evidence_fields: ["component", "candidate"],
+  });
+});
+
+test("rejects durable comparison storage for every non-standard sensitivity class", async () => {
+  const cases = [
+    { classification: "security-s1-s2", lane: "security-qa" },
+    {
+      classification: "uncertain",
+      lane: `temporary-qa-risk-${"a".repeat(64)}`,
+    },
+    { classification: "human-sensitive", lane: "bob-qa" },
+  ];
+  for (const { classification, lane } of cases) {
+    const repository = await createRepository();
+    const marker = `private-${classification}-marker`;
+    await assert.rejects(
+      prepareInventory(repository, [{
+        executionId: `unsafe-${classification}`,
+        lane,
+        proposal: sourceProposal({
+          local_id: `unsafe-${classification}`,
+          severity: classification === "security-s1-s2" ? "S2" : "S3",
+          sensitivity_classification: classification,
+          comparison: {
+            storage: "sanitized",
+            repro_steps: ["Open the synthetic fixture."],
+            expected_result: "Sensitive details remain local.",
+            actual_result: marker,
+            environment: "Private synthetic fixture",
+            safe_evidence_refs: [],
+          },
+        }),
+        reportName: `unsafe-${classification}`,
+      }], `run-unsafe-${classification}`),
+      /sensitive classification.*sensitive-local comparison storage/,
+    );
+    assert.equal(await readFile(join(repository, "findings.jsonl"), "utf8"), "");
+    await assert.rejects(
+      readFile(join(
+        repository,
+        `qa-reconciliation/run-unsafe-${classification}/reconciliation-receipt.json`,
+      )),
+      { code: "ENOENT" },
+    );
+  }
+});
+
+test("blocks all non-standard sensitivity classes without materializing defect bytes", async () => {
+  const cases = [
+    { classification: "security-s1-s2", lane: "security-qa" },
+    {
+      classification: "uncertain",
+      lane: `temporary-qa-risk-${"b".repeat(64)}`,
+    },
+    { classification: "human-sensitive", lane: "bob-qa" },
+  ];
+  for (const { classification, lane } of cases) {
+    const repository = await createRepository();
+    const marker = `private-${classification}-defect-marker`;
+    const runId = `run-blocked-${classification}`;
+    const prepared = await prepareInventory(repository, [{
+      executionId: `blocked-${classification}`,
+      lane,
+      proposal: sourceProposal({
+        local_id: `blocked-${classification}`,
+        severity: classification === "security-s1-s2" ? "S2" : "S3",
+        priority: classification === "security-s1-s2" ? "P0" : "P1",
+        sensitivity_classification: classification,
+        comparison: {
+          storage: "sensitive-local",
+          repro_steps: ["Inspect the ignored sensitive fixture."],
+          expected_result: "Sensitive details remain local.",
+          actual_result: marker,
+          environment: "Private synthetic fixture",
+          local_evidence_refs: [`QA/${marker}.png`],
+        },
+      }),
+      reportName: `blocked-${classification}`,
+    }], runId);
+    const task = await buildSemanticDecisionTask({
+      repository,
+      inventoryPath: prepared.inventory.path,
+      component: "clock-grid",
+    });
+    assert.deepEqual(task.proposals[0].required_decision, {
+      disposition: "blocked",
+      reason_code: "sensitive-manual-handling",
+      explanation: "Sensitive comparison content is withheld from durable reconciliation.",
+      unblock_condition: "An authorized human must review the ignored source proposal.",
+      evidence_fields: ["component", "candidate"],
+    });
+    assert.equal(JSON.stringify(task).includes(marker), false);
+    const report = prepared.inventory.inventory.reports[0];
+    const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+      decisions: [blockedDecision(proposalRef(report, report.proposals[0]))],
+      name: `${runId}-draft.json`,
+    });
+    const candidatePath = `QA/${runId}-candidate.jsonl`;
+    const materialized = await materializeCandidateLedger({
+      repository,
+      inventoryPath: prepared.inventory.path,
+      decisionPath: draft.path,
+      candidateLedgerPath: candidatePath,
+      outputDecisionPath: `QA/${runId}-final.json`,
+    });
+    assert.equal(materialized.candidateLedgerPath, null);
+    assert.equal(JSON.stringify(materialized.decision).includes(marker), false);
+    await assert.rejects(readFile(join(repository, candidatePath)), { code: "ENOENT" });
+    const reconciled = await reconcileFindings({
+      repository,
+      inventoryPath: prepared.inventory.path,
+      decisionPath: materialized.decisionPath,
+    });
+    assert.equal(reconciled.receipt.persistence.publication_state, "blocked-not-published");
+    assert.equal(JSON.stringify(reconciled.receipt).includes(marker), false);
+    assert.equal(await readFile(join(repository, "findings.jsonl"), "utf8"), "");
+  }
+});
+
+test("materializes a full ledger without exposing unrelated components", async () => {
+  const matching = findingRow({
+    id: "FND-clock-grid",
+    candidate: "baseline",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-clock-grid.md",
+    }],
+  });
+  const unrelated = findingRow({
+    id: "FND-qa-driver",
+    candidate: "baseline",
+    component: "qa-driver",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-driver.md",
+    }],
+  });
+  const repository = await createRepository({ rows: [matching, unrelated] });
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-grid",
+    lane: "bob-qa",
+    proposal: sourceProposal(),
+    reportName: "run-001-bob-grid",
+  }]);
+  const task = await buildSemanticDecisionTask({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    component: "clock-grid",
+  });
+  assert.equal(JSON.stringify(task).includes(unrelated.id), false);
+  const report = prepared.inventory.inventory.reports[0];
+  const proposal = report.proposals[0];
+  const stableFindingId = "FND-catalogue-duplicate";
+  const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+    decisions: [createdDecision(
+      proposalRef(report, proposal),
+      stableFindingId,
+      [matching.id],
+    )],
+    name: "run-001-draft-decisions.json",
+  });
+  const originalLedger = await readFile(join(repository, "findings.jsonl"), "utf8");
+  const result = await materializeCandidateLedger({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    decisionPath: draft.path,
+    candidateLedgerPath: "QA/run-001-candidate-findings.jsonl",
+    outputDecisionPath: "QA/run-001-final-decisions.json",
+  });
+  const script = fileURLToPath(
+    new URL("../qa-suite/scripts/finding-reconciliation.mjs", import.meta.url),
+  );
+  const cliResult = JSON.parse(execFileSync(process.execPath, [
+    script,
+    "materialize",
+    "--repo",
+    repository,
+    "--inventory",
+    prepared.inventory.path,
+    "--decisions",
+    draft.path,
+    "--candidate-ledger",
+    "QA/run-001-candidate-findings.jsonl",
+    "--output",
+    "QA/run-001-final-decisions.json",
+  ], { encoding: "utf8" }));
+  assert.deepEqual(cliResult, {
+    decision_path: result.decisionPath,
+    decision_sha256: result.decisionDigest,
+    candidate_ledger_path: result.candidateLedgerPath,
+    candidate_ledger_sha256: result.candidateLedgerDigest,
+  });
+  const candidateLedger = await readFile(
+    join(repository, result.candidateLedgerPath),
+    "utf8",
+  );
+  const originalUnrelatedLine = originalLedger
+    .trimEnd()
+    .split("\n")
+    .find((line) => JSON.parse(line).id === unrelated.id);
+  const candidateUnrelatedLine = candidateLedger
+    .trimEnd()
+    .split("\n")
+    .find((line) => JSON.parse(line).id === unrelated.id);
+  assert.equal(candidateUnrelatedLine, originalUnrelatedLine);
+  assert.deepEqual(
+    candidateLedger.trimEnd().split("\n").map(JSON.parse).map(({ id }) => id),
+    [matching.id, unrelated.id, stableFindingId],
+  );
+
+  const reconciled = await reconcileFindings({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    decisionPath: result.decisionPath,
+  });
+  assert.equal(reconciled.result, "published");
+  assert.equal(
+    (await verifyReconciliationPersistence({
+      repository,
+      receiptPath: reconciled.receiptPath,
+    })).persistenceState,
+    "pending-human-commit",
+  );
+});
+
+test("materializes matched recurrence fields once per stable finding", async () => {
+  const existing = findingRow({
+    id: "FND-catalogue-duplicate",
+    candidate: "baseline",
+    reports: [{
+      candidate: "baseline",
+      lane: "bob-qa",
+      pointer: "QA/baseline-duplicate.md",
+    }],
+  });
+  existing.status = "fixed";
+  existing.first_seen = "2026-08-05T18:00:00Z";
+  existing.last_seen = "2026-08-05T18:00:00Z";
+  const repository = await createRepository({ rows: [existing] });
+  const prepared = await prepareInventory(repository, [{
+    executionId: "bob-grid",
+    lane: "bob-qa",
+    proposal: sourceProposal(),
+    reportName: "run-001-bob-grid",
+  }]);
+  const report = prepared.inventory.inventory.reports[0];
+  const proposal = report.proposals[0];
+  const draft = await writeDecisionEnvelope(repository, prepared.inventory, {
+    decisions: [matchedDecision(
+      proposalRef(report, proposal),
+      existing.id,
+      [existing.id],
+    )],
+    name: "run-001-match-draft.json",
+  });
+  const result = await materializeCandidateLedger({
+    repository,
+    inventoryPath: prepared.inventory.path,
+    decisionPath: draft.path,
+    candidateLedgerPath: "QA/run-001-match-candidate.jsonl",
+    outputDecisionPath: "QA/run-001-match-final.json",
+  });
+  const [candidate] = (await readFile(
+    join(repository, result.candidateLedgerPath),
+    "utf8",
+  )).trimEnd().split("\n").map(JSON.parse);
+  assert.equal(candidate.id, existing.id);
+  assert.equal(candidate.status, "regressed");
+  assert.equal(candidate.occurrences, existing.occurrences + 1);
+  assert.equal(candidate.candidate_last_confirmed, prepared.candidate);
+  assert.equal(candidate.last_seen, timestamp);
+  assert.deepEqual(candidate.reports, [
+    ...existing.reports,
+    {
+      candidate: prepared.candidate,
+      lane: report.lane,
+      pointer: report.report.path,
+    },
+  ]);
 });
 
 test("publishes a complete split decision idempotently and proves persistence", async () => {

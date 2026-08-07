@@ -151,13 +151,25 @@ candidate-ledger path and digest when ledger changes are proposed. It contains
 no summary, persistence claim, or finding-results grouping for the agent to
 guess; deterministic tooling derives those values for the receipt.
 
-The candidate ledger and decision envelope remain ignored local inputs. A
-blocked-only or rejected-only envelope may use a null candidate ledger. Any
-created or matched decision requires a digest-bound candidate ledger. Created
-or matched dispositions cannot coexist with a blocked disposition because no
+The AI-authored draft decision envelope is ignored and must use
+`candidate_ledger: null`; it contains bounded semantic decisions, not ledger
+bytes. The deterministic `materialize` command verifies those decisions,
+copies every predecessor row, evolves only named stable findings, creates only
+named new findings, and emits both the complete ignored candidate ledger and a
+finalized ignored decision envelope bound to its path and digest. Unrelated
+rows are never presented to the AI and survive byte-identically. A blocked-only
+or rejected-only run needs no candidate ledger. Created or matched dispositions
+cannot coexist with a blocked disposition because no
 stable row is published in a blocked run; rejected and blocked dispositions
 may coexist. The helper validates candidate rows, stable identities, complete
 candidate sets, and report provenance before retaining a receipt.
+
+Every non-standard lane proposal must use local-sensitive comparison storage
+before inventory freeze. Inventory withholds those bytes, `review` supplies the
+fixed blocked decision, and `materialize` refuses to create a committed row
+from it. This includes `security-s1-s2`, `uncertain`, and `human-sensitive`
+proposals; no host may downgrade them to `standard` or publish their defect
+record without the separate human-clearance contract.
 
 ### Reconciliation receipt
 
@@ -240,9 +252,26 @@ blocked-not-published; it is complete accounting but not a reconciled ledger. A
 publishable receipt requires both blocked and unresolved to be zero.
 
 Candidate selection for semantic review first indexes ledger rows by exact
-component, then supplies only those candidates and the proposal's safe
-comparison record. It never injects the full report corpus or full ledger. The
-AI may still split from all candidates or block for manual review.
+component. The read-only `review` command accepts one exact component from a
+frozen inventory and returns only that component's safe proposals plus the
+exact-component candidate rows and IDs from the committed predecessor ledger.
+It never persists another protocol artifact and never injects the full report
+corpus, full ledger, or lane-authored title. A withheld proposal includes the
+verifier's fixed blocked-decision fields without its local-sensitive bytes.
+The AI may still split from all candidates, merge
+multiple same-component proposals conservatively, or block for manual review.
+It resolves the component task as one unit. After selecting any new stable IDs,
+each decision names the canonical predecessor candidate IDs plus every new ID
+created for that component, excluding its own new ID only for its `created`
+decision. The verifier recomputes and requires that exact set.
+
+After all component decisions are combined into one schema-valid draft
+envelope, `materialize` performs the non-semantic ledger work. It validates
+decision identity and complete proposal accounting against the frozen
+inventory, constructs the full candidate ledger without asking the AI to copy
+unrelated rows, validates the ledger transition, and binds its digest into the
+finalized envelope. Repeating the command with identical inputs is an
+idempotent success; differing bytes at an existing output path fail closed.
 
 Set-like arrays have one canonical order: selected executions, inventory
 reports, and unexecuted records by execution_id; proposals within a sidecar or
@@ -257,8 +286,8 @@ implementation-defined.
 reconciled_at is a canonical UTC timestamp frozen in the validated decision
 envelope. It is part of the exact input set, retained in the transaction
 journal, and reused by every retry and host adapter. Given the same manifest,
-inventory, ledger, decision envelope, and timestamp, candidate outputs are
-byte-identical across hosts.
+inventory, ledger, draft decision envelope, and timestamp, materialized
+candidate outputs are byte-identical across hosts.
 
 ## Transaction and recovery
 
@@ -358,9 +387,14 @@ implemented and verified in that phase.
 
 ## Helper commands
 
-The canonical helper commands are `dispatch`, `inventory`, `reconcile`,
-`recover`, and `verify`. Each accepts `--repo`; commands that read the finding
-ledger also accept `--context`. Timestamps are explicit inputs rather than
-wall-clock defaults. Dispatch, inventory, and receipt locations derive from
-the validated run ID. The helper never stages, commits, pushes, merges, or
-deletes Git state.
+The canonical helper commands are `dispatch`, `inventory`, `review`,
+`materialize`, `reconcile`, `recover`, and `verify`. Each accepts `--repo`;
+commands that read the finding ledger also accept `--context`. The read-only
+`review` also requires the frozen inventory and one exact component and emits
+canonical JSON to standard output; all supported hosts transport those bytes
+unchanged.
+`materialize` accepts the frozen inventory, the AI-authored draft decisions,
+and separate candidate-ledger and finalized-decision output paths. Timestamps
+are explicit inputs rather than wall-clock defaults. Dispatch, inventory, and
+receipt locations derive from the validated run ID. The helper never stages,
+commits, pushes, merges, or deletes Git state.

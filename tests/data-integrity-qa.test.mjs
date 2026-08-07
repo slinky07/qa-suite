@@ -187,9 +187,9 @@ test("data-integrity reports use the canonical verdict and ledger lifecycle", as
   assert.match(normalized, /supplied ledger ID/);
   assert.match(normalized, /confirmation missions.*Confirmation dispositions/);
   assert.match(normalized, /Apply `Blocked` as defined there, including its mutation-dependent rule/);
-  assert.match(normalized, /recurrence.*finding proposal linked to the supplied ledger ID.*orchestrator matches it.*`regressed` transition/);
+  assert.match(normalized, /recurrence.*finding proposal linked to the supplied ledger ID.*bounded semantic decision links it.*reconciliation helper applies the `regressed` transition/);
   assert.match(normalized, /Only newly observed different behavior is a separate finding proposal/);
   assert.match(normalized, /N\/A — discovery mission/);
-  assert.match(normalized, /does not read or write the finding ledger/);
-  assert.match(normalized, /orchestrator validates and matches proposals, assigns stable IDs and statuses, and reconciles the ledger/);
+  assert.match(normalized, /never reads sibling reports.*finding ledger.*never writes any of them/);
+  assert.match(normalized, /versioned reconciliation helper validates and publishes the orchestrator's bounded decisions/);
 });

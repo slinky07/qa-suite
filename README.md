@@ -199,7 +199,11 @@ dispatch and prints the exact compare-and-swap migration command. Temporary
 findings default to `uncertain` sensitivity and redacted or sidecar-only
 storage until explicit human clearance permits publication.
 
-Run order matters: smoke first, always. If smoke is `No-Go` or `Blocked`, deeper agents stop because they require an exercised smoke target.
+Run order matters: smoke first, always. The orchestrator freezes every selected
+execution in one candidate-bound dispatch manifest before smoke. If smoke is
+`No-Go` or `Blocked`, deeper agents stop because they require an exercised
+smoke target, and each is retained as an explicit gated or blocked
+`unexecuted` inventory record.
 
 Post-fix runs bind every report to one frozen candidate. They confirm each unresolved finding through its originating lane, mark older-candidate evidence as superseded, and run only the regression lanes justified by the fix's impact. Routine discovery runs receive no finding manifest.
 
@@ -219,7 +223,13 @@ semantic steering. They are not credentials, certification, guaranteed
 expertise, or a substitute for qualified human assessment. Operational rules
 and evidence outrank the role title.
 
-The orchestrator prepares neutral setup context, chooses the lanes, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or `Blocked`, and synthesizes the final result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`, `performance-qa`, `reliability-qa`, `deployment-qa`, `data-integrity-qa`, `security-qa`, `api-qa`, or `compatibility-qa` work when subagents are available.
+The orchestrator prepares neutral setup context, chooses the lanes, freezes the
+dispatch, enforces smoke-first order, stops deeper QA when smoke is `No-Go` or
+`Blocked`, completes programmatic reconciliation, and synthesizes the final
+result. It does not personally perform `smoke-qa`, `regression-qa`, `bob-qa`,
+`performance-qa`, `reliability-qa`, `deployment-qa`, `data-integrity-qa`,
+`security-qa`, `api-qa`, or `compatibility-qa` work when subagents are
+available.
 
 Lane selection follows the affected risks or the user's explicit request. The
 orchestrator records a brief reason for every selected lane and any expected
@@ -236,23 +246,49 @@ refused before project inspection.
 
 Each QA subagent receives only project-visible context: `qa-context.md`, relevant repo docs named there, the matching platform checklist, its own lane instructions, the severity/priority matrix when applicable, the report folder, and the user's scoped QA request. Subagents do not inherit the implementation agent's prior context, conversation history, memory, unstated assumptions, or explanation of how the feature should work. `bob-qa` is especially isolated so it can keep a fresh-user mindset; `smoke-qa` is independent evidence, not orchestrator self-certification.
 
+Every lane also receives identical host-neutral reconciliation transport:
+protocol version, run ID, execution ID, candidate object, exact report and
+adjacent sidecar pointers, and the proposal schema. It finalizes the report,
+then writes a digest-bound sidecar; `proposals: []` is the explicit clean
+result. Lanes remain blind to sibling reports, the inventory, decisions,
+receipt, and finding ledger.
+
 Every dispatch names the canonical primary question and lifecycle
 `mission: discovery | confirmation | regression`. Mission mode, not the
 specialist identity, controls whether a confirmation manifest or graduated
 regression corpus is allowed. Scope and manifest values remain subject to the
 single canonical verbatim-dispatch rule in `qa-suite/SKILL.md`.
 
-During synthesis, the orchestrator validates evidence, keeps assumptions
-separate and verdict-neutral, deduplicates demonstrated defects through the
-finding-ledger matching contract, retains the first owning identity, attaches
-later reports as provenance, and names unresolved factual or recommendation
-conflicts. Lane
+After lane completion, `finding-reconciliation.mjs inventory` accounts for
+every selected execution. Its read-only `review` command returns one
+component-bounded semantic task containing only safe proposals and exact-
+component stable candidates. Codex, Claude Code, Claude.ai, and fallback hosts
+transport the same canonical task bytes and versioned decision shape. The AI
+chooses only the evidenced match, split, reject, or block result and submits a
+draft envelope with no candidate-ledger bytes. Deterministic `materialize`
+tooling copies and evolves the complete ledger, preserves unrelated rows
+without presenting them to the AI, and binds the finalized decision envelope
+to that candidate ledger. The helper also owns completeness, digests,
+candidate validation, ledger/receipt
+publication, counts, and persistence.
+
+During synthesis, the orchestrator uses the verified receipt and `verify`
+result, keeps assumptions separate and verdict-neutral, attaches contributing
+reports as provenance, and names unresolved factual or recommendation
+conflicts. `verify` distinguishes `durable-committed`,
+`pending-human-commit`, and `blocked-recovery-required`. Pending work states
+`Ledger reconciled; persistence pending human commit` and names the dispatch,
+inventory, receipt, ledger, digests, counts, tracked/HEAD state, and exact files
+for human review and commit. Lane
 results remain visible separately from the orchestrator-owned final assessment
 or final release assessment. Reports and summaries preserve useful evidence
 shape while redacting credentials, sessions, personal data, private
 user identifiers, and sensitive URLs.
 
-Single-session sequential execution is fallback only for hosts with no subagent or delegation facility. Reports and final summaries from fallback runs must explicitly label themselves as `single-session fallback; non-independent evidence`.
+Single-session sequential execution is fallback only for hosts with no subagent
+or delegation facility. Reports and final summaries from fallback runs must
+explicitly label themselves as `single-session fallback; non-independent
+evidence`. Fallback changes the transport, not the reconciliation protocol.
 
 ### Governance-Aware Issue Proposals
 
@@ -288,12 +324,15 @@ In Codex Desktop, Codex CLI, and the Codex IDE extension, qa-suite should run as
 
 Codex skill instructions can request delegation, so qa-suite does not need separate Codex custom-agent files to enforce this rule. If the active Codex tool offers a way to fork or inherit the current conversation context, leave it off for QA lanes. Each QA subagent should start from a fresh, self-contained prompt containing only project-visible context and its own lane instructions. This keeps Bob fresh, keeps smoke independent, and avoids turning the implementation agent's prior reasoning into QA evidence.
 
-Codex subagents inherit the parent task's sandbox and permission mode. Choose the parent permission mode before dispatch and keep QA subagents read-only except for their own report and evidence files under the configured QA folder.
+Codex subagents inherit the parent task's sandbox and permission mode. Choose
+the parent permission mode before dispatch and keep QA subagents read-only
+except for their exact report, adjacent proposal sidecar, and evidence files
+under the configured QA folder.
 
 Codex remains wrapperless for temporary specialists. The root resolves the
 same exact registry projection and dispatches a fresh constrained child with
 no inherited conversation. The resolved `temporary-qa-...` identity—not a
-generic adapter name—appears in its report and ledger proposals.
+generic adapter name—appears in its report and proposal sidecar.
 
 ## Plugin-Shipped Agents vs Repo-Local Project Agents
 
@@ -311,7 +350,15 @@ Invoking the generated agents later:
 * Claude Code: `Use the <project>-smoke-qa agent to smoke-test this build` (or Claude delegates to it automatically for smoke-test requests in that repo).
 * Codex: ask the task to spawn it, e.g. `Spawn the <project>-smoke-qa agent to check this build comes up`.
 
-Generated agents are deliberately narrow: smoke only, `qa-context.md` first, default run policy respected, reports and evidence written only under the configured QA report folder with timestamped filenames (`YYYY-MM-DD-HHMM-...`, so every rerun is a new file), no source/test/config/git/issue/PR edits, non-destructive shutdown of anything they started, and disposable local test data for any mutating action.
+Generated agents are deliberately narrow: smoke only, `qa-context.md` first,
+default run policy respected, reports and evidence written only under the
+configured QA report folder with timestamped filenames
+(`YYYY-MM-DD-HHMM-...`, so every rerun is a new file), no
+source/test/config/git/issue/PR edits, non-destructive shutdown of anything
+they started, and disposable local test data for any mutating action. With a
+complete canonical envelope they also write the exact sidecar; direct
+standalone runs remain report-only and never claim proposal completeness or
+ledger reconciliation.
 
 ## Agents
 

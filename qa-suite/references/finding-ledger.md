@@ -193,14 +193,17 @@ evolution safety for the candidate rows it receives; a valid candidate ledger
 alone does not prove that every report-local proposal was created, matched,
 rejected, or blocked.
 
-Lane agents write only their timestamped reports. After every selected lane
-returns, the orchestrator:
+Lane agents write only their timestamped reports and adjacent proposal
+sidecars. After every selected lane returns, the reconciliation flow:
 
-1. parses all current rows and rejects invalid or duplicate IDs;
-2. matches new lane findings conservatively;
-3. updates existing rows or creates stable new IDs;
-4. applies only mechanically authorized human lifecycle decisions;
-5. redacts before writing;
+1. validates and freezes the complete proposal inventory;
+2. gives the AI one component-bounded semantic `review` task at a time, never
+   the full ledger or sibling reports;
+3. accepts only draft semantic decisions with `candidate_ledger: null`;
+4. deterministically materializes a complete candidate ledger by copying all
+   predecessor rows, evolving named matches, and creating named new IDs;
+5. applies only mechanically authorized human lifecycle decisions and redacts
+   before writing;
 6. validates every resulting row, committed string, unique-ID set, and
    ledger-wide report-pointer-to-candidate binding;
 7. acquires the exclusive sibling lock, compares the current ledger SHA-256

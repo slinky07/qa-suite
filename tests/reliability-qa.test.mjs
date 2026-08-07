@@ -136,7 +136,9 @@ test("reliability QA preserves ownership seams and current report semantics", as
     reports.replace(/\s+/g, " "),
     /demonstrated reliability impact \| recommendation \| validation/,
   );
-  assert.match(reports, /does not read or write the\s+finding ledger/);
+  assert.match(reports, /never reads sibling reports.*finding ledger.*never writes any of\s+them/s);
+  assert.match(reports, /finding-proposals-v1\.schema\.json/);
+  assert.match(reports, /explicit empty `proposals` array/);
   assert.doesNotMatch(reports, /per-finding verdict/i);
   assert.doesNotMatch(reports, /\bconfidence\b/i);
 });

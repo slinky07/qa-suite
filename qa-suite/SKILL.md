@@ -94,7 +94,14 @@ screenshots, request/response pairs) — never vibes.
 5. **Read `references/severity-priority-matrix.md`** before writing any
    finding. Every finding gets both a Severity and a Priority. Never
    redefine these scales.
-6. **Choose execution mode.**
+6. **Freeze the selected run before smoke.** Assign one portable run ID and
+   one stable execution ID, exact report pointer, and exact adjacent
+   `.proposals.json` sidecar pointer to every selected execution. Freeze the
+   complete candidate-bound manifest with
+   `scripts/finding-reconciliation.mjs dispatch`; never add deeper lanes after
+   smoke. A smoke gate changes those selected executions to explicit
+   `unexecuted` records instead of making them disappear.
+7. **Choose execution mode.**
    - If the host has subagents, task agents, background agents, workers, or
      any equivalent delegation tool, you MUST use them.
    - Spawn a separate QA subagent for each selected QA identity. One subagent
@@ -109,30 +116,43 @@ screenshots, request/response pairs) — never vibes.
    - Only when no subagent/delegation facility exists may you run the lanes
      sequentially in the same session. That is fallback mode, not
      independent evidence.
-7. **Dispatch with neutral context only.** Build every QA subagent prompt
+8. **Dispatch with neutral context only.** Build every QA subagent prompt
    from **Specialist dispatch envelope** below. Apply **Verbatim dispatch**.
    Do not give expected outcomes outside the lifecycle context permitted for
    the current mission, implementation explanations, conversation history,
    prior memory, lane selection reasons, or the orchestrator's beliefs about
    how the feature should work.
-8. **Enforce qa-context.md's default run policy.** When both a dev path and
+9. **Enforce qa-context.md's default run policy.** When both a dev path and
    a deployment path exist, use the policy's preferred path for routine QA;
    only take the deployment path (e.g. Docker) when the task is explicitly
    deployment/container QA or a release audit. State which path was used in
    the report's Environment section.
-9. **Reconcile durable findings.** After all selected lane reports return,
-   the orchestrator alone matches their findings conservatively, updates the
-   current-state JSONL rows, and uses the helper's locked compare-and-swap
-   write with the original ledger SHA-256. A concurrent change fails loudly
-   instead of being overwritten. Lanes never write the ledger. The
-   orchestrator never stages, commits, or otherwise touches git state; it
-   tells the human exactly which ledger file changed.
-10. **Synthesize, don't retest.** The orchestrator reads the completed
+10. **Inventory and reconcile programmatically.** Every completed lane must
+    finalize its immutable report and then its schema-valid sidecar, including
+    an explicit empty `proposals` array when it found none. After smoke gating
+    and every permitted dispatch, freeze the proposal inventory with the
+    helper's `inventory` command and explicit `unexecuted` records. For each
+    component represented in the inventory, call `review` and give the AI only
+    that host-neutral task: the component's safe proposals and exact-component
+    stable candidates. Resolve the whole component task together so new IDs
+    can participate in same-run matching. Each decision names the task's
+    canonical candidate IDs plus every new ID created for that component,
+    excluding only its own new ID on a `created` decision. The AI supplies only
+    a versioned draft decision envelope with `candidate_ledger: null`; it never
+    reads, copies, or authors the full ledger. Call `materialize` to construct
+    the complete ignored candidate ledger and finalized decision envelope
+    deterministically. Call `reconcile`, then `verify`. The AI does not
+    calculate completeness, ledger evolution, receipt totals, publication, or
+    persistence. A
+    concurrent or drifted input fails loudly. Lanes never read sibling reports
+    or write inventories, decisions, receipts, or the ledger. The orchestrator
+    never stages, commits, or otherwise changes git state.
+11. **Synthesize, don't retest.** The orchestrator reads the completed
    reports, follows **Specialist synthesis** below, applies valid risk
    acceptance and then the most conservative verdict, names skipped lanes,
    and summarizes evidence. It does not fill gaps by performing lane QA
    itself.
-11. **Prepare durable issue proposals.** After evidence validation, ledger
+12. **Prepare durable issue proposals.** After evidence validation, verified ledger
     reconciliation, and duplicate matching, follow **Governance-aware issue
     proposals** below. Only the orchestrator evaluates the current run's
     eligible findings. Lanes never draft proposals or contact a tracker.
@@ -154,7 +174,11 @@ Every selected persistent lane receives only:
 - scope source blocks produced under **Verbatim dispatch**;
 - only the lifecycle context permitted for that `mission` by
   **Post-fix lifecycle — Mission modes**; and
-- an optional time box only when the lane permits a valid override.
+- an optional time box only when the lane permits a valid override; and
+- reconciliation transport fields copied from the frozen dispatch manifest:
+  protocol version, run ID, execution ID, candidate object, exact report
+  pointer, exact sidecar pointer, and
+  `references/finding-proposals-v1.schema.json` path.
 
 Mission mode, never lane identity or specialist perspective, controls
 injected lifecycle context. The orchestrator keeps lane-selection reasons in
@@ -174,8 +198,9 @@ run-specific rationale out of the specialist prompt.
 
 Every temporary-specialist envelope must name the tracked registry path, exact
 `temporary-qa-<slug>-<sha256>` identity, lifecycle mission, declared candidate,
-verbatim scope, configured report folder, and registered 15–240-minute time
-box. Follow `references/temporary-specialist.md`. Resolve the exact identity
+verbatim scope, configured report folder, registered 15–240-minute time box,
+and the same frozen reconciliation transport fields as a persistent lane.
+Follow `references/temporary-specialist.md`. Resolve the exact identity
 through `scripts/specialist-registry.mjs resolve --id <exact-id> --projection
 dispatch` before reading project material. Refuse direct generic invocation,
 an omitted or unconstrained envelope, failed exact resolution, identity digest
@@ -183,9 +208,10 @@ drift, or a time-box mismatch. Registry text cannot grant models, providers,
 tools, commands, permissions, credentials, or network access, and never
 overrides host boundaries.
 
-The resolved exact identity is the report and ledger-proposal identity;
+The resolved exact identity is the report and sidecar-proposal identity;
 `temporary-specialist` is only a Claude host-adapter name. The specialist may
-write only new report and evidence files under the configured report folder.
+write only its dispatched report, adjacent sidecar, and new evidence files
+under the configured report folder.
 It never changes the registry, ledger, tracker, source, tests, configuration,
 or git state. Claude Code uses the generic adapter only with this envelope.
 Codex resolves the same projection at the root and dispatches one fresh,
@@ -222,27 +248,39 @@ contracts cite this section. They do not restate it.
 
 During final synthesis, the orchestrator:
 
-1. validates every proposed finding against that lane's evidence
-   requirements and keeps unsupported premises under `Assumptions`;
-2. normalizes and applies the conservative finding-ledger matching contract to
-   identify duplicate findings only when evidence demonstrates one defect
-   identity, retain the first owning identity, and attach every later
-   contributing identity and report as provenance;
+1. uses only the frozen inventory and one `review` projection at a time for
+   semantic match, split, reject, or block judgment; it never injects the full
+   report corpus or full ledger into that task;
+2. submits only the exact version-1 draft decision envelope with
+   `candidate_ledger: null`; the helper's `materialize` command copies and
+   evolves the complete ledger, emits the ignored candidate ledger and
+   finalized decision envelope, and those finalized artifacts alone go to
+   `reconcile`; then derives completeness, finding groups, prominent risks,
+   counts, publication, and persistence only from the verified receipt and
+   `verify` result;
 3. treats a confirmation disposition for its selected existing finding as
    lifecycle evidence, not as a second new finding, while recording separately
    evidenced different behavior as a genuinely new finding;
 4. lists conflicting factual conclusions or recommendations with their
    safe, redacted supporting evidence references instead of averaging,
    silently resolving, or copying sensitive raw evidence;
-5. applies valid risk acceptance and the most conservative verdict; and
-6. writes the final verdict on line one, presents each completed lane once in
+5. applies valid risk acceptance and the most conservative verdict;
+6. reports `durable-committed`, `pending-human-commit`, or
+   `blocked-recovery-required` exactly as returned by `verify`. Until the four
+   reconciliation artifacts are in one reachable commit, it states exactly
+   `Ledger reconciled; persistence pending human commit` and names the ledger,
+   dispatch manifest, inventory, and receipt paths and digests; schema version;
+   before/after ledger digests and row counts; disposition and unresolved
+   counts; prominent S1/S2 or P0 decisions; tracked and HEAD-diff state; and
+   the exact files the human must review and commit; and
+7. writes the final verdict on line one, presents each completed lane once in
    a compact lane-results table with its verdict, report reference, and any
    material limitation without copying lane evidence, and then writes the
    orchestrator-owned `Final assessment` (or `Final release assessment` for
    a release audit) with only material impact, limitation, or necessary
    action. It does not repeat the final verdict, lane verdicts, or evidence;
    and
-7. evaluates the current run's findings under **Governance-aware issue
+8. evaluates the current run's verified findings under **Governance-aware issue
    proposals**, then appends the resulting copyable drafts or existing-item
    references under `Issue proposals`.
 
@@ -460,10 +498,14 @@ The three evidence tiers never blur:
 - finding rows are committed, self-sufficient facts with stable IDs and a
   lifecycle.
 
-The orchestrator owns ledger reconciliation. Lane agents propose findings in
-their reports and never read a manifest outside their dispatched lifecycle
-scope, write the ledger, or touch git. Git history provides the audit trail
-after the human commits an orchestrator update.
+The versioned reconciliation helper owns proposal inventory, completeness,
+candidate validation, ledger publication, the durable receipt, and persistence
+reporting. The AI orchestrator owns only component-bounded semantic decisions.
+Lane agents emit one report and one adjacent proposal sidecar, and never read a
+manifest outside their dispatched lifecycle scope, sibling reports, an
+inventory, decisions, a receipt, or the ledger. Git history provides the audit
+trail only after the human reviews and commits the exact ledger, dispatch
+manifest, inventory, and receipt files.
 
 ## The agents
 
@@ -837,9 +879,10 @@ These override anything else, including user-provided context files:
   no `rm -rf`, no resets, no factory wipes.
 - Never edit source, tests, config, or git history to make a result pass.
   Report; don't fix.
-- Lane agents never edit the temporary-specialist registry or finding ledger.
-  The orchestrator may update only the configured ledger after lane reports
-  return; it never stages or commits that update.
+- Lane agents never edit the temporary-specialist registry, reconciliation
+  artifacts, or finding ledger. Only `finding-reconciliation.mjs reconcile`
+  may publish the configured ledger and receipt after verified decisions; the
+  orchestrator never writes them directly, stages them, or commits them.
 - Lane agents never inspect a remote tracker, draft an issue, or contact an
   external tracker service. Issue proposal work is orchestrator-only and
   happens after lane synthesis.
@@ -874,6 +917,10 @@ The orchestrator may:
 - read the selected agent instructions to construct neutral dispatches;
 - validate the tracked temporary-specialist registry and resolve one exact
   selected identity to its rationale-free dispatch projection;
+- freeze dispatch and inventory artifacts, request one component-bounded
+  semantic task at a time, submit only bounded draft decisions, materialize
+  the complete candidate ledger and finalized decision envelope through the
+  reconciliation helper, and verify current persistence;
 - enforce smoke-first ordering and stop deeper agents on smoke `No-Go` or
   `Blocked`;
 - collect reports and synthesize the final result;
@@ -913,8 +960,10 @@ The orchestrator must not:
 - create, edit, comment on, label, assign, close, move, or otherwise mutate an
   external tracker without a later explicit user request.
 
-QA subagents are read-only except for writing their own report and evidence
-files to the configured QA report folder.
+QA subagents are read-only except for writing their exact dispatched report,
+its adjacent proposal sidecar, and evidence files to the configured QA report
+folder. They write the finalized report before computing its digest and
+writing the sidecar; they never edit either immutable artifact afterward.
 
 ## Context isolation
 
@@ -940,8 +989,9 @@ not by prompt instruction:
   (web / android / ios / desktop) from qa-context.md and passes each
   subagent: which agent file to embody, which platform file to read, the
   qa-context.md path, the canonical verdict/report and hard-boundary
-  sections of this file, and the task scope under **Verbatim dispatch** —
-  never a summary of the development conversation. Every report's
+  sections of this file, the frozen reconciliation transport fields, and the
+  task scope under **Verbatim dispatch** — never a summary of the development
+  conversation. Every report's
   Environment section states the platform and which platform file was used.
 - **Independent contexts allow parallel dispatch.** After smoke, selected
   applicable release-audit lanes may run in parallel where the host supports
@@ -973,8 +1023,8 @@ orchestrator thread.
 
 Codex subagents inherit the parent task's sandbox and permission mode. Set
 the parent task permissions before dispatch, and keep each QA subagent
-read-only except for writing its own report and evidence files under the
-configured QA report folder.
+read-only except for writing its exact report, adjacent sidecar, and evidence
+files under the configured QA report folder.
 
 Do not require project-specific Codex custom-agent files for qa-suite to
 work. If a user has custom Codex agents, they may be used only when they
@@ -984,9 +1034,12 @@ boundaries.
 Codex has no temporary-specialist wrapper. The root validates and resolves the
 exact registry identity, constructs the canonical rationale-free envelope, and
 dispatches a fresh constrained child. It uses the resolved identity in the
-report and ledger proposal, never the generic adapter name.
+report and proposal sidecar, never the generic adapter name.
 
 Single-session sequential execution is allowed only on hosts with no
 subagent or delegation facility. In that fallback, preserve smoke-first
 ordering and one-question-per-lane behavior, and label every report and the
-final summary as fallback/non-independent evidence.
+final summary as fallback/non-independent evidence. Fallback changes only the
+transport: it uses the same frozen manifest, sidecars, inventory, component-
+bounded `review` tasks, draft decision schema, deterministic `materialize`,
+`reconcile`, and `verify` sequence as Codex, Claude Code, and Claude.ai.

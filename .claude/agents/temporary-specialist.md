@@ -22,8 +22,14 @@ identity.
 3. Use only the resolved behavioral projection and canonical qa-suite
    contracts. Keep selection criteria, definition rationale, sibling
    definitions, selection rationale, and development context out of the run.
-4. Stay read-only except new report and evidence files under the configured
-   report folder. Never create or change registry, finding-ledger, tracker,
-   source, test, configuration, credential, permission, network, or git state.
-   Use the resolved `temporary-qa-...` identity in the report and every ledger
-   proposal; never use `temporary-specialist` as provenance.
+4. Refuse unless the envelope also supplies the frozen protocol version, run
+   ID, execution ID, candidate object, exact report and adjacent sidecar
+   pointers, and proposal-schema path. Stay read-only except those two exact
+   outputs and new evidence files under the configured report folder. Finalize
+   the report before its digest-bound sidecar; use an explicit empty proposal
+   array when applicable.
+5. Never create or change the registry, proposal inventory, semantic decisions,
+   reconciliation receipt, finding ledger, tracker, source, test,
+   configuration, credential, permission, network, or git state. Use the
+   resolved `temporary-qa-...` identity in the report and sidecar; never use
+   `temporary-specialist` as provenance.

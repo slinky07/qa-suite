@@ -1331,9 +1331,11 @@ test("context and orchestrator contracts name the enforced workflow", async () =
     assert.match(source, /^- \*\*Named components:\*\*/m);
   }
   assert.match(skill, /dependency-free `scripts\/finding-ledger\.mjs` helper/);
-  assert.match(skill, /locked compare-and-swap/);
-  assert.match(skill, /Lanes never write the ledger/);
-  assert.match(skill, /never stages,\s+commits, or otherwise touches git state/);
+  assert.match(skill, /finding-reconciliation\.mjs reconcile/);
+  assert.match(skill, /Call `materialize` to construct/);
+  assert.match(skill, /Call\s+`reconcile`, then `verify`/);
+  assert.match(skill, /Lanes never read sibling reports\s+or write inventories, decisions, receipts, or the ledger/);
+  assert.match(skill, /never stages, commits, or otherwise changes git state/);
   assert.match(contract, /exclusive lock plus compare-and-swap/);
   assert.match(contract, /duplicate JSON object keys and IDs/);
   assert.match(contract, /optional sidecar is ignored and\s+untracked/);

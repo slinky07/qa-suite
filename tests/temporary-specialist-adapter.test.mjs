@@ -116,16 +116,16 @@ test("temporary specialist is report-folder-only and uses the exact identity", a
   );
   assert.match(
     execution,
-    /Writes are limited to new\s+report and evidence files inside `report_folder`/,
+    /Writes are limited to the\s+exact dispatched report, its adjacent proposal sidecar, and new evidence files\s+inside `report_folder`/,
   );
   assert.match(
     execution,
-    /Never create, edit, replace,\s+or delete the registry, finding ledger, tracker state, source, tests,\s+configuration, git state, credentials, permissions, or network grants/,
+    /Never create, edit, replace, or delete the registry,\s+proposal inventory, semantic decisions, reconciliation receipt, finding\s+ledger, tracker state, source, tests, configuration, git state, credentials,\s+permissions, or network grants/,
   );
   assert.match(lifecycle, /Use the resolved `temporary-qa-\.\.\.` identity/);
   assert.match(
     lifecycle,
-    /Never write `temporary-specialist` as a report identity\s+or ledger-proposal lane/,
+    /Never write `temporary-specialist` as a report or\s+sidecar identity/,
   );
   assert.match(
     lifecycle,

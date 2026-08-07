@@ -638,6 +638,451 @@ function inventoryProposals(inventory) {
   return proposals;
 }
 
+function semanticCandidate(row) {
+  return {
+    id: row.id,
+    lane: row.lane,
+    severity: row.severity,
+    priority: row.priority,
+    component: row.component,
+    location: row.location,
+    oracle: row.oracle,
+    status: row.status,
+    candidate_first_seen: row.candidate_first_seen,
+    candidate_last_confirmed: row.candidate_last_confirmed,
+    defect_record: structuredClone(row.defect_record),
+    reports: structuredClone(row.reports),
+    sensitivity: structuredClone(row.sensitivity),
+  };
+}
+
+async function sourceProposalsByKey(repositoryRoot, inventory, schemas) {
+  const proposals = new Map();
+  for (const report of inventory.reports) {
+    const sidecar = await readValidatedJson(
+      repositoryRoot,
+      report.sidecar.path,
+      schemas.sidecar,
+      `sidecar ${report.execution_id}`,
+    );
+    if (sidecar.digest !== report.sidecar.sha256) {
+      throw new Error(`sidecar ${report.execution_id} digest drifted after inventory`);
+    }
+    for (const proposal of sidecar.value.proposals) {
+      proposals.set(
+        `${report.execution_id}\u0000${proposal.local_id}`,
+        proposal,
+      );
+    }
+  }
+  return proposals;
+}
+
+export async function buildSemanticDecisionTask({
+  repository = ".",
+  context = "qa-context.md",
+  inventoryPath,
+  component,
+}) {
+  if (typeof component !== "string" || component.length === 0) {
+    throw new Error("semantic review requires one exact component");
+  }
+  const repositoryRoot = await resolveRepository(repository);
+  const schemas = await loadSchemas();
+  const inventory = await loadInventory(repositoryRoot, inventoryPath, schemas);
+  const dispatch = await loadCanonicalDispatch(
+    repositoryRoot,
+    inventory.value.dispatch_manifest.path,
+    schemas.dispatch,
+  );
+  if (dispatch.digest !== inventory.value.dispatch_manifest.sha256) {
+    throw new Error("inventory dispatch digest does not match current frozen bytes");
+  }
+  validateInventorySemantics(repositoryRoot, inventory.value, dispatch.value);
+  await verifyInventorySources(repositoryRoot, inventory.value, dispatch.value, schemas);
+  const project = await validateProject({ repository: repositoryRoot, context });
+  if (
+    project.ledgerGitPath !== inventory.value.previous_ledger.path ||
+    project.schemaVersion !== inventory.value.previous_ledger.schema_version ||
+    project.digest !== inventory.value.previous_ledger.sha256 ||
+    project.rows.length !== inventory.value.previous_ledger.row_count
+  ) {
+    throw new Error("finding ledger drifted from the frozen proposal inventory");
+  }
+
+  const entries = inventoryProposals(inventory.value)
+    .filter(({ proposal }) => proposal.component === component)
+    .sort((left, right) => compareUnicode(left.key, right.key));
+  if (entries.length === 0) {
+    throw new Error(`proposal inventory has no semantic review group for component ${component}`);
+  }
+  const sourceProposals = await sourceProposalsByKey(
+    repositoryRoot,
+    inventory.value,
+    schemas,
+  );
+  const proposals = entries.map((entry) => {
+    const source = sourceProposals.get(
+      `${entry.report.execution_id}\u0000${entry.proposal.local_id}`,
+    );
+    if (!source) {
+      throw new Error(`source proposal is missing for semantic review ${entry.key}`);
+    }
+    const identity = entry.proposal.comparison.storage === "withheld"
+      ? {
+          storage: "withheld",
+          location: null,
+          oracle: null,
+        }
+      : {
+          storage: "sanitized",
+          location: source.location,
+          oracle: source.oracle,
+        };
+    assertSafeStrings(identity, `semantic review identity ${entry.key}`);
+    return {
+      proposal: structuredClone(entry.reference),
+      identity,
+      severity: entry.proposal.severity,
+      priority: entry.proposal.priority,
+      sensitivity_classification: entry.proposal.sensitivity_classification,
+      comparison: structuredClone(entry.proposal.comparison),
+      required_decision: entry.proposal.comparison.storage === "withheld"
+        ? structuredClone(WITHHELD_DECISION)
+        : null,
+    };
+  });
+  const candidateFindings = project.rows
+    .filter((row) => row.component === component)
+    .sort((left, right) => compareUnicode(left.id, right.id))
+    .map(semanticCandidate);
+  const task = {
+    schema_version: 1,
+    protocol: PROTOCOL,
+    kind: "semantic-decision-task",
+    run_id: inventory.value.run_id,
+    candidate: structuredClone(inventory.value.candidate),
+    inventory: { path: inventory.gitPath, sha256: inventory.digest },
+    component,
+    candidate_finding_ids: candidateFindings.map(({ id }) => id),
+    proposals,
+    candidate_findings: candidateFindings,
+  };
+  assertSafeStrings(task, `semantic decision task for ${component}`);
+  return task;
+}
+
+function strongerValue(current, proposed, order) {
+  return order.indexOf(proposed) < order.indexOf(current) ? proposed : current;
+}
+
+function proposalEntryForDecision(entries, decision) {
+  const entry = entries.get(proposalKey(decision.proposal));
+  if (!entry) {
+    throw new Error(
+      `decision references unknown proposal ${proposalKey(decision.proposal)}`,
+    );
+  }
+  return entry;
+}
+
+function reportProvenance(inventory, entry) {
+  return {
+    candidate: inventory.candidate.value,
+    lane: entry.reference.lane,
+    pointer: entry.reference.report_pointer,
+  };
+}
+
+function createdFindingRow(project, inventory, decision, entry, sourceProposal) {
+  if (
+    entry.proposal.sensitivity_classification !== "standard" ||
+    sourceProposal.sensitivity_classification !== "standard" ||
+    entry.proposal.comparison.storage !== "sanitized" ||
+    sourceProposal.comparison.storage !== "sanitized"
+  ) {
+    throw new Error(
+      `created decision cannot materialize sensitive or withheld proposal ${proposalKey(decision.proposal)}`,
+    );
+  }
+  return {
+    id: decision.stable_finding_id,
+    schema_version: project.schemaVersion,
+    lane: entry.reference.lane,
+    severity: entry.proposal.severity,
+    priority: entry.proposal.priority,
+    component: entry.proposal.component,
+    location: sourceProposal.location,
+    oracle: sourceProposal.oracle,
+    status: "open",
+    status_reason: null,
+    candidate_first_seen: inventory.candidate.value,
+    candidate_last_confirmed: inventory.candidate.value,
+    first_seen: decision.reconciled_at,
+    last_seen: decision.reconciled_at,
+    occurrences: 1,
+    defect_record: {
+      actual_result: sourceProposal.comparison.actual_result,
+      environment: sourceProposal.comparison.environment,
+      expected_result: sourceProposal.comparison.expected_result,
+      repro_steps: structuredClone(sourceProposal.comparison.repro_steps),
+    },
+    reports: [reportProvenance(inventory, entry)],
+    sensitivity: {
+      classification: "standard",
+      clearance: null,
+      storage: "committed",
+    },
+  };
+}
+
+function addReportProvenance(row, report) {
+  if (!row.reports.some(({ pointer }) => pointer === report.pointer)) {
+    row.reports.push(report);
+  }
+}
+
+function evolveMatchedFinding(row, current, inventory, reconciledAt, entries) {
+  for (const entry of entries) {
+    row.severity = strongerValue(
+      row.severity,
+      entry.proposal.severity,
+      ["S1", "S2", "S3", "S4"],
+    );
+    row.priority = strongerValue(
+      row.priority,
+      entry.proposal.priority,
+      ["P0", "P1", "P2", "P3"],
+    );
+    addReportProvenance(row, reportProvenance(inventory, entry));
+  }
+  if (!current) return;
+  if (inventory.candidate.value !== current.candidate_last_confirmed) {
+    row.candidate_last_confirmed = inventory.candidate.value;
+    row.occurrences = current.occurrences + 1;
+    row.last_seen = reconciledAt;
+    if (current.status === "fixed") {
+      row.status = "regressed";
+      row.status_reason = null;
+    }
+  } else if (Date.parse(reconciledAt) > Date.parse(current.last_seen)) {
+    row.last_seen = reconciledAt;
+  }
+}
+
+function validateDecisionIdentity(decision, inventory) {
+  if (decision.value.run_id !== inventory.value.run_id) {
+    throw new Error("decision envelope run_id does not match inventory");
+  }
+  if (!valuesEqual(decision.value.candidate, inventory.value.candidate)) {
+    throw new Error("decision envelope candidate does not match inventory");
+  }
+  if (
+    decision.value.inventory.path !== inventory.gitPath ||
+    decision.value.inventory.sha256 !== inventory.digest
+  ) {
+    throw new Error("decision envelope inventory identity does not match frozen bytes");
+  }
+}
+
+export async function materializeCandidateLedger({
+  repository = ".",
+  context = "qa-context.md",
+  inventoryPath,
+  decisionPath,
+  candidateLedgerPath,
+  outputDecisionPath,
+}) {
+  const repositoryRoot = await resolveRepository(repository);
+  const schemas = await loadSchemas();
+  const inventory = await loadInventory(repositoryRoot, inventoryPath, schemas);
+  const dispatch = await loadCanonicalDispatch(
+    repositoryRoot,
+    inventory.value.dispatch_manifest.path,
+    schemas.dispatch,
+  );
+  if (dispatch.digest !== inventory.value.dispatch_manifest.sha256) {
+    throw new Error("inventory dispatch digest does not match current frozen bytes");
+  }
+  validateInventorySemantics(repositoryRoot, inventory.value, dispatch.value);
+  await verifyInventorySources(repositoryRoot, inventory.value, dispatch.value, schemas);
+  const project = await validateProject({ repository: repositoryRoot, context });
+  if (
+    project.ledgerGitPath !== inventory.value.previous_ledger.path ||
+    project.schemaVersion !== inventory.value.previous_ledger.schema_version ||
+    project.digest !== inventory.value.previous_ledger.sha256 ||
+    project.rows.length !== inventory.value.previous_ledger.row_count
+  ) {
+    throw new Error("finding ledger drifted from the frozen proposal inventory");
+  }
+  const decision = await loadDecisionEnvelope(
+    repositoryRoot,
+    decisionPath,
+    schemas.decisions,
+  );
+  validateDecisionIdentity(decision, inventory);
+  if (decision.value.candidate_ledger !== null) {
+    throw new Error("materialization input must not provide a candidate ledger");
+  }
+  const decisions = normalizeDecisions(decision.value);
+  const hasLedgerChanges = decisions.some(({ disposition }) =>
+    ["created", "matched"].includes(disposition),
+  );
+  if (
+    hasLedgerChanges &&
+    decisions.some(({ disposition }) => disposition === "blocked")
+  ) {
+    throw new Error("blocked decisions cannot coexist with created or matched dispositions");
+  }
+
+  const inventoryEntries = new Map(
+    inventoryProposals(inventory.value).map((entry) => [entry.key, entry]),
+  );
+  const sourceProposals = await sourceProposalsByKey(
+    repositoryRoot,
+    inventory.value,
+    schemas,
+  );
+  const currentById = new Map(project.rows.map((row) => [row.id, row]));
+  const candidateById = new Map(
+    project.rows.map((row) => [row.id, structuredClone(row)]),
+  );
+  const createdIds = new Set();
+  for (const semantic of decisions.filter(({ disposition }) => disposition === "created")) {
+    if (createdIds.has(semantic.stable_finding_id) || currentById.has(semantic.stable_finding_id)) {
+      throw new Error(
+        `created stable finding ${semantic.stable_finding_id} is not a unique new identity`,
+      );
+    }
+    const entry = proposalEntryForDecision(inventoryEntries, semantic);
+    const source = sourceProposals.get(
+      `${entry.report.execution_id}\u0000${entry.proposal.local_id}`,
+    );
+    if (!source) {
+      throw new Error(`source proposal is missing for ${entry.key}`);
+    }
+    const row = createdFindingRow(
+      project,
+      inventory.value,
+      { ...semantic, reconciled_at: decision.value.reconciled_at },
+      entry,
+      source,
+    );
+    candidateById.set(row.id, row);
+    createdIds.add(row.id);
+  }
+
+  const matchesById = new Map();
+  for (const semantic of decisions.filter(({ disposition }) => disposition === "matched")) {
+    const entries = matchesById.get(semantic.stable_finding_id) ?? [];
+    entries.push(proposalEntryForDecision(inventoryEntries, semantic));
+    matchesById.set(semantic.stable_finding_id, entries);
+  }
+  for (const [stableId, entries] of matchesById) {
+    const row = candidateById.get(stableId);
+    if (!row) {
+      throw new Error(`matched stable finding ${stableId} is absent`);
+    }
+    evolveMatchedFinding(
+      row,
+      currentById.get(stableId),
+      inventory.value,
+      decision.value.reconciled_at,
+      entries,
+    );
+  }
+
+  let candidate = null;
+  let candidateSource = null;
+  let candidateDigest = null;
+  let candidateLocation = null;
+  if (hasLedgerChanges) {
+    const ledgerSource = await readFile(project.ledgerPath, "utf8");
+    const currentLines = ledgerSource.length === 0
+      ? []
+      : ledgerSource.trimEnd().split("\n");
+    const outputLines = project.rows.map((row, index) => {
+      const evolved = candidateById.get(row.id);
+      return valuesEqual(row, evolved) ? currentLines[index] : JSON.stringify(evolved);
+    });
+    for (const id of sortStrings(createdIds)) {
+      outputLines.push(JSON.stringify(candidateById.get(id)));
+    }
+    candidateSource = `${outputLines.join("\n")}\n`;
+    const candidateRows = parseJsonl(candidateSource, "materialized candidate ledger");
+    validateFindingRows(candidateRows, project.schema, project);
+    assertLedgerTransition(project.rows, candidateRows);
+    candidateDigest = sha256(candidateSource);
+    candidateLocation = await assertCreationPath(
+      repositoryRoot,
+      candidateLedgerPath,
+      "materialized candidate ledger",
+    );
+    assertIgnoredUntracked(
+      repositoryRoot,
+      candidateLocation.gitPath,
+      "materialized candidate ledger",
+    );
+    if (candidateLocation.gitPath === project.ledgerGitPath) {
+      throw new Error("materialized candidate ledger cannot be the canonical ledger");
+    }
+    candidate = {
+      digest: candidateDigest,
+      rows: candidateRows,
+      source: candidateSource,
+    };
+  }
+
+  const finalized = {
+    ...structuredClone(decision.value),
+    candidate_ledger: candidateLocation
+      ? { path: candidateLocation.gitPath, sha256: candidateDigest }
+      : null,
+    decisions,
+  };
+  validateJsonDocument(finalized, schemas.decisions, "materialized decision envelope");
+  assertSafeStrings(finalized, "materialized decision envelope");
+  verifyDecisionAccounting(
+    inventory.value,
+    finalized,
+    project.rows,
+    candidate,
+  );
+  const outputLocation = await assertCreationPath(
+    repositoryRoot,
+    outputDecisionPath,
+    "materialized decision envelope",
+  );
+  assertIgnoredUntracked(
+    repositoryRoot,
+    outputLocation.gitPath,
+    "materialized decision envelope",
+  );
+  if (outputLocation.gitPath === decision.gitPath) {
+    throw new Error("materialized decision envelope must use a new path");
+  }
+  if (candidateLocation) {
+    await writeExclusiveIdempotent(
+      candidateLocation.absolutePath,
+      candidateSource,
+      "materialized candidate ledger",
+    );
+  }
+  const finalizedSource = canonicalJsonDocument(finalized);
+  await writeExclusiveIdempotent(
+    outputLocation.absolutePath,
+    finalizedSource,
+    "materialized decision envelope",
+  );
+  return {
+    candidateLedgerPath: candidateLocation?.gitPath ?? null,
+    candidateLedgerDigest: candidateDigest,
+    decisionPath: outputLocation.gitPath,
+    decisionDigest: sha256(finalizedSource),
+    decision: finalized,
+  };
+}
+
 function validateInventorySemantics(repositoryRoot, inventory, dispatch, project) {
   if (inventory.run_id !== dispatch.run_id || !valuesEqual(inventory.candidate, dispatch.candidate)) {
     throw new Error("proposal inventory run or candidate does not match dispatch");
@@ -2288,6 +2733,46 @@ async function main() {
     console.log(JSON.stringify({ path: result.path, sha256: result.digest, result: result.result }));
     return;
   }
+  if (command === "review") {
+    assertAllowedOptions(
+      options,
+      new Set(["repo", "context", "inventory", "component"]),
+    );
+    const result = await buildSemanticDecisionTask({
+      ...common,
+      inventoryPath: requiredOption(options, "inventory"),
+      component: requiredOption(options, "component"),
+    });
+    process.stdout.write(canonicalJsonDocument(result));
+    return;
+  }
+  if (command === "materialize") {
+    assertAllowedOptions(
+      options,
+      new Set([
+        "repo",
+        "context",
+        "inventory",
+        "decisions",
+        "candidate-ledger",
+        "output",
+      ]),
+    );
+    const result = await materializeCandidateLedger({
+      ...common,
+      inventoryPath: requiredOption(options, "inventory"),
+      decisionPath: requiredOption(options, "decisions"),
+      candidateLedgerPath: requiredOption(options, "candidate-ledger"),
+      outputDecisionPath: requiredOption(options, "output"),
+    });
+    console.log(JSON.stringify({
+      decision_path: result.decisionPath,
+      decision_sha256: result.decisionDigest,
+      candidate_ledger_path: result.candidateLedgerPath,
+      candidate_ledger_sha256: result.candidateLedgerDigest,
+    }));
+    return;
+  }
   if (command === "reconcile") {
     assertAllowedOptions(
       options,
@@ -2322,7 +2807,9 @@ async function main() {
     })));
     return;
   }
-  throw new Error("command must be dispatch, inventory, reconcile, recover, or verify");
+  throw new Error(
+    "command must be dispatch, inventory, review, materialize, reconcile, recover, or verify",
+  );
 }
 
 if (
