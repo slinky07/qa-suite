@@ -93,6 +93,31 @@ Until every claim is satisfied, one-off owner-authorized Tier F activity and
 all Tier A outputs remain `verification_status: "unverified"`,
 `qualification: "not-evidence"`, and `result: null`.
 
+## Finding reconciliation protocol proof
+
+Issue #132's R4 reconciliation corpus is a maintainer protocol proof, not a
+lane evaluation and not an extension of the fixed ten-lane semantic corpus.
+Its sanitized manifest is
+`tests/fixtures/finding-reconciliation-r4-proof.json`. The manifest enumerates
+the issue's twelve required adversarial and control cases and binds each one to
+an executable repository test.
+
+`tests/finding-reconciliation.test.mjs` owns the focused accounting,
+identity, drift, sensitivity, persistence, and recovery cases.
+`tests/finding-reconciliation-release-proof.test.mjs` builds the two exact-ref
+release assets, verifies byte parity and required protocol files, creates
+fresh isolated Codex-shaped and Claude-shaped payload roots, and crosses their
+installed helpers over the same frozen synthetic reconciliation state in
+separate processes. It also proves fresh-clone durable verification through
+the opposite payload.
+
+These tests prove deterministic candidate-payload and protocol compatibility.
+They do not install through a live marketplace, activate a user plugin, call a
+model, attest host name resolution, or qualify a published release. Those
+operations remain subject to the disposable-host and human release gates in
+`docs/releasing.md`. Generated archives and ignored lane artifacts remain test
+state and are never committed.
+
 ## Question under test
 
 The completed Issue #30 system will answer:

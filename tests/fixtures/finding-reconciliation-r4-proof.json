@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "protocol": "qa-suite-finding-reconciliation",
+  "cases": [
+    {
+      "requirement": 1,
+      "id": "similar-language-distinct-defects",
+      "role": "adversarial",
+      "expected": "split",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "accepts an explicit split for similar-language distinct defect records"
+    },
+    {
+      "requirement": 2,
+      "id": "cross-lane-one-defect",
+      "role": "control",
+      "expected": "merged-provenance",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "merges cross-lane wording into one new identity with complete provenance"
+    },
+    {
+      "requirement": 3,
+      "id": "unsupported-s2-p0-tooling",
+      "role": "adversarial",
+      "expected": "explicit-rejection",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "retains rejected S2/P0 tooling evidence prominently without changing rows"
+    },
+    {
+      "requirement": 4,
+      "id": "omitted-decision",
+      "role": "adversarial",
+      "expected": "completeness-failure",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "fails closed when one inventoried proposal has no decision"
+    },
+    {
+      "requirement": 5,
+      "id": "duplicate-report-local-id",
+      "role": "adversarial",
+      "expected": "inventory-failure",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "rejects duplicate report-local IDs even when proposal bodies differ"
+    },
+    {
+      "requirement": 6,
+      "id": "post-inventory-report-drift",
+      "role": "adversarial",
+      "expected": "digest-failure",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "detects report and proposal drift after inventory freeze"
+    },
+    {
+      "requirement": 7,
+      "id": "unknown-matched-finding",
+      "role": "adversarial",
+      "expected": "identity-failure",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "rejects a matched decision for an unknown stable finding"
+    },
+    {
+      "requirement": 8,
+      "id": "uncommitted-persistence",
+      "role": "control",
+      "expected": "pending-then-durable",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "publishes a complete split decision idempotently and proves persistence"
+    },
+    {
+      "requirement": 9,
+      "id": "publication-phase-interruption",
+      "role": "adversarial",
+      "expected": "deterministic-recovery",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "recovers deterministically at every publication phase boundary"
+    },
+    {
+      "requirement": 10,
+      "id": "cold-process-context-replacement",
+      "role": "adversarial",
+      "expected": "retained-state-resume",
+      "proof_file": "tests/finding-reconciliation-release-proof.test.mjs",
+      "proof_test": "resumes frozen reconciliation across separate installed host processes"
+    },
+    {
+      "requirement": 11,
+      "id": "sensitive-withheld-proposal",
+      "role": "adversarial",
+      "expected": "complete-without-leak",
+      "proof_file": "tests/finding-reconciliation.test.mjs",
+      "proof_test": "blocks all non-standard sensitivity classes without materializing defect bytes"
+    },
+    {
+      "requirement": 12,
+      "id": "isolated-host-payload-parity",
+      "role": "control",
+      "expected": "byte-compatible",
+      "proof_file": "tests/finding-reconciliation-release-proof.test.mjs",
+      "proof_test": "proves exact-ref payload parity across isolated Codex and Claude roots"
+    }
+  ]
+}
