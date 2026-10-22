@@ -5,6 +5,8 @@ import { parseJsonStrict } from "../../qa-suite/scripts/finding-ledger.mjs";
 const CASE_ID = /^fx_[0-9a-f]{32}$/;
 const RUN_ID = /^run_[0-9a-f]{32}$/;
 const SUITE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-v1$/;
+// Synthetic QA identifiers and leakage canaries, not service credentials.
+// Keep them hidden from evaluated lanes; see tests/evaluation/oracles/README.md.
 const SEAL_TOKEN = /^seal_[0-9a-f]{64}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const FULL_COMMIT = /^[0-9a-f]{40}$/;
