@@ -42,6 +42,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **API contracts/specs:** <!-- e.g. openapi.yaml, docs/api.md -->
 - **Design docs:** <!-- e.g. docs/design.md -->
 - **Design tokens/design system files:** <!-- e.g. tokens.json, src/styles/tokens.ts -->
+- **Approved design reviews:** <!-- optional; design reviews or specs that the owner approved, e.g. docs/design/reviews/; only a review marked Approved or Approved with fixes is an oracle; N/A when none -->
 - **Acceptance criteria:** <!-- e.g. issue link, docs/acceptance.md -->
 
 ## Runtime

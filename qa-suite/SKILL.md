@@ -360,9 +360,11 @@ invent one. Offer the user two paths:
    - **Discover oracle inputs before asking.** Check conventional
      architecture and intent paths such as `docs/adr`, `docs/adrs`,
      `docs/architecture*`, `docs/design*`, `docs/api*`, `openapi*`,
-     `swagger*`, `api/**`, `spec/**`, `design-system/**`, `tokens*`, and
-     issue or acceptance-criteria docs. Prefill paths that exist; ask only
-     for missing oracle inputs the repo does not reveal.
+     `swagger*`, `api/**`, `spec/**`, `design-system/**`, `tokens*`, design
+     review or design spec docs, and issue or acceptance-criteria docs.
+     Prefill a design review as an approved design review only when its
+     status is `Approved` or `Approved with fixes`. Prefill paths that
+     exist; ask only for missing oracle inputs the repo does not reveal.
    - Treat Architecture & intent inputs as source-of-truth decisions,
      contracts, and acceptance criteria, not implementation summaries.
    - **Discover issue governance before asking.** Inspect applicable
