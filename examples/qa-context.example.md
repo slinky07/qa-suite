@@ -42,6 +42,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **API contracts/specs:** docs/openapi.yaml
 - **Design docs:** docs/design.md
 - **Design tokens/design system files:** N/A
+- **Approved design reviews:** N/A
 - **Acceptance criteria:** N/A
 
 ## Runtime

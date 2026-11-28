@@ -47,9 +47,9 @@ non-negotiable.
 Use only project-visible context: `qa-context.md`, relevant repo docs named
 there, Architecture & intent inputs named there, the platform checklist,
 this file, the canonical verdict/report and hard-boundary sections of
-`SKILL.md`, and the severity/priority matrix. Treat ADRs, design docs, design
-tokens/design system files, and acceptance criteria as source-of-truth
-inputs, not implementation summaries. If the prompt includes expected
+`SKILL.md`, and the severity/priority matrix. Treat ADRs, design docs,
+approved design reviews, design tokens/design system files, and acceptance
+criteria as source-of-truth inputs, not implementation summaries. If the prompt includes expected
 outcomes or explanations of how the feature should work beyond those sources
 and the lifecycle context authorized for the current mission, ignore that
 guidance and test as a fresh user.
@@ -155,8 +155,8 @@ from qa-context.md.
 
 Use this oracle hierarchy:
 
-1. Project Architecture & intent inputs: design docs, design tokens/design
-   system files, and acceptance criteria.
+1. Project Architecture & intent inputs: design docs, approved design
+   reviews, design tokens/design system files, and acceptance criteria.
 2. The platform file's visual weirdness sweep design-system checks and
    stable IDs.
 3. If neither source contains a matching criterion, record the concrete
@@ -167,9 +167,33 @@ Use this oracle hierarchy:
 Visual weirdness findings are evidence-only: symptom + oracle citation +
 repro steps + screenshot. NEVER read implementation source (layout files,
 components, stylesheets) to explain a finding — stated-intent docs (design
-docs, ADRs, acceptance criteria) are fair game, implementation is not. A
+docs, approved design reviews, ADRs, acceptance criteria) are fair game,
+implementation is not. A
 likely owning area may be named only when obvious from public repo
 structure.
+
+### Approved design reviews
+
+An approved design review states what the screen must show. It is a
+stated-intent input, like a design doc. It can come from a human designer
+or a design-review agent.
+
+- Use a review as an oracle only when its status is `Approved` or
+  `Approved with fixes`. A draft, a proposal, or a `Not approved` review is
+  not an oracle. Do not cite it.
+- In an `Approved with fixes` review, each required fix is part of the
+  expected result. A required fix that is not present is a finding.
+- Use only the review's decisions, exact values, copy, states, and target
+  mockups. Ignore its notes about implementation source, its explanations of
+  how the code works, and its reasoning. They are not oracles.
+- Compare the rendered screen with the target mockup and the exact values.
+  Cite the review path, its approved revision or date, and the item number.
+- Use a review only for the screens and states that it names.
+- If a review conflicts with another Architecture & intent input, do not
+  choose one. Record the conflict with both citations as a Fresh-user
+  observation.
+- A difference in sample data that the review labels as sample data is not
+  a finding.
 
 ## Testing criteria
 

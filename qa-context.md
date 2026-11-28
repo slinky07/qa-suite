@@ -42,6 +42,7 @@ Optional source-of-truth documents. Use `N/A` when a project has none.
 - **API contracts/specs:** N/A
 - **Design docs:** qa-suite/SKILL.md, README.md
 - **Design tokens/design system files:** N/A
+- **Approved design reviews:** N/A
 - **Acceptance criteria:** README.md release notes; qa-suite/SKILL.md workflow, report, and hard-boundary requirements
 
 ## Runtime
